@@ -111,7 +111,12 @@ class DashboardController {
         $pendingUsers = $this->userModel->getPendingUsers();
         $teamRanking = $this->getTeamRanking();
         
-        include __DIR__ . '/../views/dashboards/gestor.php';
+        // Establecer variables globales para la vista
+        $GLOBALS['userStats'] = $userStats;
+        $GLOBALS['activityStats'] = $activityStats;
+        $GLOBALS['recentActivities'] = $recentActivities;
+        $GLOBALS['pendingUsers'] = $pendingUsers;
+        $GLOBALS['teamRanking'] = $teamRanking;
     }
     
     // Dashboard Líder
@@ -135,7 +140,12 @@ class DashboardController {
         // Métricas por miembro del equipo
         $memberMetrics = $this->getMemberMetrics($liderId);
         
-        include __DIR__ . '/../views/dashboards/lider.php';
+        // Establecer variables globales para la vista
+        $GLOBALS['teamActivities'] = $teamActivities;
+        $GLOBALS['teamStats'] = $teamStats;
+        $GLOBALS['teamMembers'] = $teamMembers;
+        $GLOBALS['recentActivities'] = $recentActivities;
+        $GLOBALS['memberMetrics'] = $memberMetrics;
     }
     
     // Dashboard Activista
