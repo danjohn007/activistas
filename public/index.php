@@ -4,6 +4,9 @@
  * Sistema de Activistas Digitales
  */
 
+// Incluir configuración de la aplicación
+require_once __DIR__ . '/../config/app.php';
+
 // Configuración básica
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -15,12 +18,8 @@ require_once __DIR__ . '/../includes/auth.php';
 // Iniciar sesión
 startSession();
 
-// Obtener la URL solicitada
-$request = $_SERVER['REQUEST_URI'];
-$path = parse_url($request, PHP_URL_PATH);
-
-// Remover el prefijo /public/ si existe
-$path = str_replace('/public', '', $path);
+// Obtener la ruta actual sin el base path
+$path = getCurrentPath();
 
 // Instanciar Auth
 $auth = getAuth();
@@ -128,19 +127,19 @@ function redirectToDashboard() {
     
     switch ($role) {
         case 'SuperAdmin':
-            header('Location: /public/dashboards/admin.php');
+            header('Location: ' . url('dashboards/admin.php'));
             break;
         case 'Gestor':
-            header('Location: /public/dashboards/gestor.php');
+            header('Location: ' . url('dashboards/gestor.php'));
             break;
         case 'Líder':
-            header('Location: /public/dashboards/lider.php');
+            header('Location: ' . url('dashboards/lider.php'));
             break;
         case 'Activista':
-            header('Location: /public/dashboards/activista.php');
+            header('Location: ' . url('dashboards/activista.php'));
             break;
         default:
-            header('Location: /public/login.php');
+            header('Location: ' . url('login.php'));
             break;
     }
     exit();

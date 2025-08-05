@@ -202,19 +202,19 @@ class Auth {
     }
     
     // Requerir autenticación
-    public function requireAuth($redirectUrl = '/public/login.php') {
+    public function requireAuth($redirectUrl = 'login.php') {
         if (!$this->isLoggedIn()) {
-            header("Location: $redirectUrl");
+            header("Location: " . url($redirectUrl));
             exit();
         }
     }
     
     // Requerir rol específico
-    public function requireRole($roles, $redirectUrl = '/public/') {
+    public function requireRole($roles, $redirectUrl = '') {
         $this->requireAuth();
         
         if (!$this->checkPermission($roles)) {
-            redirectWithMessage($redirectUrl, 'No tiene permisos para acceder a esta página', 'error');
+            redirectWithMessage($redirectUrl ?: '', 'No tiene permisos para acceder a esta página', 'error');
         }
     }
 }

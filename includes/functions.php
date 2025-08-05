@@ -3,6 +3,9 @@
  * Funciones auxiliares del sistema
  */
 
+// Incluir configuración de la aplicación
+require_once __DIR__ . '/../config/app.php';
+
 // Iniciar sesión si no está iniciada
 function startSession() {
     if (session_status() == PHP_SESSION_NONE) {
@@ -56,6 +59,12 @@ function formatDate($date, $format = 'd/m/Y H:i') {
 function redirectWithMessage($url, $message, $type = 'info') {
     $_SESSION['flash_message'] = $message;
     $_SESSION['flash_type'] = $type;
+    
+    // Si la URL no empieza con http, agregar el base path
+    if (!preg_match('/^https?:\/\//', $url)) {
+        $url = url($url);
+    }
+    
     header("Location: $url");
     exit();
 }
