@@ -7,7 +7,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/functions.php';
 
 class Activity {
-    private $db;
+    protected $db;
     
     public function __construct() {
         $database = new Database();
