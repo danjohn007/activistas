@@ -14,6 +14,11 @@ class Activity {
         $this->db = $database->getConnection();
     }
     
+    // Getter method for database connection
+    public function getDb() {
+        return $this->db;
+    }
+    
     // Crear nueva actividad
     public function createActivity($data) {
         try {
@@ -233,10 +238,10 @@ class Activity {
         try {
             $sql = "SELECT 
                         COUNT(*) as total_actividades,
-                        COUNT(CASE WHEN estado = 'completada' THEN 1 END) as completadas,
-                        COUNT(CASE WHEN estado = 'en_progreso' THEN 1 END) as en_progreso,
-                        COUNT(CASE WHEN estado = 'programada' THEN 1 END) as programadas,
-                        SUM(alcance_estimado) as alcance_total
+                        COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) as completadas,
+                        COUNT(CASE WHEN a.estado = 'en_progreso' THEN 1 END) as en_progreso,
+                        COUNT(CASE WHEN a.estado = 'programada' THEN 1 END) as programadas,
+                        SUM(a.alcance_estimado) as alcance_total
                     FROM actividades a
                     JOIN usuarios u ON a.usuario_id = u.id
                     WHERE 1=1";
