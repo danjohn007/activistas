@@ -20,20 +20,84 @@ class DashboardController {
     
     // Dashboard SuperAdmin
     public function adminDashboard() {
-        $this->auth->requireRole(['SuperAdmin']);
-        
-        // Métricas globales
-        $userStats = $this->userModel->getUserStats();
-        $activityStats = $this->activityModel->getActivityStats();
-        $recentActivities = $this->activityModel->getActivities(['limit' => 10]);
-        $activitiesByType = $this->activityModel->getActivitiesByType();
-        $pendingUsers = $this->userModel->getPendingUsers();
-        
-        // Datos para gráficas
-        $monthlyActivities = $this->getMonthlyActivityData();
-        $teamRanking = $this->getTeamRanking();
-        
-        include __DIR__ . '/../views/dashboards/admin.php';
+        try {
+            $this->auth->requireRole(['SuperAdmin']);
+            
+            // Inicializar variables con valores por defecto
+            $userStats = [];
+            $activityStats = [];
+            $recentActivities = [];
+            $activitiesByType = [];
+            $pendingUsers = [];
+            $monthlyActivities = [];
+            $teamRanking = [];
+            
+            // Métricas globales con manejo de errores
+            try {
+                $userStats = $this->userModel->getUserStats();
+            } catch (Exception $e) {
+                logActivity("Error al obtener estadísticas de usuarios: " . $e->getMessage(), 'ERROR');
+                $userStats = [];
+            }
+            
+            try {
+                $activityStats = $this->activityModel->getActivityStats();
+            } catch (Exception $e) {
+                logActivity("Error al obtener estadísticas de actividades: " . $e->getMessage(), 'ERROR');
+                $activityStats = [];
+            }
+            
+            try {
+                $recentActivities = $this->activityModel->getActivities(['limit' => 10]);
+            } catch (Exception $e) {
+                logActivity("Error al obtener actividades recientes: " . $e->getMessage(), 'ERROR');
+                $recentActivities = [];
+            }
+            
+            try {
+                $activitiesByType = $this->activityModel->getActivitiesByType();
+            } catch (Exception $e) {
+                logActivity("Error al obtener actividades por tipo: " . $e->getMessage(), 'ERROR');
+                $activitiesByType = [];
+            }
+            
+            try {
+                $pendingUsers = $this->userModel->getPendingUsers();
+            } catch (Exception $e) {
+                logActivity("Error al obtener usuarios pendientes: " . $e->getMessage(), 'ERROR');
+                $pendingUsers = [];
+            }
+            
+            // Datos para gráficas con manejo de errores
+            try {
+                $monthlyActivities = $this->getMonthlyActivityData();
+            } catch (Exception $e) {
+                logActivity("Error al obtener datos mensuales: " . $e->getMessage(), 'ERROR');
+                $monthlyActivities = [];
+            }
+            
+            try {
+                $teamRanking = $this->getTeamRanking();
+            } catch (Exception $e) {
+                logActivity("Error al obtener ranking de equipos: " . $e->getMessage(), 'ERROR');
+                $teamRanking = [];
+            }
+            
+            // Establecer variables globales para la vista
+            $GLOBALS['userStats'] = $userStats;
+            $GLOBALS['activityStats'] = $activityStats;
+            $GLOBALS['recentActivities'] = $recentActivities;
+            $GLOBALS['activitiesByType'] = $activitiesByType;
+            $GLOBALS['pendingUsers'] = $pendingUsers;
+            $GLOBALS['monthlyActivities'] = $monthlyActivities;
+            $GLOBALS['teamRanking'] = $teamRanking;
+            
+        } catch (Exception $e) {
+            logActivity("Error crítico en adminDashboard: " . $e->getMessage(), 'ERROR');
+            
+            // Re-lanzar la excepción para que sea capturada por el archivo admin.php
+            throw $e;
+        }
     }
     
     // Dashboard Gestor

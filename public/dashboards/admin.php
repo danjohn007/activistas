@@ -1,8 +1,97 @@
 <?php
-require_once __DIR__ . '/../../controllers/dashboardController.php';
+// Habilitar reporte de errores para debugging
+if (!defined('APP_ENV')) {
+    require_once __DIR__ . '/../../config/app.php';
+}
 
-$controller = new DashboardController();
-$controller->adminDashboard();
+if (APP_ENV === 'development') {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+    ini_set('log_errors', 1);
+}
+
+// Variables para el dashboard con valores por defecto
+$userStats = [];
+$activityStats = [];
+$recentActivities = [];
+$activitiesByType = [];
+$pendingUsers = [];
+$monthlyActivities = [];
+$teamRanking = [];
+$error_message = null;
+
+try {
+    // Verificar que los archivos requeridos existen
+    $required_files = [
+        __DIR__ . '/../../controllers/dashboardController.php',
+        __DIR__ . '/../../includes/auth.php',
+        __DIR__ . '/../../models/user.php',
+        __DIR__ . '/../../models/activity.php',
+        __DIR__ . '/../../config/database.php'
+    ];
+    
+    foreach ($required_files as $file) {
+        if (!file_exists($file)) {
+            throw new Exception("Archivo requerido no encontrado: " . basename($file));
+        }
+    }
+    
+    // Incluir el controlador
+    require_once __DIR__ . '/../../controllers/dashboardController.php';
+    
+    // Verificar que la clase existe
+    if (!class_exists('DashboardController')) {
+        throw new Exception("La clase DashboardController no fue encontrada");
+    }
+    
+    // Crear instancia del controlador con manejo de errores
+    $controller = new DashboardController();
+    
+    // Verificar que el método existe
+    if (!method_exists($controller, 'adminDashboard')) {
+        throw new Exception("El método adminDashboard no existe en DashboardController");
+    }
+    
+    // Llamar al método del dashboard
+    $controller->adminDashboard();
+    
+} catch (Exception $e) {
+    $error_message = $e->getMessage();
+    
+    // Log del error
+    if (function_exists('logActivity')) {
+        logActivity("Error en admin dashboard: " . $error_message, 'ERROR');
+    } else {
+        error_log("Admin Dashboard Error: " . $error_message);
+    }
+    
+    // En desarrollo, mostrar detalles del error
+    if (APP_ENV === 'development') {
+        $error_details = [
+            'mensaje' => $error_message,
+            'archivo' => $e->getFile(),
+            'linea' => $e->getLine(),
+            'trace' => $e->getTraceAsString()
+        ];
+    } else {
+        $error_details = ['mensaje' => 'Error interno del sistema. Contacte al administrador.'];
+    }
+} catch (Error $e) {
+    $error_message = "Error fatal: " . $e->getMessage();
+    
+    error_log("Admin Dashboard Fatal Error: " . $error_message);
+    
+    if (APP_ENV === 'development') {
+        $error_details = [
+            'mensaje' => $error_message,
+            'archivo' => $e->getFile(),
+            'linea' => $e->getLine(),
+            'trace' => $e->getTraceAsString()
+        ];
+    } else {
+        $error_details = ['mensaje' => 'Error crítico del sistema. Contacte al administrador.'];
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -56,7 +145,9 @@ $controller->adminDashboard();
                         <li class="nav-item mb-2">
                             <a class="nav-link text-white" href="<?= url('admin/pending_users.php') ?>">
                                 <i class="fas fa-user-clock me-2"></i>Usuarios Pendientes
-                                <?php if (count($pendingUsers) > 0): ?>
+                                <?php 
+                                $pendingUsers = $GLOBALS['pendingUsers'] ?? [];
+                                if (!$error_message && is_array($pendingUsers) && count($pendingUsers) > 0): ?>
                                     <span class="badge bg-warning text-dark"><?= count($pendingUsers) ?></span>
                                 <?php endif; ?>
                             </a>
@@ -104,14 +195,48 @@ $controller->adminDashboard();
                     </div>
                 <?php endif; ?>
 
+                <?php if ($error_message): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <h5><i class="fas fa-exclamation-triangle me-2"></i>Error del Sistema</h5>
+                        <p><strong>Descripción:</strong> <?= htmlspecialchars($error_details['mensaje']) ?></p>
+                        
+                        <?php if (APP_ENV === 'development' && isset($error_details['archivo'])): ?>
+                            <hr>
+                            <h6>Información de Debugging:</h6>
+                            <p><strong>Archivo:</strong> <?= htmlspecialchars($error_details['archivo']) ?></p>
+                            <p><strong>Línea:</strong> <?= htmlspecialchars($error_details['linea']) ?></p>
+                            <details>
+                                <summary>Stack Trace</summary>
+                                <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 12px;"><?= htmlspecialchars($error_details['trace']) ?></pre>
+                            </details>
+                        <?php endif; ?>
+                        
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <?php endif; ?>
+
                 <!-- Métricas principales -->
                 <div class="row mb-4">
-                    <?php 
-                    $totalUsers = array_sum(array_column($userStats, 'total'));
-                    $totalActivities = $activityStats['total_actividades'] ?? 0;
-                    $completedActivities = $activityStats['completadas'] ?? 0;
-                    $totalReach = $activityStats['alcance_total'] ?? 0;
-                    ?>
+                    <?php if (!$error_message): ?>
+                        <?php 
+                        $userStats = $GLOBALS['userStats'] ?? [];
+                        $activityStats = $GLOBALS['activityStats'] ?? [];
+                        $pendingUsers = $GLOBALS['pendingUsers'] ?? [];
+                        
+                        $totalUsers = is_array($userStats) ? array_sum(array_column($userStats, 'total')) : 0;
+                        $totalActivities = isset($activityStats['total_actividades']) ? $activityStats['total_actividades'] : 0;
+                        $completedActivities = isset($activityStats['completadas']) ? $activityStats['completadas'] : 0;
+                        $totalReach = isset($activityStats['alcance_total']) ? $activityStats['alcance_total'] : 0;
+                        ?>
+                    <?php else: ?>
+                        <?php 
+                        // Valores por defecto cuando hay error
+                        $totalUsers = 0;
+                        $totalActivities = 0;
+                        $completedActivities = 0;
+                        $totalReach = 0;
+                        ?>
+                    <?php endif; ?>
                     
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card metric-card card-stats">

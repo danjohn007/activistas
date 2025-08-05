@@ -5,7 +5,7 @@
  */
 
 // Configuración del entorno
-define('APP_ENV', 'production'); // development, testing, production
+define('APP_ENV', 'development'); // development, testing, production
 
 // Configuración de rutas base
 define('BASE_PATH', '/ad/public'); // Base path para la aplicación (sin trailing slash)
