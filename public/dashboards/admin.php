@@ -10,6 +10,32 @@ if (APP_ENV === 'development') {
     ini_set('log_errors', 1);
 }
 
+// Incluir funciones básicas primero para tener funciones como getFlashMessage disponibles
+if (file_exists(__DIR__ . '/../../includes/functions.php')) {
+    require_once __DIR__ . '/../../includes/functions.php';
+}
+
+// Fallback para funciones críticas si functions.php no se pudo cargar
+if (!function_exists('getFlashMessage')) {
+    function getFlashMessage() {
+        if (isset($_SESSION['flash_message'])) {
+            $message = $_SESSION['flash_message'];
+            $type = $_SESSION['flash_type'] ?? 'info';
+            unset($_SESSION['flash_message'], $_SESSION['flash_type']);
+            return ['message' => $message, 'type' => $type];
+        }
+        return null;
+    }
+}
+
+if (!function_exists('url')) {
+    function url($path = '') {
+        $base_url = 'https://fix360.app/ad/public';
+        $path = ltrim($path, '/');
+        return $base_url . ($path ? '/' . $path : '');
+    }
+}
+
 // Variables para el dashboard con valores por defecto
 $userStats = [];
 $activityStats = [];
