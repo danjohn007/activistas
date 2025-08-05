@@ -57,6 +57,10 @@ switch ($path) {
         require __DIR__ . '/dashboards/admin.php';
         break;
         
+    case '/dashboards/superadmin.php':
+        require __DIR__ . '/dashboards/superadmin.php';
+        break;
+        
     case '/dashboards/gestor.php':
         require __DIR__ . '/dashboards/gestor.php';
         break;
