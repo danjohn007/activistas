@@ -236,7 +236,7 @@ class DashboardController {
     // Obtener datos de actividades mensuales
     private function getMonthlyActivityData() {
         try {
-            $stmt = $this->activityModel->db->prepare("
+            $stmt = $this->activityModel->getDb()->prepare("
                 SELECT 
                     DATE_FORMAT(fecha_actividad, '%Y-%m') as mes,
                     COUNT(*) as cantidad
@@ -256,7 +256,7 @@ class DashboardController {
     // Obtener ranking de equipos
     private function getTeamRanking() {
         try {
-            $stmt = $this->activityModel->db->prepare("
+            $stmt = $this->activityModel->getDb()->prepare("
                 SELECT 
                     l.nombre_completo as lider_nombre,
                     COUNT(a.id) as total_actividades,
@@ -281,7 +281,7 @@ class DashboardController {
     // Obtener métricas por miembro del equipo
     private function getMemberMetrics($liderId) {
         try {
-            $stmt = $this->activityModel->db->prepare("
+            $stmt = $this->activityModel->getDb()->prepare("
                 SELECT 
                     u.id,
                     u.nombre_completo,
