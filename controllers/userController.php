@@ -140,18 +140,18 @@ class UserController {
         $this->auth->requireRole(['SuperAdmin', 'Gestor']);
         
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            redirectWithMessage('/public/admin/pending_users.php', 'Método no permitido', 'error');
+            redirectWithMessage('admin/pending_users.php', 'Método no permitido', 'error');
         }
         
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-            redirectWithMessage('/public/admin/pending_users.php', 'Token de seguridad inválido', 'error');
+            redirectWithMessage('admin/pending_users.php', 'Token de seguridad inválido', 'error');
         }
         
         $userId = intval($_POST['user_id'] ?? 0);
         $action = cleanInput($_POST['action'] ?? '');
         
         if ($userId <= 0 || !in_array($action, ['approve', 'reject'])) {
-            redirectWithMessage('/public/admin/pending_users.php', 'Datos inválidos', 'error');
+            redirectWithMessage('admin/pending_users.php', 'Datos inválidos', 'error');
         }
         
         $status = $action === 'approve' ? 'activo' : 'desactivado';
@@ -159,9 +159,9 @@ class UserController {
         
         if ($result) {
             $message = $action === 'approve' ? 'Usuario aprobado exitosamente' : 'Usuario rechazado';
-            redirectWithMessage('/public/admin/pending_users.php', $message, 'success');
+            redirectWithMessage('admin/pending_users.php', $message, 'success');
         } else {
-            redirectWithMessage('/public/admin/pending_users.php', 'Error al procesar la solicitud', 'error');
+            redirectWithMessage('admin/pending_users.php', 'Error al procesar la solicitud', 'error');
         }
     }
     
@@ -171,12 +171,12 @@ class UserController {
         
         $userId = intval($_GET['id'] ?? 0);
         if ($userId <= 0) {
-            redirectWithMessage('/public/admin/users.php', 'Usuario no encontrado', 'error');
+            redirectWithMessage('admin/users.php', 'Usuario no encontrado', 'error');
         }
         
         $user = $this->userModel->getUserById($userId);
         if (!$user) {
-            redirectWithMessage('/public/admin/users.php', 'Usuario no encontrado', 'error');
+            redirectWithMessage('admin/users.php', 'Usuario no encontrado', 'error');
         }
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -188,10 +188,10 @@ class UserController {
         include __DIR__ . '/../views/admin/edit_user.php';
     }
     
-    // Procesar edición de usuario
+    // Procesar edición de usuario  
     private function processEditUser($userId) {
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-            redirectWithMessage("/public/admin/edit_user.php?id=$userId", 'Token de seguridad inválido', 'error');
+            redirectWithMessage("admin/edit_user.php?id=$userId", 'Token de seguridad inválido', 'error');
         }
         
         $updateData = [
@@ -215,9 +215,9 @@ class UserController {
         $result = $this->userModel->updateUser($userId, $updateData);
         
         if ($result) {
-            redirectWithMessage("/public/admin/edit_user.php?id=$userId", 'Usuario actualizado exitosamente', 'success');
+            redirectWithMessage("admin/edit_user.php?id=$userId", 'Usuario actualizado exitosamente', 'success');
         } else {
-            redirectWithMessage("/public/admin/edit_user.php?id=$userId", 'Error al actualizar usuario', 'error');
+            redirectWithMessage("admin/edit_user.php?id=$userId", 'Error al actualizar usuario', 'error');
         }
     }
     
@@ -226,26 +226,26 @@ class UserController {
         $this->auth->requireRole(['SuperAdmin', 'Gestor']);
         
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            redirectWithMessage('/public/admin/users.php', 'Método no permitido', 'error');
+            redirectWithMessage('admin/users.php', 'Método no permitido', 'error');
         }
         
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-            redirectWithMessage('/public/admin/users.php', 'Token de seguridad inválido', 'error');
+            redirectWithMessage('admin/users.php', 'Token de seguridad inválido', 'error');
         }
         
         $userId = intval($_POST['user_id'] ?? 0);
         $status = cleanInput($_POST['status'] ?? '');
         
         if ($userId <= 0 || !in_array($status, ['activo', 'suspendido', 'desactivado'])) {
-            redirectWithMessage('/public/admin/users.php', 'Datos inválidos', 'error');
+            redirectWithMessage('admin/users.php', 'Datos inválidos', 'error');
         }
         
         $result = $this->userModel->updateUserStatus($userId, $status);
         
         if ($result) {
-            redirectWithMessage('/public/admin/users.php', 'Estado de usuario actualizado', 'success');
+            redirectWithMessage('admin/users.php', 'Estado de usuario actualizado', 'success');
         } else {
-            redirectWithMessage('/public/admin/users.php', 'Error al actualizar estado', 'error');
+            redirectWithMessage('admin/users.php', 'Error al actualizar estado', 'error');
         }
     }
     
@@ -266,7 +266,7 @@ class UserController {
     // Procesar actualización de perfil
     private function processProfileUpdate() {
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-            redirectWithMessage('/public/profile.php', 'Token de seguridad inválido', 'error');
+            redirectWithMessage('profile.php', 'Token de seguridad inválido', 'error');
         }
         
         $userId = $_SESSION['user_id'];
@@ -289,34 +289,36 @@ class UserController {
         if ($result) {
             // Actualizar nombre en sesión
             $_SESSION['user_name'] = $updateData['nombre_completo'];
-            redirectWithMessage('/public/profile.php', 'Perfil actualizado exitosamente', 'success');
+            redirectWithMessage('profile.php', 'Perfil actualizado exitosamente', 'success');
         } else {
-            redirectWithMessage('/public/profile.php', 'Error al actualizar perfil', 'error');
+            redirectWithMessage('profile.php', 'Error al actualizar perfil', 'error');
         }
     }
     
-    // Redireccionar al dashboard según el rol
+    /**
+     * Redireccionar al dashboard según el rol del usuario
+     * Utiliza rutas relativas compatibles con subdirectorios
+     */
     private function redirectToDashboard() {
         $role = $_SESSION['user_role'] ?? '';
         
         switch ($role) {
             case 'SuperAdmin':
-                header('Location: ' . url('dashboards/admin.php'));
+                redirectWithMessage('dashboards/admin.php', '', 'info');
                 break;
             case 'Gestor':
-                header('Location: ' . url('dashboards/gestor.php'));
+                redirectWithMessage('dashboards/gestor.php', '', 'info');
                 break;
             case 'Líder':
-                header('Location: ' . url('dashboards/lider.php'));
+                redirectWithMessage('dashboards/lider.php', '', 'info');
                 break;
             case 'Activista':
-                header('Location: ' . url('dashboards/activista.php'));
+                redirectWithMessage('dashboards/activista.php', '', 'info');
                 break;
             default:
-                header('Location: ' . url(''));
+                redirectWithMessage('login.php', 'Rol no válido', 'error');
                 break;
         }
-        exit();
     }
 }
 ?>

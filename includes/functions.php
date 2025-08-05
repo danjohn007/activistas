@@ -55,12 +55,33 @@ function formatDate($date, $format = 'd/m/Y H:i') {
     return date($format, strtotime($date));
 }
 
-// Redireccionar con mensaje
+/**
+ * Redireccionar con mensaje flash
+ * 
+ * IMPORTANTE PARA DESARROLLADORES:
+ * - Siempre usar rutas RELATIVAS como parámetro (ej: "login.php", "admin/users.php")  
+ * - NO usar rutas absolutas como "/public/login.php" o rutas con BASE_PATH
+ * - La función automáticamente aplicará el BASE_PATH configurado usando url()
+ * - Esto garantiza compatibilidad con instalaciones en subdirectorios como /ad
+ * 
+ * Ejemplos CORRECTOS:
+ *   redirectWithMessage('login.php', 'Sesión cerrada', 'success');
+ *   redirectWithMessage('admin/users.php', 'Usuario actualizado', 'success');
+ *   redirectWithMessage('dashboards/activista.php', 'Bienvenido', 'info');
+ * 
+ * Ejemplos INCORRECTOS:
+ *   redirectWithMessage('/public/login.php', '...'); // NO - ruta absoluta
+ *   redirectWithMessage('/ad/login.php', '...'); // NO - incluye base path
+ * 
+ * @param string $url Ruta relativa del destino (sin barra inicial)
+ * @param string $message Mensaje flash a mostrar
+ * @param string $type Tipo de mensaje: 'info', 'success', 'warning', 'error'
+ */
 function redirectWithMessage($url, $message, $type = 'info') {
     $_SESSION['flash_message'] = $message;
     $_SESSION['flash_type'] = $type;
     
-    // Si la URL no empieza con http, agregar el base path
+    // Si la URL no empieza con http, agregar el base path usando url()
     if (!preg_match('/^https?:\/\//', $url)) {
         $url = url($url);
     }

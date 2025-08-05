@@ -183,7 +183,7 @@ class DashboardController {
         
         // Aquí se implementaría la exportación a PDF
         // Por simplicidad, devolvemos un mensaje
-        redirectWithMessage($_SERVER['HTTP_REFERER'] ?? '/public/', 'Funcionalidad de exportación a PDF pendiente de implementar', 'info');
+        redirectWithMessage($_SERVER['HTTP_REFERER'] ?? '', 'Funcionalidad de exportación a PDF pendiente de implementar', 'info');
     }
     
     // Exportar datos a Excel
@@ -192,7 +192,7 @@ class DashboardController {
         
         // Aquí se implementaría la exportación a Excel
         // Por simplicidad, devolvemos un mensaje
-        redirectWithMessage($_SERVER['HTTP_REFERER'] ?? '/public/', 'Funcionalidad de exportación a Excel pendiente de implementar', 'info');
+        redirectWithMessage($_SERVER['HTTP_REFERER'] ?? '', 'Funcionalidad de exportación a Excel pendiente de implementar', 'info');
     }
     
     // API para obtener datos del calendario

@@ -17,13 +17,26 @@ define('PUBLIC_ROOT', APP_ROOT . '/public');
 define('VIEWS_ROOT', APP_ROOT . '/views');
 define('UPLOADS_DIR', PUBLIC_ROOT . '/assets/uploads');
 
-// Función para generar URLs absolutas
+/**
+ * Generar URLs absolutas con base path configurado
+ * 
+ * IMPORTANTE: Esta función debe usarse para todos los redirects y links
+ * para garantizar compatibilidad con instalaciones en subdirectorios
+ * 
+ * @param string $path Ruta relativa (ej: 'login.php', 'admin/users.php')
+ * @return string URL absoluta con base path (ej: 'https://fix360.app/ad/login.php')
+ */
 function url($path = '') {
     $path = ltrim($path, '/');
     return BASE_URL . ($path ? '/' . $path : '');
 }
 
-// Función para generar rutas del sistema
+/**
+ * Generar rutas del sistema con base path (sin dominio)
+ * 
+ * @param string $path Ruta relativa 
+ * @return string Ruta con base path (ej: '/ad/login.php')
+ */
 function route($path = '') {
     $path = ltrim($path, '/');
     return BASE_PATH . ($path ? '/' . $path : '');
