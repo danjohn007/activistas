@@ -6,9 +6,9 @@
 
 class Database {
     private $host = 'localhost';
-    private $db_name = 'activistas_digitales';
-    private $username = 'root';
-    private $password = '';
+    private $db_name = 'fix360_ad';
+    private $username = 'fix360_ad';
+    private $password = 'Danjohn007';
     private $charset = 'utf8mb4';
     private $conn;
 
