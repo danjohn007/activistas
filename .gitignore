@@ -1,0 +1,19 @@
+# Ignorar logs y archivos temporales
+/logs/
+/tmp/
+
+# Ignorar archivos de configuración local
+config/local.php
+
+# Ignorar archivos subidos por usuarios
+public/assets/uploads/*
+!public/assets/uploads/.gitkeep
+
+# Ignorar archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Ignorar archivos de backup
+*.bak
+*.backup
+*.sql.bak
