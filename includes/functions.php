@@ -170,18 +170,51 @@ function sendEmail($to, $subject, $message, $from = 'noreply@activistas.com') {
     )));
 }
 
-// Logging básico
+// Logging mejorado con manejo de errores
 function logActivity($message, $level = 'INFO') {
-    $logFile = __DIR__ . '/../logs/system.log';
-    $logDir = dirname($logFile);
-    
-    if (!is_dir($logDir)) {
-        mkdir($logDir, 0755, true);
+    try {
+        $logFile = __DIR__ . '/../logs/system.log';
+        $logDir = dirname($logFile);
+        
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0755, true);
+        }
+        
+        $timestamp = date('Y-m-d H:i:s');
+        $logEntry = "[$timestamp] [$level] $message" . PHP_EOL;
+        
+        file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
+        
+        // Para errores críticos, también registrar en error_log
+        if ($level === 'ERROR') {
+            error_log("Activistas App - $level: $message");
+        }
+    } catch (Exception $e) {
+        // Si falla el logging, usar error_log como respaldo
+        error_log("Logging failed - Original: $message | Error: " . $e->getMessage());
     }
+}
+
+// Función para registrar errores de dashboard específicamente
+function logDashboardError($dashboard, $userId, $error) {
+    $message = "Dashboard Error - Type: $dashboard, User: $userId, Error: $error";
+    logActivity($message, 'ERROR');
     
-    $timestamp = date('Y-m-d H:i:s');
-    $logEntry = "[$timestamp] [$level] $message" . PHP_EOL;
-    
-    file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
+    // También registrar en un archivo específico para dashboards
+    try {
+        $logFile = __DIR__ . '/../logs/dashboard_errors.log';
+        $logDir = dirname($logFile);
+        
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0755, true);
+        }
+        
+        $timestamp = date('Y-m-d H:i:s');
+        $logEntry = "[$timestamp] $message" . PHP_EOL;
+        
+        file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
+    } catch (Exception $e) {
+        error_log("Dashboard logging failed: " . $e->getMessage());
+    }
 }
 ?>
