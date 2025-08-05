@@ -87,6 +87,10 @@ switch ($path) {
         require __DIR__ . '/activities/edit.php';
         break;
         
+    case '/activities/add_evidence.php':
+        require __DIR__ . '/activities/add_evidence.php';
+        break;
+        
     // Administración
     case '/admin/users.php':
         require __DIR__ . '/admin/users.php';
