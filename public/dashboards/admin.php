@@ -44,17 +44,17 @@ $controller->adminDashboard();
                     
                     <ul class="nav flex-column">
                         <li class="nav-item mb-2">
-                            <a class="nav-link text-white active" href="/public/dashboards/admin.php">
+                            <a class="nav-link text-white active" href="<?= url('dashboards/admin.php') ?>">
                                 <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                             </a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="/public/admin/users.php">
+                            <a class="nav-link text-white" href="<?= url('admin/users.php') ?>">
                                 <i class="fas fa-users me-2"></i>Gestión de Usuarios
                             </a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="/public/admin/pending_users.php">
+                            <a class="nav-link text-white" href="<?= url('admin/pending_users.php') ?>">
                                 <i class="fas fa-user-clock me-2"></i>Usuarios Pendientes
                                 <?php if (count($pendingUsers) > 0): ?>
                                     <span class="badge bg-warning text-dark"><?= count($pendingUsers) ?></span>
@@ -62,17 +62,17 @@ $controller->adminDashboard();
                             </a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="/public/activities/">
+                            <a class="nav-link text-white" href="<?= url('activities/') ?>">
                                 <i class="fas fa-tasks me-2"></i>Actividades
                             </a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="/public/profile.php">
+                            <a class="nav-link text-white" href="<?= url('profile.php') ?>">
                                 <i class="fas fa-user me-2"></i>Mi Perfil
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="/public/logout.php">
+                            <a class="nav-link text-white" href="<?= url('logout.php') ?>">
                                 <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
                             </a>
                         </li>

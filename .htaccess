@@ -1,0 +1,16 @@
+# Redirección automática al subdirectorio /public
+# Este archivo debe estar en la raíz del proyecto (/ad/)
+
+RewriteEngine On
+
+# Si acceden directamente a /ad sin ruta adicional, redirigir a /ad/public/
+RewriteCond %{REQUEST_URI} ^/ad/?$
+RewriteRule ^(.*)$ /ad/public/ [R=301,L]
+
+# Redirigir todas las peticiones que no sean a /public hacia /public
+# Evitar bucles infinitos verificando que no sea ya una ruta a /public
+RewriteCond %{REQUEST_URI} !^/ad/public/
+RewriteCond %{REQUEST_URI} ^/ad/(.+)$
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /ad/public/%1 [R=301,L]
