@@ -28,18 +28,18 @@ class UserController {
     // Procesar login
     public function processLogin() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            redirectWithMessage('/public/login.php', 'Método no permitido', 'error');
+            redirectWithMessage('login.php', 'Método no permitido', 'error');
         }
         
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-            redirectWithMessage('/public/login.php', 'Token de seguridad inválido', 'error');
+            redirectWithMessage('login.php', 'Token de seguridad inválido', 'error');
         }
         
         $email = cleanInput($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
         
         if (empty($email) || empty($password)) {
-            redirectWithMessage('/public/login.php', 'Email y contraseña son obligatorios', 'error');
+            redirectWithMessage('login.php', 'Email y contraseña son obligatorios', 'error');
         }
         
         $result = $this->auth->login($email, $password);
@@ -47,7 +47,7 @@ class UserController {
         if ($result['success']) {
             $this->redirectToDashboard();
         } else {
-            redirectWithMessage('/public/login.php', $result['error'], 'error');
+            redirectWithMessage('login.php', $result['error'], 'error');
         }
     }
     
@@ -65,11 +65,11 @@ class UserController {
     // Procesar registro
     public function processRegister() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            redirectWithMessage('/public/register.php', 'Método no permitido', 'error');
+            redirectWithMessage('register.php', 'Método no permitido', 'error');
         }
         
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-            redirectWithMessage('/public/register.php', 'Token de seguridad inválido', 'error');
+            redirectWithMessage('register.php', 'Token de seguridad inválido', 'error');
         }
         
         $userData = [
@@ -88,24 +88,24 @@ class UserController {
             if ($uploadResult['success']) {
                 $userData['foto_perfil'] = $uploadResult['filename'];
             } else {
-                redirectWithMessage('/public/register.php', $uploadResult['error'], 'error');
+                redirectWithMessage('register.php', $uploadResult['error'], 'error');
             }
         }
         
         $result = $this->auth->register($userData);
         
         if ($result['success']) {
-            redirectWithMessage('/public/login.php', 'Registro exitoso. Su cuenta está pendiente de aprobación.', 'success');
+            redirectWithMessage('login.php', 'Registro exitoso. Su cuenta está pendiente de aprobación.', 'success');
         } else {
             $error = isset($result['errors']) ? implode(', ', $result['errors']) : $result['error'];
-            redirectWithMessage('/public/register.php', $error, 'error');
+            redirectWithMessage('register.php', $error, 'error');
         }
     }
     
     // Cerrar sesión
     public function logout() {
         $this->auth->logout();
-        redirectWithMessage('/public/login.php', 'Sesión cerrada exitosamente', 'success');
+        redirectWithMessage('login.php', 'Sesión cerrada exitosamente', 'success');
     }
     
     // Mostrar lista de usuarios (para admin/gestor)
@@ -301,19 +301,19 @@ class UserController {
         
         switch ($role) {
             case 'SuperAdmin':
-                header('Location: /public/dashboards/admin.php');
+                header('Location: ' . url('dashboards/admin.php'));
                 break;
             case 'Gestor':
-                header('Location: /public/dashboards/gestor.php');
+                header('Location: ' . url('dashboards/gestor.php'));
                 break;
             case 'Líder':
-                header('Location: /public/dashboards/lider.php');
+                header('Location: ' . url('dashboards/lider.php'));
                 break;
             case 'Activista':
-                header('Location: /public/dashboards/activista.php');
+                header('Location: ' . url('dashboards/activista.php'));
                 break;
             default:
-                header('Location: /public/');
+                header('Location: ' . url(''));
                 break;
         }
         exit();
