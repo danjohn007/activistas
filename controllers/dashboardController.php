@@ -121,31 +121,84 @@ class DashboardController {
     
     // Dashboard Líder
     public function liderDashboard() {
-        $this->auth->requireRole(['Líder']);
-        
-        $currentUser = $this->auth->getCurrentUser();
-        $liderId = $currentUser['id'];
-        
-        // Actividades propias y de sus activistas
-        $teamActivities = $this->activityModel->getActivities(['lider_id' => $liderId]);
-        $teamStats = $this->activityModel->getActivityStats(['lider_id' => $liderId]);
-        $teamMembers = $this->userModel->getActivistsOfLeader($liderId);
-        
-        // Actividades recientes del equipo
-        $recentActivities = $this->activityModel->getActivities([
-            'lider_id' => $liderId,
-            'limit' => 10
-        ]);
-        
-        // Métricas por miembro del equipo
-        $memberMetrics = $this->getMemberMetrics($liderId);
-        
-        // Establecer variables globales para la vista
-        $GLOBALS['teamActivities'] = $teamActivities;
-        $GLOBALS['teamStats'] = $teamStats;
-        $GLOBALS['teamMembers'] = $teamMembers;
-        $GLOBALS['recentActivities'] = $recentActivities;
-        $GLOBALS['memberMetrics'] = $memberMetrics;
+        try {
+            $this->auth->requireRole(['Líder']);
+            
+            $currentUser = $this->auth->getCurrentUser();
+            if (!$currentUser) {
+                throw new Exception("No se pudo obtener la información del usuario actual");
+            }
+            
+            $liderId = $currentUser['id'];
+            
+            // Inicializar variables con valores por defecto
+            $teamActivities = [];
+            $teamStats = [];
+            $teamMembers = [];
+            $recentActivities = [];
+            $memberMetrics = [];
+            
+            // Actividades propias y de sus activistas con manejo de errores
+            try {
+                $teamActivities = $this->activityModel->getActivities(['lider_id' => $liderId]);
+            } catch (Exception $e) {
+                logActivity("Error al obtener actividades del equipo del líder $liderId: " . $e->getMessage(), 'ERROR');
+                $teamActivities = [];
+            }
+            
+            try {
+                $teamStats = $this->activityModel->getActivityStats(['lider_id' => $liderId]);
+            } catch (Exception $e) {
+                logActivity("Error al obtener estadísticas del equipo del líder $liderId: " . $e->getMessage(), 'ERROR');
+                $teamStats = [];
+            }
+            
+            try {
+                $teamMembers = $this->userModel->getActivistsOfLeader($liderId);
+            } catch (Exception $e) {
+                logActivity("Error al obtener miembros del equipo del líder $liderId: " . $e->getMessage(), 'ERROR');
+                $teamMembers = [];
+            }
+            
+            // Actividades recientes del equipo
+            try {
+                $recentActivities = $this->activityModel->getActivities([
+                    'lider_id' => $liderId,
+                    'limit' => 10
+                ]);
+            } catch (Exception $e) {
+                logActivity("Error al obtener actividades recientes del líder $liderId: " . $e->getMessage(), 'ERROR');
+                $recentActivities = [];
+            }
+            
+            // Métricas por miembro del equipo
+            try {
+                $memberMetrics = $this->getMemberMetrics($liderId);
+            } catch (Exception $e) {
+                logActivity("Error al obtener métricas de miembros del líder $liderId: " . $e->getMessage(), 'ERROR');
+                $memberMetrics = [];
+            }
+            
+            // Establecer variables globales para la vista
+            $GLOBALS['teamActivities'] = $teamActivities;
+            $GLOBALS['teamStats'] = $teamStats;
+            $GLOBALS['teamMembers'] = $teamMembers;
+            $GLOBALS['recentActivities'] = $recentActivities;
+            $GLOBALS['memberMetrics'] = $memberMetrics;
+            
+        } catch (Exception $e) {
+            logActivity("Error crítico en liderDashboard: " . $e->getMessage(), 'ERROR');
+            
+            // Inicializar variables vacías para evitar errores en la vista
+            $GLOBALS['teamActivities'] = [];
+            $GLOBALS['teamStats'] = [];
+            $GLOBALS['teamMembers'] = [];
+            $GLOBALS['recentActivities'] = [];
+            $GLOBALS['memberMetrics'] = [];
+            
+            // Re-lanzar la excepción para que sea capturada por el archivo lider.php
+            throw $e;
+        }
     }
     
     // Dashboard Activista
