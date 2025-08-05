@@ -201,7 +201,13 @@ class Auth {
         }
     }
     
-    // Requerir autenticación
+    /**
+     * Requerir autenticación - redirige a login si no está autenticado
+     * 
+     * IMPORTANTE: Usar rutas RELATIVAS solamente
+     * 
+     * @param string $redirectUrl Ruta relativa de redirección (ej: 'login.php')
+     */
     public function requireAuth($redirectUrl = 'login.php') {
         if (!$this->isLoggedIn()) {
             header("Location: " . url($redirectUrl));
@@ -209,7 +215,14 @@ class Auth {
         }
     }
     
-    // Requerir rol específico
+    /**
+     * Requerir rol específico - verifica autenticación y permisos
+     * 
+     * IMPORTANTE: Usar rutas RELATIVAS solamente
+     * 
+     * @param array $roles Roles permitidos (ej: ['SuperAdmin', 'Gestor'])
+     * @param string $redirectUrl Ruta relativa de redirección en caso de no tener permisos
+     */
     public function requireRole($roles, $redirectUrl = '') {
         $this->requireAuth();
         

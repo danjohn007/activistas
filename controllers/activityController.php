@@ -69,11 +69,11 @@ class ActivityController {
         $this->auth->requireAuth();
         
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            redirectWithMessage('/public/activities/create.php', 'Método no permitido', 'error');
+            redirectWithMessage('activities/create.php', 'Método no permitido', 'error');
         }
         
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-            redirectWithMessage('/public/activities/create.php', 'Token de seguridad inválido', 'error');
+            redirectWithMessage('activities/create.php', 'Token de seguridad inválido', 'error');
         }
         
         $currentUser = $this->auth->getCurrentUser();
@@ -93,7 +93,7 @@ class ActivityController {
         if (!empty($errors)) {
             $_SESSION['form_errors'] = $errors;
             $_SESSION['form_data'] = $_POST;
-            redirectWithMessage('/public/activities/create.php', 'Por favor corrige los errores', 'error');
+            redirectWithMessage('activities/create.php', 'Por favor corrige los errores', 'error');
         }
         
         $activityId = $this->activityModel->createActivity($activityData);
@@ -102,9 +102,9 @@ class ActivityController {
             // Procesar evidencias si se subieron
             $this->processEvidenceFiles($activityId);
             
-            redirectWithMessage('/public/activities/', 'Actividad creada exitosamente', 'success');
+            redirectWithMessage('activities/', 'Actividad creada exitosamente', 'success');
         } else {
-            redirectWithMessage('/public/activities/create.php', 'Error al crear actividad', 'error');
+            redirectWithMessage('activities/create.php', 'Error al crear actividad', 'error');
         }
     }
     
@@ -114,18 +114,18 @@ class ActivityController {
         
         $activityId = intval($_GET['id'] ?? 0);
         if ($activityId <= 0) {
-            redirectWithMessage('/public/activities/', 'Actividad no encontrada', 'error');
+            redirectWithMessage('activities/', 'Actividad no encontrada', 'error');
         }
         
         $activity = $this->activityModel->getActivityById($activityId);
         if (!$activity) {
-            redirectWithMessage('/public/activities/', 'Actividad no encontrada', 'error');
+            redirectWithMessage('activities/', 'Actividad no encontrada', 'error');
         }
         
         // Verificar permisos
         $currentUser = $this->auth->getCurrentUser();
         if (!$this->canViewActivity($currentUser, $activity)) {
-            redirectWithMessage('/public/activities/', 'No tiene permisos para ver esta actividad', 'error');
+            redirectWithMessage('activities/', 'No tiene permisos para ver esta actividad', 'error');
         }
         
         $evidence = $this->activityModel->getActivityEvidence($activityId);
@@ -139,18 +139,18 @@ class ActivityController {
         
         $activityId = intval($_GET['id'] ?? 0);
         if ($activityId <= 0) {
-            redirectWithMessage('/public/activities/', 'Actividad no encontrada', 'error');
+            redirectWithMessage('activities/', 'Actividad no encontrada', 'error');
         }
         
         $activity = $this->activityModel->getActivityById($activityId);
         if (!$activity) {
-            redirectWithMessage('/public/activities/', 'Actividad no encontrada', 'error');
+            redirectWithMessage('activities/', 'Actividad no encontrada', 'error');
         }
         
         // Verificar permisos
         $currentUser = $this->auth->getCurrentUser();
         if (!$this->canEditActivity($currentUser, $activity)) {
-            redirectWithMessage('/public/activities/', 'No tiene permisos para editar esta actividad', 'error');
+            redirectWithMessage('activities/', 'No tiene permisos para editar esta actividad', 'error');
         }
         
         $activityTypes = $this->activityModel->getActivityTypes();
@@ -163,27 +163,27 @@ class ActivityController {
         $this->auth->requireAuth();
         
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            redirectWithMessage('/public/activities/', 'Método no permitido', 'error');
+            redirectWithMessage('activities/', 'Método no permitido', 'error');
         }
         
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-            redirectWithMessage('/public/activities/', 'Token de seguridad inválido', 'error');
+            redirectWithMessage('activities/', 'Token de seguridad inválido', 'error');
         }
         
         $activityId = intval($_POST['activity_id'] ?? 0);
         if ($activityId <= 0) {
-            redirectWithMessage('/public/activities/', 'Actividad no encontrada', 'error');
+            redirectWithMessage('activities/', 'Actividad no encontrada', 'error');
         }
         
         $activity = $this->activityModel->getActivityById($activityId);
         if (!$activity) {
-            redirectWithMessage('/public/activities/', 'Actividad no encontrada', 'error');
+            redirectWithMessage('activities/', 'Actividad no encontrada', 'error');
         }
         
         // Verificar permisos
         $currentUser = $this->auth->getCurrentUser();
         if (!$this->canEditActivity($currentUser, $activity)) {
-            redirectWithMessage('/public/activities/', 'No tiene permisos para editar esta actividad', 'error');
+            redirectWithMessage('activities/', 'No tiene permisos para editar esta actividad', 'error');
         }
         
         $updateData = [
@@ -201,9 +201,9 @@ class ActivityController {
             // Procesar nuevas evidencias si se subieron
             $this->processEvidenceFiles($activityId);
             
-            redirectWithMessage("/public/activities/detail.php?id=$activityId", 'Actividad actualizada exitosamente', 'success');
+            redirectWithMessage("activities/detail.php?id=$activityId", 'Actividad actualizada exitosamente', 'success');
         } else {
-            redirectWithMessage("/public/activities/edit.php?id=$activityId", 'Error al actualizar actividad', 'error');
+            redirectWithMessage("activities/edit.php?id=$activityId", 'Error al actualizar actividad', 'error');
         }
     }
     
@@ -212,11 +212,11 @@ class ActivityController {
         $this->auth->requireAuth();
         
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            redirectWithMessage('/public/activities/', 'Método no permitido', 'error');
+            redirectWithMessage('activities/', 'Método no permitido', 'error');
         }
         
         if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-            redirectWithMessage('/public/activities/', 'Token de seguridad inválido', 'error');
+            redirectWithMessage('activities/', 'Token de seguridad inválido', 'error');
         }
         
         $activityId = intval($_POST['activity_id'] ?? 0);
@@ -224,18 +224,18 @@ class ActivityController {
         $content = cleanInput($_POST['content'] ?? '');
         
         if ($activityId <= 0) {
-            redirectWithMessage('/public/activities/', 'Actividad no encontrada', 'error');
+            redirectWithMessage('activities/', 'Actividad no encontrada', 'error');
         }
         
         $activity = $this->activityModel->getActivityById($activityId);
         if (!$activity) {
-            redirectWithMessage('/public/activities/', 'Actividad no encontrada', 'error');
+            redirectWithMessage('activities/', 'Actividad no encontrada', 'error');
         }
         
         // Verificar permisos
         $currentUser = $this->auth->getCurrentUser();
         if (!$this->canEditActivity($currentUser, $activity)) {
-            redirectWithMessage('/public/activities/', 'No tiene permisos para agregar evidencia', 'error');
+            redirectWithMessage('activities/', 'No tiene permisos para agregar evidencia', 'error');
         }
         
         $fileName = null;
@@ -248,16 +248,16 @@ class ActivityController {
             if ($uploadResult['success']) {
                 $fileName = $uploadResult['filename'];
             } else {
-                redirectWithMessage("/public/activities/detail.php?id=$activityId", $uploadResult['error'], 'error');
+                redirectWithMessage("activities/detail.php?id=$activityId", $uploadResult['error'], 'error');
             }
         }
         
         $evidenceId = $this->activityModel->addEvidence($activityId, $evidenceType, $fileName, $content);
         
         if ($evidenceId) {
-            redirectWithMessage("/public/activities/detail.php?id=$activityId", 'Evidencia agregada exitosamente', 'success');
+            redirectWithMessage("activities/detail.php?id=$activityId", 'Evidencia agregada exitosamente', 'success');
         } else {
-            redirectWithMessage("/public/activities/detail.php?id=$activityId", 'Error al agregar evidencia', 'error');
+            redirectWithMessage("activities/detail.php?id=$activityId", 'Error al agregar evidencia', 'error');
         }
     }
     

@@ -121,7 +121,10 @@ switch ($path) {
         break;
 }
 
-// Función para redireccionar al dashboard según el rol
+/**
+ * Función para redireccionar al dashboard según el rol del usuario
+ * Utiliza rutas relativas compatibles con subdirectorios
+ */
 function redirectToDashboard() {
     $role = $_SESSION['user_role'] ?? '';
     
