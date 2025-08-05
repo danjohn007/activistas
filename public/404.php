@@ -1,3 +1,7 @@
+<?php
+// Incluir configuración de la aplicación
+require_once __DIR__ . '/../config/app.php';
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -31,7 +35,7 @@
                             <p class="text-muted mb-4">
                                 La página que estás buscando no existe o ha sido movida.
                             </p>
-                            <a href="/public/" class="btn btn-primary">
+                            <a href="<?= url('') ?>" class="btn btn-primary">
                                 <i class="fas fa-home me-2"></i>Volver al inicio
                             </a>
                         </div>

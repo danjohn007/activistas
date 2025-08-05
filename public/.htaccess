@@ -1,0 +1,23 @@
+# Configuración de reescritura de URLs para el directorio /public
+# Este archivo maneja las rutas internas de la aplicación
+
+RewriteEngine On
+
+# Redirigir todas las peticiones a index.php si el archivo no existe
+# Esto permite que index.php maneje el enrutamiento interno
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# Configuraciones de seguridad
+# Denegar acceso a archivos sensibles
+<Files ~ "^\.">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Denegar acceso a archivos de configuración PHP que puedan estar en public
+<Files ~ "\.(inc|conf|config)$">
+    Order allow,deny
+    Deny from all
+</Files>

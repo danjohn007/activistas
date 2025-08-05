@@ -44,27 +44,27 @@ $controller->activistaDashboard();
                     
                     <ul class="nav flex-column">
                         <li class="nav-item mb-2">
-                            <a class="nav-link text-white active" href="/public/dashboards/activista.php">
+                            <a class="nav-link text-white active" href="<?= url('dashboards/activista.php') ?>">
                                 <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                             </a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="/public/activities/">
+                            <a class="nav-link text-white" href="<?= url('activities/') ?>">
                                 <i class="fas fa-tasks me-2"></i>Mis Actividades
                             </a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="/public/activities/create.php">
+                            <a class="nav-link text-white" href="<?= url('activities/create.php') ?>">
                                 <i class="fas fa-plus me-2"></i>Nueva Actividad
                             </a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="/public/profile.php">
+                            <a class="nav-link text-white" href="<?= url('profile.php') ?>">
                                 <i class="fas fa-user me-2"></i>Mi Perfil
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="/public/logout.php">
+                            <a class="nav-link text-white" href="<?= url('logout.php') ?>">
                                 <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
                             </a>
                         </li>
@@ -78,7 +78,7 @@ $controller->activistaDashboard();
                     <h1 class="h2">Mi Dashboard</h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <div class="btn-group me-2">
-                            <a href="/public/activities/create.php" class="btn btn-primary">
+                            <a href="<?= url('activities/create.php') ?>" class="btn btn-primary">
                                 <i class="fas fa-plus me-1"></i>Nueva Actividad
                             </a>
                         </div>
@@ -187,7 +187,7 @@ $controller->activistaDashboard();
                                     <div class="d-flex align-items-center">
                                         <div class="flex-shrink-0">
                                             <?php if ($lider['foto_perfil']): ?>
-                                                <img src="/public/assets/uploads/profiles/<?= htmlspecialchars($lider['foto_perfil']) ?>" 
+                                                <img src="<?= url('assets/uploads/profiles/' . htmlspecialchars($lider['foto_perfil'])) ?>" 
                                                      class="rounded-circle" width="60" height="60" alt="Foto líder">
                                             <?php else: ?>
                                                 <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" 
@@ -223,7 +223,7 @@ $controller->activistaDashboard();
                                             <div class="d-flex align-items-center mb-2">
                                                 <div class="flex-shrink-0">
                                                     <?php if ($teammate['foto_perfil']): ?>
-                                                        <img src="/public/assets/uploads/profiles/<?= htmlspecialchars($teammate['foto_perfil']) ?>" 
+                                                        <img src="<?= url('assets/uploads/profiles/' . htmlspecialchars($teammate['foto_perfil'])) ?>" 
                                                              class="rounded-circle" width="40" height="40" alt="Foto">
                                                     <?php else: ?>
                                                         <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" 
@@ -281,7 +281,7 @@ $controller->activistaDashboard();
                                                         </td>
                                                         <td><?= number_format($activity['alcance_estimado']) ?></td>
                                                         <td>
-                                                            <a href="/public/activities/detail.php?id=<?= $activity['id'] ?>" 
+                                                            <a href="<?= url('activities/detail.php?id=' . $activity['id']) ?>" 
                                                                class="btn btn-sm btn-outline-primary">
                                                                 Ver
                                                             </a>
@@ -291,13 +291,13 @@ $controller->activistaDashboard();
                                             </tbody>
                                         </table>
                                     </div>
-                                    <a href="/public/activities/" class="btn btn-primary">Ver todas mis actividades</a>
+                                    <a href="<?= url('activities/') ?>" class="btn btn-primary">Ver todas mis actividades</a>
                                 <?php else: ?>
                                     <div class="text-center py-4">
                                         <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
                                         <h5 class="text-muted">No tienes actividades registradas</h5>
                                         <p class="text-muted">Comienza registrando tu primera actividad</p>
-                                        <a href="/public/activities/create.php" class="btn btn-primary">
+                                        <a href="<?= url('activities/create.php') ?>" class="btn btn-primary">
                                             <i class="fas fa-plus me-2"></i>Crear Primera Actividad
                                         </a>
                                     </div>

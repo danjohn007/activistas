@@ -1,3 +1,7 @@
+<?php
+// Incluir configuración de la aplicación
+require_once __DIR__ . '/../config/app.php';
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,7 +10,7 @@
     <title>Sistema de Activistas Digitales - Demo</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="/public/assets/css/styles.css" rel="stylesheet">
+    <link href="<?= url('assets/css/styles.css') ?>" rel="stylesheet">
 </head>
 <body>
     <div class="bg-gradient-primary min-vh-100">
@@ -139,10 +143,10 @@
                         </div>
                         
                         <div class="d-grid gap-2 d-md-flex justify-content-md-center">
-                            <a href="/public/login.php" class="btn btn-light btn-lg me-md-2">
+                            <a href="<?= url('login.php') ?>" class="btn btn-light btn-lg me-md-2">
                                 <i class="fas fa-sign-in-alt me-2"></i>Acceder al Sistema
                             </a>
-                            <a href="/public/register.php" class="btn btn-outline-light btn-lg">
+                            <a href="<?= url('register.php') ?>" class="btn btn-outline-light btn-lg">
                                 <i class="fas fa-user-plus me-2"></i>Registrarse
                             </a>
                         </div>

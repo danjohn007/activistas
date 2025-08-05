@@ -8,8 +8,8 @@
 define('APP_ENV', 'production'); // development, testing, production
 
 // Configuración de rutas base
-define('BASE_PATH', '/ad'); // Base path para la aplicación (sin trailing slash)
-define('BASE_URL', 'https://fix360.app/ad'); // URL base completa (sin trailing slash)
+define('BASE_PATH', '/ad/public'); // Base path para la aplicación (sin trailing slash)
+define('BASE_URL', 'https://fix360.app/ad/public'); // URL base completa (sin trailing slash)
 
 // Configuración de directorios
 define('APP_ROOT', dirname(__DIR__));
