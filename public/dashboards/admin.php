@@ -30,9 +30,24 @@ if (!function_exists('getFlashMessage')) {
 
 if (!function_exists('url')) {
     function url($path = '') {
-        $base_url = 'https://fix360.app/ad/public';
-        $path = ltrim($path, '/');
-        return $base_url . ($path ? '/' . $path : '');
+        // Detectar si estamos en entorno local/desarrollo
+        $isLocal = (
+            isset($_SERVER['HTTP_HOST']) && 
+            (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || 
+             strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false ||
+             strpos($_SERVER['HTTP_HOST'], 'local') !== false)
+        );
+        
+        if ($isLocal) {
+            // En local, usar rutas relativas
+            $path = ltrim($path, '/');
+            return '../' . $path;
+        } else {
+            // En producción, usar la URL completa
+            $base_url = 'https://fix360.app/ad/public';
+            $path = ltrim($path, '/');
+            return $base_url . ($path ? '/' . $path : '');
+        }
     }
 }
 
@@ -129,6 +144,33 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Fallback para cuando los CDN están bloqueados -->
+    <script>
+        // Verificar si Chart.js se cargó correctamente
+        window.addEventListener('DOMContentLoaded', function() {
+            if (typeof Chart === 'undefined') {
+                console.warn('⚠️ Chart.js no se pudo cargar desde CDN');
+                
+                // Mostrar mensaje informativo
+                setTimeout(function() {
+                    const chartContainers = document.querySelectorAll('canvas');
+                    chartContainers.forEach(function(canvas) {
+                        const parent = canvas.parentElement;
+                        if (parent) {
+                            parent.innerHTML = `
+                                <div class="alert alert-warning text-center" style="margin: 20px;">
+                                    <h5><i class="fas fa-exclamation-triangle"></i> Gráfica no disponible</h5>
+                                    <p class="mb-0">Los recursos externos están bloqueados.<br>
+                                    <small>En producción, las gráficas funcionarán normalmente.</small></p>
+                                </div>
+                            `;
+                        }
+                    });
+                }, 1000);
+            }
+        });
+    </script>
     <style>
         .sidebar {
             min-height: 100vh;
@@ -893,10 +935,6 @@ try {
                 console.error('Error al inicializar gráfica de ranking:', error);
             }
         }
-        
-        // Datos reales para las gráficas desde la base de datos
-        const activitiesCtx = document.getElementById('activitiesChart').getContext('2d');
-        activitiesChart = new Chart(activitiesCtx, {
         
         // Función para actualizar gráficas en tiempo real
         function updateCharts() {
