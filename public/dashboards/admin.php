@@ -247,6 +247,25 @@ try {
                     </div>
                 <?php endif; ?>
 
+                <!-- Diagnóstico del estado del dashboard -->
+                <?php 
+                $allDataEmpty = (count($activitiesByType) + count($userStats) + count($monthlyActivities) + count($teamRanking)) === 0;
+                if ($allDataEmpty): ?>
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <h5><i class="fas fa-database me-2"></i>Estado de Conexión de Base de Datos</h5>
+                        <p><strong>⚠️ Problema Detectado:</strong> No se pudieron cargar datos del dashboard.</p>
+                        <p><strong>Posibles Causas:</strong></p>
+                        <ul class="mb-2">
+                            <li>Conexión a base de datos interrumpida</li>
+                            <li>Base de datos sin datos iniciales</li>
+                            <li>Configuración de base de datos incorrecta</li>
+                            <li>Permisos de usuario insuficientes</li>
+                        </ul>
+                        <p><strong>✅ Solución Implementada:</strong> Las gráficas mostrarán datos de demostración para evitar pantallas vacías.</p>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <?php endif; ?>
+
                 <!-- Métricas principales -->
                 <div class="row mb-4">
                     <?php if (!$error_message): ?>
@@ -558,36 +577,91 @@ try {
             $teamData[] = (int)$team['completadas'];
         }
         
-        // SOLUCIÓN PARA GRÁFICAS VACÍAS: Si no hay datos, usar valores por defecto
+        // DIAGNÓSTICO Y SOLUCIÓN PARA GRÁFICAS VACÍAS
+        // Verificar si hay problemas de conexión a base de datos o datos faltantes
+        $dataValidation = [
+            'activities_count' => count($activitiesByType),
+            'users_count' => count($userStats),
+            'monthly_count' => count($monthlyActivities),
+            'teams_count' => count($teamRanking),
+            'error_detected' => $error_message !== null
+        ];
+        
+        // Si todos los datos están vacíos, probablemente hay un problema de conexión DB
+        $allDataEmpty = ($dataValidation['activities_count'] + $dataValidation['users_count'] + 
+                        $dataValidation['monthly_count'] + $dataValidation['teams_count']) === 0;
+        
+        if ($allDataEmpty && !$error_message) {
+            error_log("Dashboard Warning: Todos los datos están vacíos - posible problema de conexión DB");
+        }
+        
+        // SOLUCIÓN PARA GRÁFICAS VACÍAS: Si no hay datos, usar valores demostrativos
         // Esto evita que las gráficas aparezcan completamente vacías
         if (empty($activityLabels)) {
-            $activityLabels = ['Sin actividades registradas'];
-            $activityData = [0];
-            error_log("Dashboard Warning: No hay datos de actividades por tipo disponibles");
+            if ($allDataEmpty) {
+                // Datos de demostración si hay problemas de DB
+                $activityLabels = ['Redes Sociales', 'Eventos', 'Capacitación', 'Encuestas'];
+                $activityData = [0, 0, 0, 0];
+                error_log("Dashboard Notice: Usando datos de demostración para actividades por tipo");
+            } else {
+                $activityLabels = ['Sin actividades registradas'];
+                $activityData = [0];
+                error_log("Dashboard Warning: No hay datos de actividades por tipo disponibles");
+            }
         }
+        
         if (empty($userLabels)) {
-            $userLabels = ['Sin usuarios'];
-            $userData = [0];
-            error_log("Dashboard Warning: No hay estadísticas de usuarios disponibles");
+            if ($allDataEmpty) {
+                // Datos de demostración si hay problemas de DB
+                $userLabels = ['SuperAdmin', 'Gestor', 'Líder', 'Activista'];
+                $userData = [1, 0, 0, 0];
+                error_log("Dashboard Notice: Usando datos de demostración para usuarios por rol");
+            } else {
+                $userLabels = ['Sin usuarios'];
+                $userData = [0];
+                error_log("Dashboard Warning: No hay estadísticas de usuarios disponibles");
+            }
         }
+        
         if (empty($monthlyLabels)) {
-            $monthlyLabels = [date('M Y')]; // Mes actual como fallback
-            $monthlyData = [0];
-            error_log("Dashboard Warning: No hay datos de actividades mensuales disponibles");
+            if ($allDataEmpty) {
+                // Datos de demostración de últimos 6 meses
+                $monthlyLabels = [];
+                $monthlyData = [];
+                for ($i = 5; $i >= 0; $i--) {
+                    $monthlyLabels[] = date('M Y', strtotime("-{$i} months"));
+                    $monthlyData[] = 0;
+                }
+                error_log("Dashboard Notice: Usando datos de demostración para actividades mensuales");
+            } else {
+                $monthlyLabels = [date('M Y')]; // Mes actual como fallback
+                $monthlyData = [0];
+                error_log("Dashboard Warning: No hay datos de actividades mensuales disponibles");
+            }
         }
+        
         if (empty($teamLabels)) {
-            $teamLabels = ['Sin equipos registrados'];
-            $teamData = [0];
-            error_log("Dashboard Warning: No hay datos de ranking de equipos disponibles");
+            if ($allDataEmpty) {
+                // Datos de demostración si hay problemas de DB  
+                $teamLabels = ['Sin equipos registrados'];
+                $teamData = [0];
+                error_log("Dashboard Notice: Usando datos de demostración para ranking de equipos");
+            } else {
+                $teamLabels = ['Sin equipos registrados'];
+                $teamData = [0];
+                error_log("Dashboard Warning: No hay datos de ranking de equipos disponibles");
+            }
         }
         
         // LOG PARA DEBUGGING: Verificar qué datos están disponibles
         if (APP_ENV === 'development') {
-            error_log("Dashboard Debug - Datos disponibles:");
+            error_log("Dashboard Debug - Estado de datos:");
             error_log("- Actividades por tipo: " . count($activitiesByType) . " registros");
             error_log("- Usuarios por rol: " . count($userStats) . " roles");
             error_log("- Actividades mensuales: " . count($monthlyActivities) . " meses");
             error_log("- Ranking equipos: " . count($teamRanking) . " equipos");
+            error_log("- Todos vacíos: " . ($allDataEmpty ? 'SÍ' : 'NO'));
+            error_log("- Error presente: " . ($error_message ? 'SÍ' : 'NO'));
         }
         ?>
         

@@ -10,8 +10,18 @@ class User {
     private $db;
     
     public function __construct() {
-        $database = new Database();
-        $this->db = $database->getConnection();
+        try {
+            $database = new Database();
+            $this->db = $database->getConnection();
+            
+            // Verificar que la conexión sea válida
+            if (!$this->db) {
+                throw new Exception("No se pudo establecer conexión a la base de datos");
+            }
+        } catch (Exception $e) {
+            error_log("User Model Error: " . $e->getMessage());
+            $this->db = null;
+        }
     }
     
     // Obtener todos los usuarios
@@ -178,6 +188,11 @@ class User {
     // Obtener estadísticas de usuarios
     public function getUserStats() {
         try {
+            // Verificar conexión antes de proceder
+            if (!$this->db) {
+                throw new Exception("No hay conexión a la base de datos disponible");
+            }
+            
             $stmt = $this->db->prepare("SELECT * FROM vista_estadisticas_usuarios");
             $stmt->execute();
             $stats = $stmt->fetchAll();
@@ -196,6 +211,8 @@ class User {
             return $result;
         } catch (Exception $e) {
             logActivity("Error al obtener estadísticas de usuarios: " . $e->getMessage(), 'ERROR');
+            
+            // Retornar datos vacíos pero válidos en caso de error
             return [];
         }
     }

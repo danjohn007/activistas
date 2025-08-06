@@ -21,11 +21,26 @@ class Database {
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
+                PDO::ATTR_TIMEOUT => 5, // Timeout de 5 segundos
             ];
             
             $this->conn = new PDO($dsn, $this->username, $this->password, $options);
+            
+            // Test the connection
+            $this->conn->query("SELECT 1");
+            
         } catch(PDOException $exception) {
-            echo "Error de conexión: " . $exception->getMessage();
+            // Log the error but don't expose it to the user interface
+            error_log("Database Connection Error: " . $exception->getMessage());
+            
+            // For development, show more details
+            if (defined('APP_ENV') && APP_ENV === 'development') {
+                echo "Error de conexión (Dev): " . $exception->getMessage();
+            } else {
+                echo "Error de conexión a la base de datos. Contacte al administrador.";
+            }
+            
+            $this->conn = null;
         }
         
         return $this->conn;
