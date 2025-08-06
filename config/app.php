@@ -5,7 +5,7 @@
  */
 
 // Configuración del entorno
-define('APP_ENV', 'production'); // development, testing, production
+define('APP_ENV', 'development'); // development, testing, production
 
 // Configuración de rutas base
 define('BASE_PATH', '/ad/public'); // Base path para la aplicación (sin trailing slash)
@@ -27,8 +27,25 @@ define('UPLOADS_DIR', PUBLIC_ROOT . '/assets/uploads');
  * @return string URL absoluta con base path (ej: 'https://fix360.app/ad/login.php')
  */
 function url($path = '') {
+    // Detectar entorno local/desarrollo
+    $isLocal = (
+        isset($_SERVER['HTTP_HOST']) && 
+        (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || 
+         strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false ||
+         strpos($_SERVER['HTTP_HOST'], 'local') !== false)
+    );
+    
     $path = ltrim($path, '/');
-    return BASE_URL . ($path ? '/' . $path : '');
+    
+    if ($isLocal) {
+        // En desarrollo local, usar URL relativa basada en el servidor actual
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost:8000';
+        return $protocol . '://' . $host . ($path ? '/' . $path : '');
+    } else {
+        // En producción, usar BASE_URL configurado
+        return BASE_URL . ($path ? '/' . $path : '');
+    }
 }
 
 /**
