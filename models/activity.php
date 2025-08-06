@@ -10,8 +10,18 @@ class Activity {
     protected $db;
     
     public function __construct() {
-        $database = new Database();
-        $this->db = $database->getConnection();
+        try {
+            $database = new Database();
+            $this->db = $database->getConnection();
+            
+            // Verificar que la conexión sea válida
+            if (!$this->db) {
+                throw new Exception("No se pudo establecer conexión a la base de datos");
+            }
+        } catch (Exception $e) {
+            error_log("Activity Model Error: " . $e->getMessage());
+            $this->db = null;
+        }
     }
     
     // Getter method for database connection
@@ -53,6 +63,11 @@ class Activity {
     // Obtener actividades
     public function getActivities($filters = []) {
         try {
+            // Verificar conexión antes de proceder
+            if (!$this->db) {
+                throw new Exception("No hay conexión a la base de datos disponible");
+            }
+            
             $sql = "SELECT a.*, u.nombre_completo as usuario_nombre, ta.nombre as tipo_nombre 
                     FROM actividades a 
                     JOIN usuarios u ON a.usuario_id = u.id 
@@ -236,6 +251,11 @@ class Activity {
     // Obtener estadísticas de actividades
     public function getActivityStats($filters = []) {
         try {
+            // Verificar conexión antes de proceder
+            if (!$this->db) {
+                throw new Exception("No hay conexión a la base de datos disponible");
+            }
+            
             $sql = "SELECT 
                         COUNT(*) as total_actividades,
                         COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) as completadas,
@@ -281,6 +301,11 @@ class Activity {
     // Obtener actividades por tipo
     public function getActivitiesByType($filters = []) {
         try {
+            // Verificar conexión antes de proceder
+            if (!$this->db) {
+                throw new Exception("No hay conexión a la base de datos disponible");
+            }
+            
             $sql = "SELECT ta.nombre, COUNT(a.id) as cantidad
                     FROM tipos_actividades ta
                     LEFT JOIN actividades a ON ta.id = a.tipo_actividad_id";
