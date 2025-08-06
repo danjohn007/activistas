@@ -368,6 +368,130 @@ try {
                     </div>
                 </div>
 
+                <!-- Nuevas gráficas informativas -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Actividades por Mes (Últimos 12 meses)</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="monthlyChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Ranking de Equipos</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="teamRankingChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Listados informativos sugeridos -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-user-clock me-2"></i>Usuarios Pendientes de Aprobación
+                                    <?php 
+                                    $pendingUsers = $GLOBALS['pendingUsers'] ?? [];
+                                    if (!$error_message && is_array($pendingUsers) && count($pendingUsers) > 0): ?>
+                                        <span class="badge bg-warning text-dark"><?= count($pendingUsers) ?></span>
+                                    <?php endif; ?>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <?php if (!$error_message && is_array($pendingUsers) && count($pendingUsers) > 0): ?>
+                                    <div class="list-group list-group-flush">
+                                        <?php foreach (array_slice($pendingUsers, 0, 5) as $user): ?>
+                                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h6 class="mb-1"><?= htmlspecialchars($user['nombre_completo']) ?></h6>
+                                                    <p class="mb-1 text-muted small"><?= htmlspecialchars($user['email']) ?></p>
+                                                    <small class="text-muted">
+                                                        Rol: <?= htmlspecialchars($user['rol']) ?> | 
+                                                        Registro: <?= date('d/m/Y', strtotime($user['fecha_registro'])) ?>
+                                                    </small>
+                                                </div>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-success btn-sm" onclick="approveUser(<?= $user['id'] ?>)">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                    <button class="btn btn-danger btn-sm" onclick="rejectUser(<?= $user['id'] ?>)">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <?php if (count($pendingUsers) > 5): ?>
+                                        <div class="text-center mt-3">
+                                            <a href="<?= url('admin/pending_users.php') ?>" class="btn btn-outline-primary btn-sm">
+                                                Ver todos (<?= count($pendingUsers) ?>)
+                                            </a>
+                                        </div>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <div class="text-center text-muted py-3">
+                                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                                        <p class="mb-0">No hay usuarios pendientes de aprobación</p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-clock me-2"></i>Últimas Actividades Recientes
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <?php 
+                                $recentActivities = $GLOBALS['recentActivities'] ?? [];
+                                if (!$error_message && is_array($recentActivities) && count($recentActivities) > 0): ?>
+                                    <div class="list-group list-group-flush">
+                                        <?php foreach (array_slice($recentActivities, 0, 5) as $activity): ?>
+                                            <div class="list-group-item">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <h6 class="mb-1"><?= htmlspecialchars($activity['titulo']) ?></h6>
+                                                    <small class="badge bg-<?= $activity['estado'] === 'completada' ? 'success' : ($activity['estado'] === 'en_progreso' ? 'warning' : 'secondary') ?>">
+                                                        <?= htmlspecialchars($activity['estado']) ?>
+                                                    </small>
+                                                </div>
+                                                <p class="mb-1 text-muted"><?= htmlspecialchars($activity['tipo_nombre'] ?? 'Sin tipo') ?></p>
+                                                <small class="text-muted">
+                                                    Por: <?= htmlspecialchars($activity['usuario_nombre']) ?> | 
+                                                    <?= date('d/m/Y', strtotime($activity['fecha_actividad'])) ?>
+                                                </small>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <div class="text-center mt-3">
+                                        <a href="<?= url('activities/') ?>" class="btn btn-outline-primary btn-sm">
+                                            Ver todas las actividades
+                                        </a>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="text-center text-muted py-3">
+                                        <i class="fas fa-calendar-alt fa-2x mb-2"></i>
+                                        <p class="mb-0">No hay actividades recientes</p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Sistema funcional básico implementado -->
                 <div class="alert alert-success">
                     <h5><i class="fas fa-check-circle me-2"></i>Sistema Implementado</h5>
@@ -386,6 +510,8 @@ try {
         <?php
         $activitiesByType = $GLOBALS['activitiesByType'] ?? [];
         $userStats = $GLOBALS['userStats'] ?? [];
+        $monthlyActivities = $GLOBALS['monthlyActivities'] ?? [];
+        $teamRanking = $GLOBALS['teamRanking'] ?? [];
         
         // Preparar datos para gráfica de actividades por tipo
         $activityLabels = [];
@@ -403,6 +529,22 @@ try {
             $userData[] = (int)$stats['total'];
         }
         
+        // Preparar datos para gráfica de actividades mensuales
+        $monthlyLabels = [];
+        $monthlyData = [];
+        foreach ($monthlyActivities as $month) {
+            $monthlyLabels[] = date('M Y', strtotime($month['mes'] . '-01'));
+            $monthlyData[] = (int)$month['cantidad'];
+        }
+        
+        // Preparar datos para gráfica de ranking de equipos
+        $teamLabels = [];
+        $teamData = [];
+        foreach (array_slice($teamRanking, 0, 8) as $team) {
+            $teamLabels[] = substr($team['lider_nombre'], 0, 15) . (strlen($team['lider_nombre']) > 15 ? '...' : '');
+            $teamData[] = (int)$team['completadas'];
+        }
+        
         // Si no hay datos, usar valores por defecto para evitar gráficas vacías
         if (empty($activityLabels)) {
             $activityLabels = ['Sin datos'];
@@ -411,6 +553,14 @@ try {
         if (empty($userLabels)) {
             $userLabels = ['Sin datos'];
             $userData = [0];
+        }
+        if (empty($monthlyLabels)) {
+            $monthlyLabels = ['Sin datos'];
+            $monthlyData = [0];
+        }
+        if (empty($teamLabels)) {
+            $teamLabels = ['Sin datos'];
+            $teamData = [0];
         }
         ?>
         
@@ -477,6 +627,99 @@ try {
                 }
             }
         });
+
+        // Gráfica de actividades mensuales
+        const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+        const monthlyChart = new Chart(monthlyCtx, {
+            type: 'line',
+            data: {
+                labels: <?= json_encode($monthlyLabels) ?>,
+                datasets: [{
+                    label: 'Actividades',
+                    data: <?= json_encode($monthlyData) ?>,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Tendencia de Actividades Mensuales'
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // Gráfica de ranking de equipos
+        const teamRankingCtx = document.getElementById('teamRankingChart').getContext('2d');
+        const teamRankingChart = new Chart(teamRankingCtx, {
+            type: 'bar',
+            data: {
+                labels: <?= json_encode($teamLabels) ?>,
+                datasets: [{
+                    label: 'Actividades Completadas',
+                    data: <?= json_encode($teamData) ?>,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.6)',
+                        'rgba(54, 162, 235, 0.6)',
+                        'rgba(255, 205, 86, 0.6)',
+                        'rgba(75, 192, 192, 0.6)',
+                        'rgba(153, 102, 255, 0.6)',
+                        'rgba(255, 159, 64, 0.6)',
+                        'rgba(199, 199, 199, 0.6)',
+                        'rgba(83, 102, 255, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 205, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(199, 199, 199, 1)',
+                        'rgba(83, 102, 255, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Top Equipos por Actividades Completadas'
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
         
         // Función para actualizar gráficas en tiempo real
         function updateCharts() {
@@ -516,6 +759,32 @@ try {
                             usersChart.update();
                         }
                         
+                        // Actualizar gráfica de actividades mensuales
+                        if (data.data.monthly_activities && data.data.monthly_activities.length > 0) {
+                            const monthlyLabels = data.data.monthly_activities.map(item => {
+                                const date = new Date(item.mes + '-01');
+                                return date.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
+                            });
+                            const monthlyData = data.data.monthly_activities.map(item => parseInt(item.cantidad));
+                            
+                            monthlyChart.data.labels = monthlyLabels;
+                            monthlyChart.data.datasets[0].data = monthlyData;
+                            monthlyChart.update();
+                        }
+                        
+                        // Actualizar gráfica de ranking de equipos
+                        if (data.data.team_ranking && data.data.team_ranking.length > 0) {
+                            const teamLabels = data.data.team_ranking.slice(0, 8).map(item => {
+                                const name = item.lider_nombre || 'Sin nombre';
+                                return name.length > 15 ? name.substring(0, 15) + '...' : name;
+                            });
+                            const teamData = data.data.team_ranking.slice(0, 8).map(item => parseInt(item.completadas));
+                            
+                            teamRankingChart.data.labels = teamLabels;
+                            teamRankingChart.data.datasets[0].data = teamData;
+                            teamRankingChart.update();
+                        }
+                        
                         // Actualizar timestamp
                         const now = new Date();
                         lastUpdateSpan.textContent = `Última actualización: ${now.toLocaleTimeString()}`;
@@ -537,13 +806,70 @@ try {
         }
         
         // Guardar referencias a las gráficas para poder actualizarlas
-        let activitiesChart, usersChart;
+        let activitiesChart, usersChart, monthlyChart, teamRankingChart;
         
         // Agregar event listener para el botón de actualizar
         document.getElementById('refreshData').addEventListener('click', updateCharts);
         
         // Actualizar cada 30 segundos automáticamente (opcional)
         // setInterval(updateCharts, 30000);
+        
+        // Funciones para gestión de usuarios pendientes
+        function approveUser(userId) {
+            if (confirm('¿Está seguro de que desea aprobar este usuario?')) {
+                fetch('<?= url('api/users.php') ?>', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'approve',
+                        user_id: userId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Recargar la página para actualizar la lista
+                        location.reload();
+                    } else {
+                        alert('Error al aprobar usuario: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error de conexión al aprobar usuario');
+                });
+            }
+        }
+        
+        function rejectUser(userId) {
+            if (confirm('¿Está seguro de que desea rechazar este usuario? Esta acción no se puede deshacer.')) {
+                fetch('<?= url('api/users.php') ?>', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'reject',
+                        user_id: userId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Recargar la página para actualizar la lista
+                        location.reload();
+                    } else {
+                        alert('Error al rechazar usuario: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error de conexión al rechazar usuario');
+                });
+            }
+        }
     </script>
 </body>
 </html>
