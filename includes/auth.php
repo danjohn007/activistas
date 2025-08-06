@@ -107,8 +107,8 @@ class Auth {
             
             // Insertar usuario
             $stmt = $this->db->prepare("
-                INSERT INTO usuarios (nombre_completo, telefono, email, password_hash, direccion, rol, lider_id, token_verificacion)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO usuarios (nombre_completo, telefono, email, password_hash, direccion, rol, lider_id, token_verificacion, foto_perfil)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $stmt->execute([
@@ -119,7 +119,8 @@ class Auth {
                 $userData['direccion'],
                 $userData['rol'],
                 $userData['lider_id'] ?? null,
-                $verificationToken
+                $verificationToken,
+                $userData['foto_perfil'] ?? null
             ]);
             
             $userId = $this->db->lastInsertId();
@@ -151,7 +152,7 @@ class Auth {
         }
         
         if (empty($data['password']) || !isStrongPassword($data['password'])) {
-            $errors[] = 'La contraseña debe tener al menos 8 caracteres, incluyendo mayúscula, minúscula, número y carácter especial';
+            $errors[] = 'La contraseña debe tener al menos 8 caracteres, incluyendo al menos un número O una mayúscula';
         }
         
         if (empty($data['direccion'])) {
