@@ -102,7 +102,7 @@
                                     <label for="password" class="form-label">Contraseña *</label>
                                     <input type="password" class="form-control" id="password" name="password" required>
                                     <div class="form-text">
-                                        Mínimo 8 caracteres, debe incluir: mayúscula, minúscula, número y carácter especial.
+                                        Mínimo 8 caracteres, debe incluir al menos un número O una mayúscula.
                                     </div>
                                 </div>
                                 
