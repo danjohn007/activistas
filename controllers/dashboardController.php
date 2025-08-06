@@ -23,6 +23,11 @@ class DashboardController {
         try {
             $this->auth->requireRole(['SuperAdmin']);
             
+            // Log de inicio para debugging
+            if (function_exists('logActivity')) {
+                logActivity("Iniciando carga de dashboard SuperAdmin", 'DEBUG');
+            }
+            
             // Inicializar variables con valores por defecto
             $userStats = [];
             $activityStats = [];
@@ -35,6 +40,9 @@ class DashboardController {
             // Métricas globales con manejo de errores
             try {
                 $userStats = $this->userModel->getUserStats();
+                if (function_exists('logActivity')) {
+                    logActivity("Estadísticas de usuarios obtenidas: " . count($userStats) . " roles", 'DEBUG');
+                }
             } catch (Exception $e) {
                 logActivity("Error al obtener estadísticas de usuarios: " . $e->getMessage(), 'ERROR');
                 $userStats = [];
@@ -42,6 +50,9 @@ class DashboardController {
             
             try {
                 $activityStats = $this->activityModel->getActivityStats();
+                if (function_exists('logActivity')) {
+                    logActivity("Estadísticas de actividades obtenidas", 'DEBUG');
+                }
             } catch (Exception $e) {
                 logActivity("Error al obtener estadísticas de actividades: " . $e->getMessage(), 'ERROR');
                 $activityStats = [];
@@ -49,6 +60,9 @@ class DashboardController {
             
             try {
                 $recentActivities = $this->activityModel->getActivities(['limit' => 10]);
+                if (function_exists('logActivity')) {
+                    logActivity("Actividades recientes obtenidas: " . count($recentActivities), 'DEBUG');
+                }
             } catch (Exception $e) {
                 logActivity("Error al obtener actividades recientes: " . $e->getMessage(), 'ERROR');
                 $recentActivities = [];
@@ -56,6 +70,9 @@ class DashboardController {
             
             try {
                 $activitiesByType = $this->activityModel->getActivitiesByType();
+                if (function_exists('logActivity')) {
+                    logActivity("Actividades por tipo obtenidas: " . count($activitiesByType) . " tipos", 'DEBUG');
+                }
             } catch (Exception $e) {
                 logActivity("Error al obtener actividades por tipo: " . $e->getMessage(), 'ERROR');
                 $activitiesByType = [];
@@ -68,6 +85,9 @@ class DashboardController {
             
             try {
                 $pendingUsers = $this->userModel->getPendingUsers();
+                if (function_exists('logActivity')) {
+                    logActivity("Usuarios pendientes obtenidos: " . count($pendingUsers), 'DEBUG');
+                }
             } catch (Exception $e) {
                 logActivity("Error al obtener usuarios pendientes: " . $e->getMessage(), 'ERROR');
                 $pendingUsers = [];
@@ -76,6 +96,9 @@ class DashboardController {
             // Datos para gráficas con manejo de errores
             try {
                 $monthlyActivities = $this->getMonthlyActivityData();
+                if (function_exists('logActivity')) {
+                    logActivity("Datos mensuales obtenidos: " . count($monthlyActivities) . " meses", 'DEBUG');
+                }
             } catch (Exception $e) {
                 logActivity("Error al obtener datos mensuales: " . $e->getMessage(), 'ERROR');
                 $monthlyActivities = [];
@@ -83,6 +106,9 @@ class DashboardController {
             
             try {
                 $teamRanking = $this->getTeamRanking();
+                if (function_exists('logActivity')) {
+                    logActivity("Ranking de equipos obtenido: " . count($teamRanking) . " equipos", 'DEBUG');
+                }
             } catch (Exception $e) {
                 logActivity("Error al obtener ranking de equipos: " . $e->getMessage(), 'ERROR');
                 $teamRanking = [];
@@ -96,6 +122,11 @@ class DashboardController {
             $GLOBALS['pendingUsers'] = $pendingUsers;
             $GLOBALS['monthlyActivities'] = $monthlyActivities;
             $GLOBALS['teamRanking'] = $teamRanking;
+            
+            // Log de finalización
+            if (function_exists('logActivity')) {
+                logActivity("Dashboard SuperAdmin cargado exitosamente", 'DEBUG');
+            }
             
         } catch (Exception $e) {
             logActivity("Error crítico en adminDashboard: " . $e->getMessage(), 'ERROR');
