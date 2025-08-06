@@ -732,12 +732,15 @@ try {
             
             fetch('<?= url('api/stats.php') ?>')
                 .then(response => {
+                    console.log('Response status:', response.status);
                     if (!response.ok) {
-                        throw new Error('Error en la respuesta del servidor');
+                        throw new Error(`Error ${response.status}: ${response.statusText}`);
                     }
                     return response.json();
                 })
                 .then(data => {
+                    console.log('API response:', data);
+                    
                     if (data.success) {
                         // Actualizar gráfica de actividades por tipo
                         if (data.data.activities_by_type && data.data.activities_by_type.length > 0) {
@@ -747,6 +750,9 @@ try {
                             activitiesChart.data.labels = newLabels;
                             activitiesChart.data.datasets[0].data = newData;
                             activitiesChart.update();
+                            console.log('Activities chart updated with', newLabels.length, 'items');
+                        } else {
+                            console.warn('No activities by type data received');
                         }
                         
                         // Actualizar gráfica de usuarios por rol
@@ -757,6 +763,9 @@ try {
                             usersChart.data.labels = userLabels;
                             usersChart.data.datasets[0].data = userData;
                             usersChart.update();
+                            console.log('Users chart updated with', userLabels.length, 'roles');
+                        } else {
+                            console.warn('No user stats data received');
                         }
                         
                         // Actualizar gráfica de actividades mensuales
@@ -770,6 +779,9 @@ try {
                             monthlyChart.data.labels = monthlyLabels;
                             monthlyChart.data.datasets[0].data = monthlyData;
                             monthlyChart.update();
+                            console.log('Monthly chart updated with', monthlyLabels.length, 'months');
+                        } else {
+                            console.warn('No monthly activities data received');
                         }
                         
                         // Actualizar gráfica de ranking de equipos
@@ -783,20 +795,34 @@ try {
                             teamRankingChart.data.labels = teamLabels;
                             teamRankingChart.data.datasets[0].data = teamData;
                             teamRankingChart.update();
+                            console.log('Team ranking chart updated with', teamLabels.length, 'teams');
+                        } else {
+                            console.warn('No team ranking data received');
                         }
                         
                         // Actualizar timestamp
                         const now = new Date();
                         lastUpdateSpan.textContent = `Última actualización: ${now.toLocaleTimeString()}`;
                         
-                        console.log('Gráficas actualizadas con datos reales');
+                        console.log('✓ Gráficas actualizadas con datos reales');
                     } else {
                         console.error('Error en la respuesta:', data.error);
+                        lastUpdateSpan.textContent = `Error: ${data.error}`;
+                        
+                        // Mostrar alerta si es error de autenticación
+                        if (data.error_code === 'NOT_AUTHENTICATED' || data.error_code === 'USER_NOT_FOUND') {
+                            alert('Su sesión ha expirado. Por favor, recargue la página e inicie sesión nuevamente.');
+                        }
                     }
                 })
                 .catch(error => {
                     console.error('Error al actualizar datos:', error);
-                    lastUpdateSpan.textContent = 'Error al actualizar datos';
+                    lastUpdateSpan.textContent = `Error al actualizar: ${error.message}`;
+                    
+                    // Mostrar detalles del error en desarrollo
+                    if (window.console && console.error) {
+                        console.error('Detalles del error:', error);
+                    }
                 })
                 .finally(() => {
                     // Restaurar botón
@@ -811,8 +837,28 @@ try {
         // Agregar event listener para el botón de actualizar
         document.getElementById('refreshData').addEventListener('click', updateCharts);
         
-        // Actualizar cada 30 segundos automáticamente (opcional)
-        // setInterval(updateCharts, 30000);
+        // Test inicial al cargar la página para verificar que los datos están disponibles
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Dashboard loaded, testing initial data...');
+            console.log('Activities by type data:', <?= json_encode($activitiesByType) ?>);
+            console.log('User stats data:', <?= json_encode($userStats) ?>);
+            console.log('Monthly activities data:', <?= json_encode($monthlyActivities) ?>);
+            console.log('Team ranking data:', <?= json_encode($teamRanking) ?>);
+            
+            // Si no hay datos iniciales, intentar cargar desde la API
+            if (<?= empty($activitiesByType) ? 'true' : 'false' ?>) {
+                console.log('No initial data available, attempting to fetch from API...');
+                setTimeout(updateCharts, 1000); // Intentar después de 1 segundo
+            } else {
+                console.log('Initial data loaded successfully');
+            }
+        });
+        
+        // Actualizar cada 60 segundos automáticamente (solo si hay datos iniciales)
+        if (<?= !empty($activitiesByType) ? 'true' : 'false' ?>) {
+            setInterval(updateCharts, 60000);
+            console.log('Auto-refresh enabled (every 60 seconds)');
+        }
         
         // Funciones para gestión de usuarios pendientes
         function approveUser(userId) {

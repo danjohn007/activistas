@@ -59,6 +59,11 @@ class DashboardController {
             } catch (Exception $e) {
                 logActivity("Error al obtener actividades por tipo: " . $e->getMessage(), 'ERROR');
                 $activitiesByType = [];
+                
+                // Si es error de base de datos, registrar específicamente
+                if (strpos($e->getMessage(), 'No such file or directory') !== false) {
+                    logActivity("Error de conexión a base de datos detectado", 'ERROR');
+                }
             }
             
             try {

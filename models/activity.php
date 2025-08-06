@@ -285,8 +285,24 @@ class Activity {
                     FROM tipos_actividades ta
                     LEFT JOIN actividades a ON ta.id = a.tipo_actividad_id";
             
+            // Agregar JOIN con usuarios si necesitamos filtrar por líder
+            if (!empty($filters['lider_id'])) {
+                $sql .= " LEFT JOIN usuarios u ON a.usuario_id = u.id";
+            }
+            
             $params = [];
             $where = [];
+            
+            if (!empty($filters['usuario_id'])) {
+                $where[] = "a.usuario_id = ?";
+                $params[] = $filters['usuario_id'];
+            }
+            
+            if (!empty($filters['lider_id'])) {
+                $where[] = "(a.usuario_id = ? OR u.lider_id = ?)";
+                $params[] = $filters['lider_id'];
+                $params[] = $filters['lider_id'];
+            }
             
             if (!empty($filters['fecha_desde'])) {
                 $where[] = "a.fecha_actividad >= ?";
