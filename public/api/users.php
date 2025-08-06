@@ -1,0 +1,95 @@
+<?php
+/**
+ * API endpoint para gestión de usuarios
+ */
+
+// Headers para API JSON
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT');
+header('Access-Control-Allow-Headers: Content-Type');
+
+try {
+    // Incluir dependencias
+    require_once __DIR__ . '/../../includes/auth.php';
+    require_once __DIR__ . '/../../models/user.php';
+    require_once __DIR__ . '/../../includes/functions.php';
+    
+    // Verificar autenticación
+    $auth = getAuth();
+    $auth->requireRole(['SuperAdmin', 'Gestor']);
+    
+    $currentUser = $auth->getCurrentUser();
+    if (!$currentUser) {
+        throw new Exception('Usuario no encontrado');
+    }
+    
+    // Inicializar modelo
+    $userModel = new User();
+    
+    // Obtener datos de la petición
+    $input = json_decode(file_get_contents('php://input'), true);
+    $action = $input['action'] ?? $_GET['action'] ?? null;
+    $userId = $input['user_id'] ?? $_GET['user_id'] ?? null;
+    
+    if (!$action || !$userId) {
+        throw new Exception('Acción y ID de usuario son requeridos');
+    }
+    
+    $response = ['success' => false];
+    
+    switch ($action) {
+        case 'approve':
+            $result = $userModel->updateUserStatus($userId, 'activo');
+            if ($result) {
+                logActivity("Usuario ID $userId aprobado por " . $currentUser['nombre_completo']);
+                $response = [
+                    'success' => true,
+                    'message' => 'Usuario aprobado exitosamente'
+                ];
+            } else {
+                throw new Exception('Error al aprobar usuario');
+            }
+            break;
+            
+        case 'reject':
+            $result = $userModel->updateUserStatus($userId, 'desactivado');
+            if ($result) {
+                logActivity("Usuario ID $userId rechazado por " . $currentUser['nombre_completo']);
+                $response = [
+                    'success' => true,
+                    'message' => 'Usuario rechazado exitosamente'
+                ];
+            } else {
+                throw new Exception('Error al rechazar usuario');
+            }
+            break;
+            
+        case 'suspend':
+            $result = $userModel->updateUserStatus($userId, 'suspendido');
+            if ($result) {
+                logActivity("Usuario ID $userId suspendido por " . $currentUser['nombre_completo']);
+                $response = [
+                    'success' => true,
+                    'message' => 'Usuario suspendido exitosamente'
+                ];
+            } else {
+                throw new Exception('Error al suspender usuario');
+            }
+            break;
+            
+        default:
+            throw new Exception('Acción no válida');
+    }
+    
+    echo json_encode($response, JSON_PRETTY_PRINT);
+    
+} catch (Exception $e) {
+    http_response_code(400);
+    echo json_encode([
+        'success' => false,
+        'error' => $e->getMessage(),
+        'timestamp' => date('c')
+    ], JSON_PRETTY_PRINT);
+}
+?>
