@@ -203,12 +203,18 @@ try {
                     <h1 class="h2">Dashboard SuperAdmin</h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-success" id="refreshData" title="Actualizar datos">
+                                <i class="fas fa-sync-alt me-1"></i>Actualizar Datos
+                            </button>
                             <button type="button" class="btn btn-sm btn-outline-secondary">
                                 <i class="fas fa-download me-1"></i>Exportar PDF
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-secondary">
                                 <i class="fas fa-file-excel me-1"></i>Exportar Excel
                             </button>
+                        </div>
+                        <div class="text-muted small">
+                            <span id="lastUpdate">Última actualización: <?= date('H:i:s') ?></span>
                         </div>
                     </div>
                 </div>
@@ -376,15 +382,47 @@ try {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Datos básicos para las gráficas
+        // Obtener datos reales de la base de datos
+        <?php
+        $activitiesByType = $GLOBALS['activitiesByType'] ?? [];
+        $userStats = $GLOBALS['userStats'] ?? [];
+        
+        // Preparar datos para gráfica de actividades por tipo
+        $activityLabels = [];
+        $activityData = [];
+        foreach ($activitiesByType as $activity) {
+            $activityLabels[] = $activity['nombre'];
+            $activityData[] = (int)$activity['cantidad'];
+        }
+        
+        // Preparar datos para gráfica de usuarios por rol
+        $userLabels = [];
+        $userData = [];
+        foreach ($userStats as $rol => $stats) {
+            $userLabels[] = $rol;
+            $userData[] = (int)$stats['total'];
+        }
+        
+        // Si no hay datos, usar valores por defecto para evitar gráficas vacías
+        if (empty($activityLabels)) {
+            $activityLabels = ['Sin datos'];
+            $activityData = [0];
+        }
+        if (empty($userLabels)) {
+            $userLabels = ['Sin datos'];
+            $userData = [0];
+        }
+        ?>
+        
+        // Datos reales para las gráficas desde la base de datos
         const activitiesCtx = document.getElementById('activitiesChart').getContext('2d');
-        new Chart(activitiesCtx, {
+        activitiesChart = new Chart(activitiesCtx, {
             type: 'bar',
             data: {
-                labels: ['Redes Sociales', 'Eventos', 'Capacitación', 'Encuestas'],
+                labels: <?= json_encode($activityLabels) ?>,
                 datasets: [{
                     label: 'Cantidad',
-                    data: [12, 8, 5, 3],
+                    data: <?= json_encode($activityData) ?>,
                     backgroundColor: 'rgba(102, 126, 234, 0.6)',
                     borderColor: 'rgba(102, 126, 234, 1)',
                     borderWidth: 1
@@ -394,31 +432,118 @@ try {
                 responsive: true,
                 scales: {
                     y: {
-                        beginAtZero: true
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Actividades por Tipo (Datos Reales)'
                     }
                 }
             }
         });
 
         const usersCtx = document.getElementById('usersChart').getContext('2d');
-        new Chart(usersCtx, {
+        usersChart = new Chart(usersCtx, {
             type: 'doughnut',
             data: {
-                labels: ['SuperAdmin', 'Gestor', 'Líder', 'Activista'],
+                labels: <?= json_encode($userLabels) ?>,
                 datasets: [{
-                    data: [1, 2, 5, 15],
+                    data: <?= json_encode($userData) ?>,
                     backgroundColor: [
                         'rgba(255, 99, 132, 0.6)',
                         'rgba(54, 162, 235, 0.6)',
                         'rgba(255, 205, 86, 0.6)',
-                        'rgba(75, 192, 192, 0.6)'
+                        'rgba(75, 192, 192, 0.6)',
+                        'rgba(153, 102, 255, 0.6)',
+                        'rgba(255, 159, 64, 0.6)'
                     ]
                 }]
             },
             options: {
-                responsive: true
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Usuarios por Rol (Datos Reales)'
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
             }
         });
+        
+        // Función para actualizar gráficas en tiempo real
+        function updateCharts() {
+            const refreshButton = document.getElementById('refreshData');
+            const lastUpdateSpan = document.getElementById('lastUpdate');
+            
+            // Mostrar indicador de carga
+            refreshButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Actualizando...';
+            refreshButton.disabled = true;
+            
+            fetch('<?= url('api/stats.php') ?>')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error en la respuesta del servidor');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Actualizar gráfica de actividades por tipo
+                        if (data.data.activities_by_type && data.data.activities_by_type.length > 0) {
+                            const newLabels = data.data.activities_by_type.map(item => item.nombre);
+                            const newData = data.data.activities_by_type.map(item => parseInt(item.cantidad));
+                            
+                            activitiesChart.data.labels = newLabels;
+                            activitiesChart.data.datasets[0].data = newData;
+                            activitiesChart.update();
+                        }
+                        
+                        // Actualizar gráfica de usuarios por rol
+                        if (data.data.user_stats) {
+                            const userLabels = Object.keys(data.data.user_stats);
+                            const userData = Object.values(data.data.user_stats).map(stats => parseInt(stats.total));
+                            
+                            usersChart.data.labels = userLabels;
+                            usersChart.data.datasets[0].data = userData;
+                            usersChart.update();
+                        }
+                        
+                        // Actualizar timestamp
+                        const now = new Date();
+                        lastUpdateSpan.textContent = `Última actualización: ${now.toLocaleTimeString()}`;
+                        
+                        console.log('Gráficas actualizadas con datos reales');
+                    } else {
+                        console.error('Error en la respuesta:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al actualizar datos:', error);
+                    lastUpdateSpan.textContent = 'Error al actualizar datos';
+                })
+                .finally(() => {
+                    // Restaurar botón
+                    refreshButton.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Actualizar Datos';
+                    refreshButton.disabled = false;
+                });
+        }
+        
+        // Guardar referencias a las gráficas para poder actualizarlas
+        let activitiesChart, usersChart;
+        
+        // Agregar event listener para el botón de actualizar
+        document.getElementById('refreshData').addEventListener('click', updateCharts);
+        
+        // Actualizar cada 30 segundos automáticamente (opcional)
+        // setInterval(updateCharts, 30000);
     </script>
 </body>
 </html>
