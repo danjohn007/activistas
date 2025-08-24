@@ -120,7 +120,14 @@ class UserController {
             $filters['estado'] = cleanInput($_GET['estado']);
         }
         
-        $users = $this->userModel->getAllUsers($filters);
+        // Si hay búsqueda, usar searchUsers en lugar de getAllUsers
+        $search = cleanInput($_GET['search'] ?? '');
+        if (!empty($search)) {
+            $users = $this->userModel->searchUsers($search, $filters);
+        } else {
+            $users = $this->userModel->getAllUsers($filters);
+        }
+        
         $stats = $this->userModel->getUserStats();
         
         include __DIR__ . '/../views/admin/users.php';

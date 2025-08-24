@@ -91,6 +91,12 @@
                     <div class="card-body">
                         <form method="GET" class="row g-3">
                             <div class="col-md-3">
+                                <label for="search" class="form-label">Buscar</label>
+                                <input type="text" class="form-control" id="search" name="search" 
+                                       value="<?= htmlspecialchars($_GET['search'] ?? '') ?>" 
+                                       placeholder="Nombre, correo o teléfono...">
+                            </div>
+                            <div class="col-md-2">
                                 <label for="rol" class="form-label">Rol</label>
                                 <select class="form-select" id="rol" name="rol">
                                     <option value="">Todos los roles</option>
@@ -100,7 +106,7 @@
                                     <option value="Activista" <?= ($_GET['rol'] ?? '') === 'Activista' ? 'selected' : '' ?>>Activista</option>
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label for="estado" class="form-label">Estado</label>
                                 <select class="form-select" id="estado" name="estado">
                                     <option value="">Todos los estados</option>
@@ -110,9 +116,9 @@
                                     <option value="desactivado" <?= ($_GET['estado'] ?? '') === 'desactivado' ? 'selected' : '' ?>>Desactivado</option>
                                 </select>
                             </div>
-                            <div class="col-md-3 d-flex align-items-end">
+                            <div class="col-md-5 d-flex align-items-end">
                                 <button type="submit" class="btn btn-primary me-2">
-                                    <i class="fas fa-search me-1"></i>Filtrar
+                                    <i class="fas fa-search me-1"></i>Buscar
                                 </button>
                                 <a href="<?= url('admin/users.php') ?>" class="btn btn-outline-secondary">
                                     <i class="fas fa-undo me-1"></i>Limpiar
