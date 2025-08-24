@@ -5,8 +5,13 @@
  */
 
 class Database {
+    private $host = 'localhost';
+    private $db_name = 'ejercito_activistas';
+    private $username = 'ejercito_activistas';
+    private $password = 'Danjohn007';
+    private $charset = 'utf8mb4';
     private $conn;
-
+ 
     public function getConnection() {
         $this->conn = null;
         
