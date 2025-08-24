@@ -45,6 +45,14 @@ function isStrongPassword($password) {
     return strlen($password) >= 8 && (preg_match('/[A-Z]/', $password) || preg_match('/\d/', $password));
 }
 
+// Verificar formato de URL
+function isValidUrl($url) {
+    if (empty($url)) {
+        return true; // URLs vacías son válidas (opcionales)
+    }
+    return filter_var($url, FILTER_VALIDATE_URL) !== false;
+}
+
 // Generar token aleatorio
 function generateRandomToken($length = 32) {
     return bin2hex(random_bytes($length));

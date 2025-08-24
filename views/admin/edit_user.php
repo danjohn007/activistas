@@ -163,6 +163,71 @@
                                         <textarea class="form-control" id="direccion" name="direccion" rows="3"><?= htmlspecialchars($user['direccion']) ?></textarea>
                                     </div>
                                     
+                                    <!-- Redes Sociales -->
+                                    <div class="card mt-4 mb-3">
+                                        <div class="card-header">
+                                            <h6 class="card-title mb-0">
+                                                <i class="fas fa-share-alt me-2"></i>Redes Sociales
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="facebook" class="form-label">
+                                                        <i class="fab fa-facebook text-primary me-2"></i>Facebook
+                                                    </label>
+                                                    <input type="url" class="form-control" id="facebook" name="facebook" 
+                                                           value="<?= htmlspecialchars($user['facebook'] ?? '') ?>"
+                                                           placeholder="https://facebook.com/perfil">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="instagram" class="form-label">
+                                                        <i class="fab fa-instagram text-danger me-2"></i>Instagram
+                                                    </label>
+                                                    <input type="url" class="form-control" id="instagram" name="instagram" 
+                                                           value="<?= htmlspecialchars($user['instagram'] ?? '') ?>"
+                                                           placeholder="https://instagram.com/perfil">
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="tiktok" class="form-label">
+                                                        <i class="fab fa-tiktok text-dark me-2"></i>TikTok
+                                                    </label>
+                                                    <input type="url" class="form-control" id="tiktok" name="tiktok" 
+                                                           value="<?= htmlspecialchars($user['tiktok'] ?? '') ?>"
+                                                           placeholder="https://tiktok.com/@perfil">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="x" class="form-label">
+                                                        <i class="fab fa-x-twitter text-dark me-2"></i>X (Twitter)
+                                                    </label>
+                                                    <input type="url" class="form-control" id="x" name="x" 
+                                                           value="<?= htmlspecialchars($user['x'] ?? '') ?>"
+                                                           placeholder="https://x.com/perfil">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Cuenta de Pago -->
+                                    <div class="card mt-4 mb-3">
+                                        <div class="card-header">
+                                            <h6 class="card-title mb-0">
+                                                <i class="fas fa-credit-card me-2"></i>Información de Pago
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label for="cuenta_pago" class="form-label">Cuenta de Pago</label>
+                                                <input type="text" class="form-control" id="cuenta_pago" name="cuenta_pago" 
+                                                       value="<?= htmlspecialchars($user['cuenta_pago'] ?? '') ?>"
+                                                       placeholder="Número de cuenta, PayPal, etc.">
+                                                <small class="text-muted">Información para pagos y transferencias</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
                                     <?php if ($user['rol'] === 'Activista' && !empty($liders)): ?>
                                     <div class="mb-3">
                                         <label for="lider_id" class="form-label">Líder Asignado</label>

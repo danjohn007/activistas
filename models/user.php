@@ -164,6 +164,32 @@ class User {
                 $params[] = $data['lider_id'];
             }
             
+            // Social media fields
+            if (isset($data['facebook'])) {
+                $fields[] = "facebook = ?";
+                $params[] = $data['facebook'];
+            }
+            
+            if (isset($data['instagram'])) {
+                $fields[] = "instagram = ?";
+                $params[] = $data['instagram'];
+            }
+            
+            if (isset($data['tiktok'])) {
+                $fields[] = "tiktok = ?";
+                $params[] = $data['tiktok'];
+            }
+            
+            if (isset($data['x'])) {
+                $fields[] = "x = ?";
+                $params[] = $data['x'];
+            }
+            
+            if (isset($data['cuenta_pago'])) {
+                $fields[] = "cuenta_pago = ?";
+                $params[] = $data['cuenta_pago'];
+            }
+            
             if (empty($fields)) {
                 return false;
             }
