@@ -1,39 +1,30 @@
--- Database migration for activity system improvements
--- Implements the requirements for pending tasks, evidence blocking, and ranking system
+-- 1. Permitir imagen de perfil hasta 20MB
+-- Actualiza el valor en la tabla de configuraciones
+UPDATE configuraciones SET valor='20971520' WHERE clave='max_tamaño_archivo';
 
--- 1. Update usuarios table for profile image and ranking
-ALTER TABLE usuarios MODIFY COLUMN foto_perfil VARCHAR(255);
-ALTER TABLE usuarios ADD COLUMN ranking_puntos INT DEFAULT 0;
+-- 2. Eliminar campos de lugar y alcance_estimado en actividades, agregar tarea_pendiente, solicitante_id y hora_evidencia
+ALTER TABLE actividades
+  DROP COLUMN lugar,
+  DROP COLUMN alcance_estimado,
+  ADD COLUMN tarea_pendiente TINYINT(1) DEFAULT 0 AFTER estado,
+  ADD COLUMN solicitante_id INT DEFAULT NULL AFTER tarea_pendiente,
+  ADD COLUMN hora_evidencia DATETIME AFTER solicitante_id;
 
--- 2. Update actividades table - remove lugar and alcance_estimado, add new fields
-ALTER TABLE actividades 
-ADD COLUMN hora_evidencia DATETIME NULL,
-ADD COLUMN tarea_pendiente TINYINT(1) DEFAULT 0,
-ADD COLUMN solicitante_id INT DEFAULT NULL,
-DROP COLUMN lugar,
-DROP COLUMN alcance_estimado;
+-- 3. Evidencia: bloquear edición y registrar hora automática (ya tienes fecha_subida, solo agregamos bloqueada)
+ALTER TABLE evidencias
+  ADD COLUMN bloqueada TINYINT(1) DEFAULT 0 AFTER fecha_subida;
 
--- Add foreign key constraint for solicitante_id
-ALTER TABLE actividades 
-ADD CONSTRAINT fk_actividades_solicitante 
-FOREIGN KEY (solicitante_id) REFERENCES usuarios(id) ON DELETE SET NULL;
+-- 4. Ranking en usuarios (agregar columna para guardar puntos)
+ALTER TABLE usuarios
+  ADD COLUMN ranking_puntos INT DEFAULT 0 AFTER cuenta_pago;
 
--- 3. Update evidencias table for blocking and timestamp tracking
-ALTER TABLE evidencias 
-ADD COLUMN fecha_subida DATETIME DEFAULT CURRENT_TIMESTAMP,
-ADD COLUMN bloqueada TINYINT(1) DEFAULT 0;
+-- 5. Asegurar integridad referencial de nuevos campos (si solicitante_id viene de usuarios)
+ALTER TABLE actividades
+  ADD CONSTRAINT fk_actividades_solicitante_id FOREIGN KEY (solicitante_id) REFERENCES usuarios(id) ON DELETE SET NULL;
 
--- Update existing evidencias to set fecha_subida if NULL
-UPDATE evidencias SET fecha_subida = CURRENT_TIMESTAMP WHERE fecha_subida IS NULL;
+-- 6. Si quieres que todos los cambios sean atómicos:
+START TRANSACTION;
+-- (Coloca aquí todos los ALTER/UPDATE anteriores)
+COMMIT;
 
--- 4. Create index for better performance on ranking queries
-CREATE INDEX idx_usuarios_ranking ON usuarios(ranking_puntos DESC);
-CREATE INDEX idx_actividades_tarea_pendiente ON actividades(tarea_pendiente, solicitante_id);
-CREATE INDEX idx_evidencias_fecha_subida ON evidencias(fecha_subida);
-
--- 5. Insert configuration for new features
-INSERT INTO configuraciones (clave, valor, descripcion) VALUES 
-('max_tamaño_archivo_perfil', '20971520', 'Tamaño máximo de archivos de perfil en bytes (20MB)'),
-('ranking_puntos_tarea_completada', '200', 'Puntos por tarea completada'),
-('ranking_puntos_mejor_tiempo', '800', 'Puntos máximos por mejor tiempo de respuesta')
-ON DUPLICATE KEY UPDATE valor = VALUES(valor);
+-- NOTA: Si tienes vistas o procedimientos que usen los campos "lugar" o "alcance_estimado", actualízalos manualmente.
