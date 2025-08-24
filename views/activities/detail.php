@@ -32,7 +32,7 @@
                     
                     <ul class="nav flex-column">
                         <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= url('dashboards/' . strtolower($_SESSION['user_role']) . '.php') ?>">
+                            <a class="nav-link text-white" href="<?= getDashboardUrl($_SESSION['user_role']) ?>">
                                 <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                             </a>
                         </li>
@@ -112,7 +112,6 @@
                                                 <?= ucfirst(str_replace('_', ' ', $activity['estado'])) ?>
                                             </span>
                                         </p>
-                                        <p><strong>Alcance Estimado:</strong> <?= number_format($activity['alcance_estimado']) ?> personas</p>
                                         <p><strong>Responsable:</strong> <?= htmlspecialchars($activity['usuario_nombre']) ?></p>
                                     </div>
                                 </div>

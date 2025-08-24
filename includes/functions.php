@@ -227,4 +227,17 @@ function logDashboardError($dashboard, $userId, $error) {
         error_log("Dashboard logging failed: " . $e->getMessage());
     }
 }
+
+// Map user role to dashboard filename (without accent issues)
+function getDashboardUrl($role) {
+    $dashboardMap = [
+        'SuperAdmin' => 'admin.php',
+        'Gestor' => 'gestor.php', 
+        'Líder' => 'lider.php',
+        'Activista' => 'activista.php'
+    ];
+    
+    $filename = $dashboardMap[$role] ?? 'activista.php';
+    return url('dashboards/' . $filename);
+}
 ?>

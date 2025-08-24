@@ -32,7 +32,7 @@
                     
                     <ul class="nav flex-column">
                         <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= url('dashboards/' . strtolower($currentUser['rol']) . '.php') ?>">
+                            <a class="nav-link text-white" href="<?= getDashboardUrl($currentUser['rol']) ?>">
                                 <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                             </a>
                         </li>
