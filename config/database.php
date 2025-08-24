@@ -15,28 +15,6 @@ class Database {
     public function getConnection() {
         $this->conn = null;
         
-        // For testing purposes, use SQLite if available
-        if (file_exists(__DIR__ . '/../test_database.sqlite')) {
-            try {
-                $dsn = "sqlite:" . __DIR__ . '/../test_database.sqlite';
-                $options = [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES => false,
-                ];
-                
-                $this->conn = new PDO($dsn, null, null, $options);
-                
-                // Test the connection
-                $this->conn->query("SELECT 1");
-                
-                return $this->conn;
-            } catch(PDOException $exception) {
-                // Fall through to MySQL attempt
-                error_log("SQLite Connection Error: " . $exception->getMessage());
-            }
-        }
-        
         try {
             $dsn = "mysql:host=" . $this->host . ";dbname=" . $this->db_name . ";charset=" . $this->charset;
             $options = [

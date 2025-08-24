@@ -329,7 +329,6 @@ try {
                         $totalUsers = is_array($userStats) ? array_sum(array_column($userStats, 'total')) : 0;
                         $totalActivities = isset($activityStats['total_actividades']) ? $activityStats['total_actividades'] : 0;
                         $completedActivities = isset($activityStats['completadas']) ? $activityStats['completadas'] : 0;
-                        $totalReach = isset($activityStats['alcance_total']) ? $activityStats['alcance_total'] : 0;
                         ?>
                     <?php else: ?>
                         <?php 
@@ -337,11 +336,10 @@ try {
                         $totalUsers = 0;
                         $totalActivities = 0;
                         $completedActivities = 0;
-                        $totalReach = 0;
                         ?>
                     <?php endif; ?>
                     
-                    <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="col-xl-4 col-md-6 mb-4">
                         <div class="card metric-card card-stats">
                             <div class="card-body">
                                 <div class="row">
@@ -359,7 +357,7 @@ try {
                         </div>
                     </div>
                     
-                    <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="col-xl-4 col-md-6 mb-4">
                         <div class="card bg-success text-white card-stats">
                             <div class="card-body">
                                 <div class="row">
@@ -377,35 +375,17 @@ try {
                         </div>
                     </div>
                     
-                    <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="col-xl-4 col-md-6 mb-4">
                         <div class="card bg-info text-white card-stats">
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col">
-                                        <h5 class="card-title text-uppercase text-white-50 mb-0">Completadas</h5>
-                                        <span class="h2 font-weight-bold mb-0"><?= number_format($completedActivities) ?></span>
+                                        <h5 class="card-title text-uppercase text-white-50 mb-0">% Atención</h5>
+                                        <span class="h2 font-weight-bold mb-0"><?= $totalActivities > 0 ? number_format(($completedActivities / $totalActivities) * 100, 1) : '0.0' ?>%</span>
                                     </div>
                                     <div class="col-auto">
                                         <div class="icon text-white-50">
-                                            <i class="fas fa-check fa-2x"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card bg-warning text-white card-stats">
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col">
-                                        <h5 class="card-title text-uppercase text-white-50 mb-0">Alcance Total</h5>
-                                        <span class="h2 font-weight-bold mb-0"><?= number_format($totalReach) ?></span>
-                                    </div>
-                                    <div class="col-auto">
-                                        <div class="icon text-white-50">
-                                            <i class="fas fa-chart-line fa-2x"></i>
+                                            <i class="fas fa-percentage fa-2x"></i>
                                         </div>
                                     </div>
                                 </div>
