@@ -266,7 +266,8 @@ class DashboardController {
             $teammates = $this->userModel->getActivistsOfLeader($currentUser['lider_id']);
         }
         
-        include __DIR__ . '/../views/dashboards/activista.php';
+        // Variables disponibles para la vista:
+        // $myActivities, $myStats, $recentActivities, $lider, $teammates
     }
     
     // Obtener datos de actividades mensuales
