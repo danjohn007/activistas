@@ -49,7 +49,15 @@ class ActivityController {
             $filters['fecha_hasta'] = cleanInput($_GET['fecha_hasta']);
         }
         
+        // Pagination parameters
+        $page = max(1, intval($_GET['page'] ?? 1));
+        $perPage = 10; // Activities per page
+        $filters['page'] = $page;
+        $filters['per_page'] = $perPage;
+        
         $activities = $this->activityModel->getActivities($filters);
+        $totalActivities = $this->activityModel->countActivities($filters);
+        $totalPages = ceil($totalActivities / $perPage);
         $activityTypes = $this->activityModel->getActivityTypes();
         
         include __DIR__ . '/../views/activities/list.php';
@@ -82,10 +90,16 @@ class ActivityController {
         $recipients = [];
         $shouldCreateForRecipients = false;
         
-        if ($currentUser['rol'] === 'SuperAdmin' && !empty($_POST['destinatarios_lideres'])) {
-            // SuperAdmin selected leaders as recipients
-            $recipients = array_map('intval', $_POST['destinatarios_lideres']);
-            $shouldCreateForRecipients = true;
+        if ($currentUser['rol'] === 'SuperAdmin') {
+            if (!empty($_POST['destinatarios_lideres'])) {
+                // SuperAdmin selected leaders as recipients
+                $recipients = array_map('intval', $_POST['destinatarios_lideres']);
+                $shouldCreateForRecipients = true;
+            } elseif (!empty($_POST['destinatarios_todos'])) {
+                // SuperAdmin selected all users as recipients
+                $recipients = array_map('intval', $_POST['destinatarios_todos']);
+                $shouldCreateForRecipients = true;
+            }
         } elseif ($currentUser['rol'] === 'Líder' && !empty($_POST['destinatarios_activistas'])) {
             // Leader selected activists as recipients
             $recipients = array_map('intval', $_POST['destinatarios_activistas']);
