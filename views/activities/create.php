@@ -128,34 +128,62 @@
                                 <div class="form-text">Describe brevemente los objetivos y detalles de la actividad.</div>
                             </div>
 
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="fecha_actividad" class="form-label">Fecha de la Actividad *</label>
-                                        <input type="date" class="form-control" id="fecha_actividad" name="fecha_actividad" 
-                                               value="<?= htmlspecialchars($_SESSION['form_data']['fecha_actividad'] ?? '') ?>" 
-                                               required>
-                                    </div>
-                                </div>
-                                <?php if (in_array($_SESSION['user_role'] ?? '', ['SuperAdmin', 'Gestor'])): ?>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="alcance_estimado" class="form-label">Alcance Estimado (personas)</label>
-                                        <input type="number" class="form-control" id="alcance_estimado" name="alcance_estimado" 
-                                               value="<?= htmlspecialchars($_SESSION['form_data']['alcance_estimado'] ?? '') ?>" 
-                                               min="0" max="999999">
-                                        <div class="form-text">Número estimado de personas a las que llegará la actividad.</div>
-                                    </div>
-                                </div>
-                                <?php endif; ?>
+                            <div class="mb-3">
+                                <label for="fecha_actividad" class="form-label">Fecha de la Actividad *</label>
+                                <input type="date" class="form-control" id="fecha_actividad" name="fecha_actividad" 
+                                       value="<?= htmlspecialchars($_SESSION['form_data']['fecha_actividad'] ?? '') ?>" 
+                                       required>
                             </div>
 
-                            <?php if (in_array($_SESSION['user_role'] ?? '', ['SuperAdmin', 'Gestor'])): ?>
+                            <!-- Selección de destinatarios -->
+                            <?php if ($_SESSION['user_role'] === 'SuperAdmin'): ?>
                             <div class="mb-3">
-                                <label for="lugar" class="form-label">Lugar</label>
-                                <input type="text" class="form-control" id="lugar" name="lugar" 
-                                       value="<?= htmlspecialchars($_SESSION['form_data']['lugar'] ?? '') ?>" 
-                                       maxlength="255" placeholder="Dirección, ciudad o plataforma digital">
+                                <label for="destinatario_lider" class="form-label">Asignar a Líder</label>
+                                <select class="form-select" id="destinatario_lider" name="destinatario_lider">
+                                    <option value="">Seleccionar líder destinatario (opcional)</option>
+                                    <?php 
+                                    require_once __DIR__ . '/../../models/user.php';
+                                    $userModel = new User();
+                                    $lideres = $userModel->getActiveLiders();
+                                    foreach ($lideres as $lider): ?>
+                                        <option value="<?= $lider['id'] ?>" 
+                                                <?= ($_SESSION['form_data']['destinatario_lider'] ?? '') == $lider['id'] ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($lider['nombre_completo']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <div class="form-text">Si selecciona un líder, la actividad aparecerá como tarea pendiente para ese líder y sus activistas.</div>
+                            </div>
+                            <?php elseif ($_SESSION['user_role'] === 'Líder'): ?>
+                            <div class="mb-3">
+                                <label class="form-label">Asignar a Activistas</label>
+                                <div class="border rounded p-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="select_all_activists">
+                                        <label class="form-check-label fw-bold" for="select_all_activists">
+                                            Seleccionar/Deseleccionar todos
+                                        </label>
+                                    </div>
+                                    <hr>
+                                    <?php 
+                                    $userModel = new User();
+                                    $activistas = $userModel->getActivistsOfLeader($_SESSION['user_id']);
+                                    if (!empty($activistas)): ?>
+                                        <?php foreach ($activistas as $activista): ?>
+                                            <div class="form-check">
+                                                <input class="form-check-input activist-checkbox" type="checkbox" 
+                                                       id="activista_<?= $activista['id'] ?>" name="destinatarios_activistas[]" 
+                                                       value="<?= $activista['id'] ?>" checked>
+                                                <label class="form-check-label" for="activista_<?= $activista['id'] ?>">
+                                                    <?= htmlspecialchars($activista['nombre_completo']) ?>
+                                                </label>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <div class="text-muted">No tienes activistas asignados.</div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="form-text">Si selecciona activistas, la actividad aparecerá como tarea pendiente para ellos.</div>
                             </div>
                             <?php endif; ?>
 
@@ -211,6 +239,29 @@
                 });
             }
         });
+
+        // Funcionalidad para seleccionar/deseleccionar todos los activistas
+        const selectAllCheckbox = document.getElementById('select_all_activists');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                const activistCheckboxes = document.querySelectorAll('.activist-checkbox');
+                activistCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+            });
+
+            // Actualizar el estado del checkbox "seleccionar todos" cuando se cambian los individuales
+            const activistCheckboxes = document.querySelectorAll('.activist-checkbox');
+            activistCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const allChecked = Array.from(activistCheckboxes).every(cb => cb.checked);
+                    const anyChecked = Array.from(activistCheckboxes).some(cb => cb.checked);
+                    
+                    selectAllCheckbox.checked = allChecked;
+                    selectAllCheckbox.indeterminate = anyChecked && !allChecked;
+                });
+            });
+        }
         
         // Limpiar datos del formulario después de mostrar
         <?php unset($_SESSION['form_data']); ?>

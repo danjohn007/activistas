@@ -78,32 +78,85 @@ class ActivityController {
         
         $currentUser = $this->auth->getCurrentUser();
         
-        $activityData = [
-            'usuario_id' => $currentUser['id'],
-            'user_role' => $currentUser['rol'], // Add user role for pending task logic
-            'tipo_actividad_id' => intval($_POST['tipo_actividad_id'] ?? 0),
-            'titulo' => cleanInput($_POST['titulo'] ?? ''),
-            'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
-            'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? '')
-        ];
+        // Handle recipient selection
+        $recipients = [];
+        $shouldCreateForRecipients = false;
         
-        // Validar datos
-        $errors = $this->validateActivityData($activityData, $currentUser['rol']);
-        if (!empty($errors)) {
-            $_SESSION['form_errors'] = $errors;
-            $_SESSION['form_data'] = $_POST;
-            redirectWithMessage('activities/create.php', 'Por favor corrige los errores', 'error');
+        if ($currentUser['rol'] === 'SuperAdmin' && !empty($_POST['destinatario_lider'])) {
+            // SuperAdmin selected a leader as recipient
+            $recipients = [intval($_POST['destinatario_lider'])];
+            $shouldCreateForRecipients = true;
+        } elseif ($currentUser['rol'] === 'Líder' && !empty($_POST['destinatarios_activistas'])) {
+            // Leader selected activists as recipients
+            $recipients = array_map('intval', $_POST['destinatarios_activistas']);
+            $shouldCreateForRecipients = true;
         }
         
-        $activityId = $this->activityModel->createActivity($activityData);
-        
-        if ($activityId) {
-            // Procesar evidencias si se subieron
-            $this->processEvidenceFiles($activityId);
+        if ($shouldCreateForRecipients && !empty($recipients)) {
+            // Create activity for each recipient
+            $successCount = 0;
+            foreach ($recipients as $recipientId) {
+                $activityData = [
+                    'usuario_id' => $recipientId,
+                    'user_role' => $currentUser['rol'], // Add user role for pending task logic
+                    'tipo_actividad_id' => intval($_POST['tipo_actividad_id'] ?? 0),
+                    'titulo' => cleanInput($_POST['titulo'] ?? ''),
+                    'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
+                    'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? ''),
+                    'solicitante_id' => $currentUser['id'] // Track who created the task
+                ];
+                
+                // Validar datos
+                $errors = $this->validateActivityData($activityData, $currentUser['rol']);
+                if (!empty($errors)) {
+                    $_SESSION['form_errors'] = $errors;
+                    $_SESSION['form_data'] = $_POST;
+                    redirectWithMessage('activities/create.php', 'Por favor corrige los errores', 'error');
+                }
+                
+                $activityId = $this->activityModel->createActivity($activityData);
+                
+                if ($activityId) {
+                    // Procesar evidencias si se subieron
+                    $this->processEvidenceFiles($activityId);
+                    $successCount++;
+                }
+            }
             
-            redirectWithMessage('activities/', 'Actividad creada exitosamente', 'success');
+            if ($successCount > 0) {
+                redirectWithMessage('activities/', "Actividad creada exitosamente para $successCount destinatario(s)", 'success');
+            } else {
+                redirectWithMessage('activities/create.php', 'Error al crear actividad', 'error');
+            }
         } else {
-            redirectWithMessage('activities/create.php', 'Error al crear actividad', 'error');
+            // Create activity for current user (original behavior)
+            $activityData = [
+                'usuario_id' => $currentUser['id'],
+                'user_role' => $currentUser['rol'], // Add user role for pending task logic
+                'tipo_actividad_id' => intval($_POST['tipo_actividad_id'] ?? 0),
+                'titulo' => cleanInput($_POST['titulo'] ?? ''),
+                'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
+                'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? '')
+            ];
+            
+            // Validar datos
+            $errors = $this->validateActivityData($activityData, $currentUser['rol']);
+            if (!empty($errors)) {
+                $_SESSION['form_errors'] = $errors;
+                $_SESSION['form_data'] = $_POST;
+                redirectWithMessage('activities/create.php', 'Por favor corrige los errores', 'error');
+            }
+            
+            $activityId = $this->activityModel->createActivity($activityData);
+            
+            if ($activityId) {
+                // Procesar evidencias si se subieron
+                $this->processEvidenceFiles($activityId);
+                
+                redirectWithMessage('activities/', 'Actividad creada exitosamente', 'success');
+            } else {
+                redirectWithMessage('activities/create.php', 'Error al crear actividad', 'error');
+            }
         }
     }
     
@@ -189,8 +242,6 @@ class ActivityController {
             'titulo' => cleanInput($_POST['titulo'] ?? ''),
             'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
             'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? ''),
-            'lugar' => cleanInput($_POST['lugar'] ?? ''),
-            'alcance_estimado' => intval($_POST['alcance_estimado'] ?? 0),
             'estado' => cleanInput($_POST['estado'] ?? '')
         ];
         
@@ -276,11 +327,6 @@ class ActivityController {
             $errors[] = 'La fecha de actividad es obligatoria';
         } elseif (!strtotime($data['fecha_actividad'])) {
             $errors[] = 'Formato de fecha inválido';
-        }
-        
-        // Only validate alcance_estimado for SuperAdmin and Gestor roles
-        if (in_array($userRole, ['SuperAdmin', 'Gestor']) && isset($data['alcance_estimado']) && $data['alcance_estimado'] < 0) {
-            $errors[] = 'El alcance estimado no puede ser negativo';
         }
         
         return $errors;
