@@ -289,7 +289,7 @@ class User {
         }
     }
     
-    // Cambiar contraseña
+        // Cambiar contraseña
     public function changePassword($userId, $newPassword) {
         try {
             $passwordHash = password_hash($newPassword, PASSWORD_DEFAULT);
@@ -305,6 +305,23 @@ class User {
         } catch (Exception $e) {
             logActivity("Error al cambiar contraseña: " . $e->getMessage(), 'ERROR');
             return false;
+        }
+    }
+    
+    // Obtener todos los usuarios activos para asignación de tareas
+    public function getAllActiveUsers() {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT id, nombre_completo, rol, email
+                FROM usuarios 
+                WHERE estado = 'activo' 
+                ORDER BY rol, nombre_completo
+            ");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            logActivity("Error al obtener usuarios activos: " . $e->getMessage(), 'ERROR');
+            return [];
         }
     }
 }

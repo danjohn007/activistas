@@ -84,10 +84,12 @@ class Activity {
                 throw new Exception("No hay conexión a la base de datos disponible");
             }
             
-            $sql = "SELECT a.*, u.nombre_completo as usuario_nombre, ta.nombre as tipo_nombre 
+            $sql = "SELECT a.*, u.nombre_completo as usuario_nombre, ta.nombre as tipo_nombre,
+                           s.nombre_completo as solicitante_nombre
                     FROM actividades a 
                     JOIN usuarios u ON a.usuario_id = u.id 
                     JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id 
+                    LEFT JOIN usuarios s ON a.solicitante_id = s.id
                     WHERE 1=1";
             $params = [];
             
@@ -124,7 +126,13 @@ class Activity {
             
             $sql .= " ORDER BY a.fecha_actividad DESC, a.fecha_creacion DESC";
             
-            if (!empty($filters['limit'])) {
+            // Add pagination support
+            if (!empty($filters['page']) && !empty($filters['per_page'])) {
+                $page = intval($filters['page']);
+                $perPage = intval($filters['per_page']);
+                $offset = ($page - 1) * $perPage;
+                $sql .= " LIMIT " . $perPage . " OFFSET " . $offset;
+            } elseif (!empty($filters['limit'])) {
                 $sql .= " LIMIT " . intval($filters['limit']);
             }
             
@@ -135,6 +143,64 @@ class Activity {
         } catch (Exception $e) {
             logActivity("Error al obtener actividades: " . $e->getMessage(), 'ERROR');
             return [];
+        }
+    }
+    
+    // Count total activities for pagination
+    public function countActivities($filters = []) {
+        try {
+            // Verificar conexión antes de proceder
+            if (!$this->db) {
+                throw new Exception("No hay conexión a la base de datos disponible");
+            }
+            
+            $sql = "SELECT COUNT(*) as total
+                    FROM actividades a 
+                    JOIN usuarios u ON a.usuario_id = u.id 
+                    JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id 
+                    LEFT JOIN usuarios s ON a.solicitante_id = s.id
+                    WHERE 1=1";
+            $params = [];
+            
+            if (!empty($filters['usuario_id'])) {
+                $sql .= " AND a.usuario_id = ?";
+                $params[] = $filters['usuario_id'];
+            }
+            
+            if (!empty($filters['lider_id'])) {
+                $sql .= " AND (a.usuario_id = ? OR u.lider_id = ?)";
+                $params[] = $filters['lider_id'];
+                $params[] = $filters['lider_id'];
+            }
+            
+            if (!empty($filters['tipo_actividad_id'])) {
+                $sql .= " AND a.tipo_actividad_id = ?";
+                $params[] = $filters['tipo_actividad_id'];
+            }
+            
+            if (!empty($filters['estado'])) {
+                $sql .= " AND a.estado = ?";
+                $params[] = $filters['estado'];
+            }
+            
+            if (!empty($filters['fecha_desde'])) {
+                $sql .= " AND a.fecha_actividad >= ?";
+                $params[] = $filters['fecha_desde'];
+            }
+            
+            if (!empty($filters['fecha_hasta'])) {
+                $sql .= " AND a.fecha_actividad <= ?";
+                $params[] = $filters['fecha_hasta'];
+            }
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetch();
+            
+            return $result['total'] ?? 0;
+        } catch (Exception $e) {
+            logActivity("Error al contar actividades: " . $e->getMessage(), 'ERROR');
+            return 0;
         }
     }
     

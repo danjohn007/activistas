@@ -164,6 +164,73 @@
                                 </table>
                             </div>
                         <?php endif; ?>
+                        
+                        <!-- Pagination -->
+                        <?php if (isset($totalPages) && $totalPages > 1): ?>
+                            <div class="mt-4">
+                                <nav aria-label="Navegación de páginas">
+                                    <ul class="pagination justify-content-center">
+                                        <!-- Previous button -->
+                                        <?php if ($page > 1): ?>
+                                            <li class="page-item">
+                                                <a class="page-link" href="<?= url('activities/?' . http_build_query(array_merge($_GET, ['page' => $page - 1]))) ?>">
+                                                    <i class="fas fa-chevron-left"></i> Anterior
+                                                </a>
+                                            </li>
+                                        <?php endif; ?>
+                                        
+                                        <!-- Page numbers -->
+                                        <?php
+                                        $startPage = max(1, $page - 2);
+                                        $endPage = min($totalPages, $page + 2);
+                                        ?>
+                                        
+                                        <?php if ($startPage > 1): ?>
+                                            <li class="page-item">
+                                                <a class="page-link" href="<?= url('activities/?' . http_build_query(array_merge($_GET, ['page' => 1]))) ?>">1</a>
+                                            </li>
+                                            <?php if ($startPage > 2): ?>
+                                                <li class="page-item disabled">
+                                                    <span class="page-link">...</span>
+                                                </li>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                        
+                                        <?php for ($i = $startPage; $i <= $endPage; $i++): ?>
+                                            <li class="page-item <?= $i === $page ? 'active' : '' ?>">
+                                                <a class="page-link" href="<?= url('activities/?' . http_build_query(array_merge($_GET, ['page' => $i]))) ?>"><?= $i ?></a>
+                                            </li>
+                                        <?php endfor; ?>
+                                        
+                                        <?php if ($endPage < $totalPages): ?>
+                                            <?php if ($endPage < $totalPages - 1): ?>
+                                                <li class="page-item disabled">
+                                                    <span class="page-link">...</span>
+                                                </li>
+                                            <?php endif; ?>
+                                            <li class="page-item">
+                                                <a class="page-link" href="<?= url('activities/?' . http_build_query(array_merge($_GET, ['page' => $totalPages]))) ?>"><?= $totalPages ?></a>
+                                            </li>
+                                        <?php endif; ?>
+                                        
+                                        <!-- Next button -->
+                                        <?php if ($page < $totalPages): ?>
+                                            <li class="page-item">
+                                                <a class="page-link" href="<?= url('activities/?' . http_build_query(array_merge($_GET, ['page' => $page + 1]))) ?>">
+                                                    Siguiente <i class="fas fa-chevron-right"></i>
+                                                </a>
+                                            </li>
+                                        <?php endif; ?>
+                                    </ul>
+                                </nav>
+                                
+                                <!-- Page info -->
+                                <div class="text-center text-muted mt-2">
+                                    Mostrando página <?= $page ?> de <?= $totalPages ?> 
+                                    (<?= $totalActivities ?> actividades en total)
+                                </div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </main>

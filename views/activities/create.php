@@ -102,35 +102,83 @@
                             <!-- Selección de destinatarios -->
                             <?php if ($_SESSION['user_role'] === 'SuperAdmin'): ?>
                             <div class="mb-3">
-                                <label class="form-label">Asignar a Líderes</label>
-                                <div class="border rounded p-3">
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" id="select_all_leaders">
-                                        <label class="form-check-label fw-bold" for="select_all_leaders">
-                                            Seleccionar/Deseleccionar todos
-                                        </label>
+                                <label class="form-label">Asignar a</label>
+                                
+                                <!-- Tab navigation -->
+                                <ul class="nav nav-tabs" id="assignmentTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="leaders-tab" data-bs-toggle="tab" data-bs-target="#leaders" type="button" role="tab">
+                                            Líderes
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="all-users-tab" data-bs-toggle="tab" data-bs-target="#all-users" type="button" role="tab">
+                                            Todos los Usuarios
+                                        </button>
+                                    </li>
+                                </ul>
+                                
+                                <!-- Tab content -->
+                                <div class="tab-content border border-top-0 rounded-bottom p-3" id="assignmentTabContent">
+                                    <!-- Leaders tab -->
+                                    <div class="tab-pane fade show active" id="leaders" role="tabpanel">
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="select_all_leaders">
+                                            <label class="form-check-label fw-bold" for="select_all_leaders">
+                                                Seleccionar/Deseleccionar todos los líderes
+                                            </label>
+                                        </div>
+                                        <hr>
+                                        <?php 
+                                        require_once __DIR__ . '/../../models/user.php';
+                                        $userModel = new User();
+                                        $lideres = $userModel->getActiveLiders();
+                                        if (!empty($lideres)): ?>
+                                            <?php foreach ($lideres as $lider): ?>
+                                                <div class="form-check">
+                                                    <input class="form-check-input leader-checkbox" type="checkbox" 
+                                                           id="lider_<?= $lider['id'] ?>" name="destinatarios_lideres[]" 
+                                                           value="<?= $lider['id'] ?>" checked>
+                                                    <label class="form-check-label" for="lider_<?= $lider['id'] ?>">
+                                                        <?= htmlspecialchars($lider['nombre_completo']) ?>
+                                                    </label>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <div class="text-muted">No hay líderes disponibles.</div>
+                                        <?php endif; ?>
+                                        <div class="form-text mt-2">La actividad aparecerá como tarea pendiente para los líderes seleccionados y sus activistas.</div>
                                     </div>
-                                    <hr>
-                                    <?php 
-                                    require_once __DIR__ . '/../../models/user.php';
-                                    $userModel = new User();
-                                    $lideres = $userModel->getActiveLiders();
-                                    if (!empty($lideres)): ?>
-                                        <?php foreach ($lideres as $lider): ?>
-                                            <div class="form-check">
-                                                <input class="form-check-input leader-checkbox" type="checkbox" 
-                                                       id="lider_<?= $lider['id'] ?>" name="destinatarios_lideres[]" 
-                                                       value="<?= $lider['id'] ?>" checked>
-                                                <label class="form-check-label" for="lider_<?= $lider['id'] ?>">
-                                                    <?= htmlspecialchars($lider['nombre_completo']) ?>
-                                                </label>
-                                            </div>
-                                        <?php endforeach; ?>
-                                    <?php else: ?>
-                                        <div class="text-muted">No hay líderes disponibles.</div>
-                                    <?php endif; ?>
+                                    
+                                    <!-- All users tab -->
+                                    <div class="tab-pane fade" id="all-users" role="tabpanel">
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="select_all_users">
+                                            <label class="form-check-label fw-bold" for="select_all_users">
+                                                Seleccionar/Deseleccionar todos los usuarios
+                                            </label>
+                                        </div>
+                                        <hr>
+                                        <?php 
+                                        $allUsers = $userModel->getAllActiveUsers();
+                                        if (!empty($allUsers)): ?>
+                                            <?php foreach ($allUsers as $user): ?>
+                                                <div class="form-check">
+                                                    <input class="form-check-input all-user-checkbox" type="checkbox" 
+                                                           id="user_<?= $user['id'] ?>" name="destinatarios_todos[]" 
+                                                           value="<?= $user['id'] ?>">
+                                                    <label class="form-check-label" for="user_<?= $user['id'] ?>">
+                                                        <?= htmlspecialchars($user['nombre_completo']) ?> 
+                                                        <span class="badge bg-secondary ms-1"><?= $user['rol'] ?></span>
+                                                    </label>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <div class="text-muted">No hay usuarios disponibles.</div>
+                                        <?php endif; ?>
+                                        <div class="form-text mt-2">La actividad aparecerá como tarea pendiente para todos los usuarios seleccionados.</div>
+                                    </div>
                                 </div>
-                                <div class="form-text">Si selecciona líderes, la actividad aparecerá como tarea pendiente para ellos y sus activistas.</div>
                             </div>
                             <?php elseif ($_SESSION['user_role'] === 'Líder'): ?>
                             <div class="mb-3">
@@ -260,6 +308,29 @@
                     
                     selectAllLeadersCheckbox.checked = allChecked;
                     selectAllLeadersCheckbox.indeterminate = anyChecked && !allChecked;
+                });
+            });
+        }
+        
+        // Funcionalidad para seleccionar/deseleccionar todos los usuarios (SuperAdmin)
+        const selectAllUsersCheckbox = document.getElementById('select_all_users');
+        if (selectAllUsersCheckbox) {
+            selectAllUsersCheckbox.addEventListener('change', function() {
+                const userCheckboxes = document.querySelectorAll('.all-user-checkbox');
+                userCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+            });
+
+            // Actualizar el estado del checkbox "seleccionar todos" cuando se cambian los individuales
+            const userCheckboxes = document.querySelectorAll('.all-user-checkbox');
+            userCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const allChecked = Array.from(userCheckboxes).every(cb => cb.checked);
+                    const anyChecked = Array.from(userCheckboxes).some(cb => cb.checked);
+                    
+                    selectAllUsersCheckbox.checked = allChecked;
+                    selectAllUsersCheckbox.indeterminate = anyChecked && !allChecked;
                 });
             });
         }
