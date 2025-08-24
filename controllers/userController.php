@@ -84,7 +84,7 @@ class UserController {
         
         // Procesar foto de perfil si se subió
         if (isset($_FILES['foto_perfil']) && $_FILES['foto_perfil']['error'] === UPLOAD_ERR_OK) {
-            $uploadResult = uploadFile($_FILES['foto_perfil'], __DIR__ . '/../public/assets/uploads/profiles');
+            $uploadResult = uploadFile($_FILES['foto_perfil'], __DIR__ . '/../public/assets/uploads/profiles', ['jpg', 'jpeg', 'png', 'gif'], true);
             if ($uploadResult['success']) {
                 $userData['foto_perfil'] = $uploadResult['filename'];
             } else {
@@ -220,7 +220,7 @@ class UserController {
         
         // Procesar nueva foto de perfil si se subió
         if (isset($_FILES['foto_perfil']) && $_FILES['foto_perfil']['error'] === UPLOAD_ERR_OK) {
-            $uploadResult = uploadFile($_FILES['foto_perfil'], __DIR__ . '/../public/assets/uploads/profiles');
+            $uploadResult = uploadFile($_FILES['foto_perfil'], __DIR__ . '/../public/assets/uploads/profiles', ['jpg', 'jpeg', 'png', 'gif'], true);
             if ($uploadResult['success']) {
                 $updateData['foto_perfil'] = $uploadResult['filename'];
             }
@@ -306,7 +306,7 @@ class UserController {
         
         // Procesar nueva foto de perfil si se subió
         if (isset($_FILES['foto_perfil']) && $_FILES['foto_perfil']['error'] === UPLOAD_ERR_OK) {
-            $uploadResult = uploadFile($_FILES['foto_perfil'], __DIR__ . '/../public/assets/uploads/profiles');
+            $uploadResult = uploadFile($_FILES['foto_perfil'], __DIR__ . '/../public/assets/uploads/profiles', ['jpg', 'jpeg', 'png', 'gif'], true);
             if ($uploadResult['success']) {
                 $updateData['foto_perfil'] = $uploadResult['filename'];
             }

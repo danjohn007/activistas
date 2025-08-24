@@ -32,8 +32,18 @@ class Activity {
     // Crear nueva actividad
     public function createActivity($data) {
         try {
+            // Determine if this should be a pending task
+            $tarea_pendiente = 0;
+            $solicitante_id = null;
+            
+            // If created by SuperAdmin or Líder, mark as pending task for others
+            if (isset($data['user_role']) && in_array($data['user_role'], ['SuperAdmin', 'Líder'])) {
+                $tarea_pendiente = 1;
+                $solicitante_id = $data['usuario_id'];
+            }
+            
             $stmt = $this->db->prepare("
-                INSERT INTO actividades (usuario_id, tipo_actividad_id, titulo, descripcion, fecha_actividad, lugar, alcance_estimado)
+                INSERT INTO actividades (usuario_id, tipo_actividad_id, titulo, descripcion, fecha_actividad, tarea_pendiente, solicitante_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
             
@@ -43,8 +53,8 @@ class Activity {
                 $data['titulo'],
                 $data['descripcion'] ?? null,
                 $data['fecha_actividad'],
-                $data['lugar'] ?? null,
-                $data['alcance_estimado'] ?? 0
+                $tarea_pendiente,
+                $solicitante_id
             ]);
             
             if ($result) {
@@ -212,22 +222,73 @@ class Activity {
     // Agregar evidencia a actividad
     public function addEvidence($activityId, $type, $file = null, $content = null) {
         try {
+            // Check if evidence is already blocked
             $stmt = $this->db->prepare("
-                INSERT INTO evidencias (actividad_id, tipo_evidencia, archivo, contenido)
-                VALUES (?, ?, ?, ?)
+                SELECT bloqueada FROM evidencias 
+                WHERE actividad_id = ? AND bloqueada = 1 
+                LIMIT 1
+            ");
+            $stmt->execute([$activityId]);
+            $isBlocked = $stmt->fetch();
+            
+            if ($isBlocked) {
+                return ['success' => false, 'error' => 'Las evidencias de esta actividad ya han sido bloqueadas y no pueden modificarse'];
+            }
+            
+            $stmt = $this->db->prepare("
+                INSERT INTO evidencias (actividad_id, tipo_evidencia, archivo, contenido, fecha_subida, bloqueada)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, 1)
             ");
             
             $result = $stmt->execute([$activityId, $type, $file, $content]);
             
             if ($result) {
                 $evidenceId = $this->db->lastInsertId();
+                
+                // Update activity with evidence timestamp and mark as completed
+                $this->updateActivityEvidenceTimestamp($activityId);
+                
+                // Update rankings after evidence is uploaded
+                $this->updateUserRankings();
+                
                 logActivity("Evidencia agregada: ID $evidenceId para actividad $activityId");
-                return $evidenceId;
+                return ['success' => true, 'evidenceId' => $evidenceId];
             }
             
-            return false;
+            return ['success' => false, 'error' => 'Error al guardar la evidencia'];
         } catch (Exception $e) {
             logActivity("Error al agregar evidencia: " . $e->getMessage(), 'ERROR');
+            return ['success' => false, 'error' => 'Error interno del servidor'];
+        }
+    }
+    
+    // Update activity with evidence timestamp
+    private function updateActivityEvidenceTimestamp($activityId) {
+        try {
+            $stmt = $this->db->prepare("
+                UPDATE actividades 
+                SET hora_evidencia = CURRENT_TIMESTAMP, estado = 'completada'
+                WHERE id = ?
+            ");
+            $stmt->execute([$activityId]);
+        } catch (Exception $e) {
+            logActivity("Error al actualizar timestamp de evidencia: " . $e->getMessage(), 'ERROR');
+        }
+    }
+    
+    // Check if evidence can be modified
+    public function canModifyEvidence($activityId) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT COUNT(*) as count FROM evidencias 
+                WHERE actividad_id = ? AND bloqueada = 1
+            ");
+            $stmt->execute([$activityId]);
+            $result = $stmt->fetch();
+            
+            return $result['count'] == 0;
+        } catch (Exception $e) {
+            logActivity("Error al verificar modificación de evidencia: " . $e->getMessage(), 'ERROR');
             return false;
         }
     }
@@ -397,6 +458,115 @@ class Activity {
             return $activities;
         } catch (Exception $e) {
             logActivity("Error al obtener actividades del calendario: " . $e->getMessage(), 'ERROR');
+            return [];
+        }
+    }
+    
+    // Calculate and update user rankings
+    public function updateUserRankings() {
+        try {
+            // Get all users with completed activities
+            $stmt = $this->db->prepare("
+                SELECT 
+                    u.id,
+                    COUNT(a.id) as tareas_completadas,
+                    MIN(TIMESTAMPDIFF(MINUTE, a.fecha_creacion, a.hora_evidencia)) as mejor_tiempo_minutos
+                FROM usuarios u
+                LEFT JOIN actividades a ON u.id = a.usuario_id 
+                WHERE a.estado = 'completada' AND a.hora_evidencia IS NOT NULL
+                GROUP BY u.id
+            ");
+            $stmt->execute();
+            $users = $stmt->fetchAll();
+            
+            if (empty($users)) {
+                return;
+            }
+            
+            // Find the best response time for comparison
+            $bestTime = min(array_column($users, 'mejor_tiempo_minutos'));
+            
+            // Calculate rankings
+            foreach ($users as $user) {
+                $puntosTareas = $user['tareas_completadas'] * 200; // 200 points per completed task
+                
+                // Calculate time points (800 for best time, decreasing for others)
+                $puntostiempo = 0;
+                if ($user['mejor_tiempo_minutos'] == $bestTime) {
+                    $puntostiempo = 800;
+                } else {
+                    // Each position away from best time reduces points
+                    $positionPenalty = 0;
+                    foreach ($users as $otherUser) {
+                        if ($otherUser['mejor_tiempo_minutos'] < $user['mejor_tiempo_minutos']) {
+                            $positionPenalty++;
+                        }
+                    }
+                    $puntostiempo = 800 - $positionPenalty;
+                    // Allow negative values as specified
+                }
+                
+                $puntosTotal = $puntosTareas + $puntostiempo;
+                
+                // Update user ranking
+                $updateStmt = $this->db->prepare("
+                    UPDATE usuarios 
+                    SET ranking_puntos = ? 
+                    WHERE id = ?
+                ");
+                $updateStmt->execute([$puntosTotal, $user['id']]);
+            }
+            
+            logActivity("Rankings actualizados para " . count($users) . " usuarios");
+        } catch (Exception $e) {
+            logActivity("Error al actualizar rankings: " . $e->getMessage(), 'ERROR');
+        }
+    }
+    
+    // Get ranking data
+    public function getUserRanking($limit = 10) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT 
+                    u.nombre_completo,
+                    u.ranking_puntos,
+                    COUNT(a.id) as actividades_completadas,
+                    MIN(TIMESTAMPDIFF(MINUTE, a.fecha_creacion, a.hora_evidencia)) as mejor_tiempo_minutos
+                FROM usuarios u
+                LEFT JOIN actividades a ON u.id = a.usuario_id AND a.estado = 'completada'
+                WHERE u.estado = 'activo'
+                GROUP BY u.id, u.nombre_completo, u.ranking_puntos
+                ORDER BY u.ranking_puntos DESC
+                LIMIT ?
+            ");
+            $stmt->execute([$limit]);
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            logActivity("Error al obtener ranking: " . $e->getMessage(), 'ERROR');
+            return [];
+        }
+    }
+    
+    // Get pending tasks for a user
+    public function getPendingTasks($userId) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT 
+                    a.*,
+                    s.nombre_completo as solicitante_nombre,
+                    ta.nombre as tipo_nombre
+                FROM actividades a
+                JOIN usuarios s ON a.solicitante_id = s.id
+                JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id
+                WHERE a.tarea_pendiente = 1 
+                AND a.usuario_id != a.solicitante_id
+                AND a.estado != 'completada'
+                ORDER BY a.fecha_creacion DESC
+            ");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            logActivity("Error al obtener tareas pendientes: " . $e->getMessage(), 'ERROR');
             return [];
         }
     }
