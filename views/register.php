@@ -89,9 +89,9 @@
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label for="foto_perfil" class="form-label">Foto de Perfil *</label>
+                                    <label for="foto_perfil" class="form-label">Foto de Perfil</label>
                                     <input type="file" class="form-control" id="foto_perfil" name="foto_perfil" 
-                                           accept="image/*" required onchange="previewImage(this)">
+                                           accept="image/*" onchange="previewImage(this)">
                                     <div class="mt-2 text-center">
                                         <img id="preview" class="foto-preview" style="display: none;" alt="Vista previa">
                                     </div>
@@ -102,13 +102,13 @@
                                     <label for="password" class="form-label">Contraseña *</label>
                                     <input type="password" class="form-control" id="password" name="password" required>
                                     <div class="form-text">
-                                        Mínimo 8 caracteres, debe incluir al menos un número O una mayúscula.
+                                        Mínimo 6 caracteres.
                                     </div>
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label for="direccion" class="form-label">Dirección *</label>
-                                    <textarea class="form-control" id="direccion" name="direccion" rows="2" required><?= htmlspecialchars($_SESSION['form_data']['direccion'] ?? '') ?></textarea>
+                                    <label for="direccion" class="form-label">Dirección</label>
+                                    <textarea class="form-control" id="direccion" name="direccion" rows="2"><?= htmlspecialchars($_SESSION['form_data']['direccion'] ?? '') ?></textarea>
                                 </div>
                                 
                                 <div class="mb-3">

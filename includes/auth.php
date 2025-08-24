@@ -152,11 +152,7 @@ class Auth {
         }
         
         if (empty($data['password']) || !isStrongPassword($data['password'])) {
-            $errors[] = 'La contraseña debe tener al menos 8 caracteres, incluyendo al menos un número O una mayúscula';
-        }
-        
-        if (empty($data['direccion'])) {
-            $errors[] = 'La dirección es obligatoria';
+            $errors[] = 'La contraseña debe tener al menos 6 caracteres';
         }
         
         if (!in_array($data['rol'], ['Líder', 'Activista'])) {
