@@ -152,8 +152,6 @@
                                             <th>Tipo</th>
                                             <th>Fecha</th>
                                             <th>Estado</th>
-                                            <th>Alcance</th>
-                                            <th>Lugar</th>
                                             <th>Acciones</th>
                                         </tr>
                                     </thead>
@@ -184,8 +182,6 @@
                                                     <?= ucfirst(str_replace('_', ' ', $activity['estado'])) ?>
                                                 </span>
                                             </td>
-                                            <td><?= number_format($activity['alcance_estimado']) ?></td>
-                                            <td><?= htmlspecialchars($activity['lugar'] ?? 'N/A') ?></td>
                                             <td>
                                                 <div class="btn-group btn-group-sm" role="group">
                                                     <a href="<?= url('activities/detail.php?id=' . $activity['id']) ?>" 
