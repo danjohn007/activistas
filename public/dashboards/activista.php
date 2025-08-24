@@ -60,12 +60,7 @@ $controller->activistaDashboard();
                         </li>
                         <li class="nav-item mb-2">
                             <a class="nav-link text-white" href="<?= url('tasks/') ?>">
-                                <i class="fas fa-clipboard-list me-2"></i>Tareas Pendientes
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= url('ranking/') ?>">
-                                <i class="fas fa-trophy me-2"></i>Ranking
+                                <i class="fas fa-clipboard-list me-2"></i>Tareas
                             </a>
                         </li>
                         <li class="nav-item mb-2">

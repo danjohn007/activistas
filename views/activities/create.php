@@ -183,6 +183,35 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Auto-llenar descripción cuando se selecciona un tipo de actividad
+        document.getElementById('tipo_actividad_id').addEventListener('change', function() {
+            const typeId = this.value;
+            const descripcionField = document.getElementById('descripcion');
+            
+            if (typeId) {
+                // Hacer petición AJAX para obtener la descripción del tipo
+                fetch('<?= url('activity-types/api.php') ?>?id=' + typeId, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.descripcion) {
+                        // Solo llenar si el campo está vacío o preguntarle al usuario
+                        if (!descripcionField.value.trim() || 
+                            confirm('¿Desea cargar la descripción del tipo de actividad seleccionado? Esto reemplazará el contenido actual.')) {
+                            descripcionField.value = data.descripcion;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.log('Error al cargar descripción del tipo:', error);
+                });
+            }
+        });
+        
         // Limpiar datos del formulario después de mostrar
         <?php unset($_SESSION['form_data']); ?>
     </script>

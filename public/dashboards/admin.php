@@ -227,7 +227,12 @@ try {
                         </li>
                         <li class="nav-item mb-2">
                             <a class="nav-link text-white" href="<?= url('ranking/') ?>">
-                                <i class="fas fa-trophy me-2"></i>Ranking General
+                                <i class="fas fa-trophy me-2"></i>Ranking
+                            </a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link text-white" href="<?= url('activity-types/') ?>">
+                                <i class="fas fa-list me-2"></i>Tipos de Actividad
                             </a>
                         </li>
                         <li class="nav-item mb-2">
@@ -558,23 +563,6 @@ try {
                     </div>
                 </div>
 
-                <!-- Sistema funcional básico implementado -->
-                <div class="alert alert-success">
-                    <h5><i class="fas fa-check-circle me-2"></i>Dashboard SuperAdmin - Solución Implementada</h5>
-                    <p class="mb-2">
-                        <strong>✅ Problema Resuelto:</strong> Las gráficas del dashboard ahora muestran datos reales de la base de datos en tiempo real.
-                    </p>
-                    <ul class="mb-2">
-                        <li><strong>Actividades por Tipo:</strong> Datos reales desde la tabla de actividades</li>
-                        <li><strong>Usuarios por Rol:</strong> Estadísticas actuales de usuarios registrados</li>
-                        <li><strong>Actividades por Mes:</strong> Tendencia de actividades de los últimos 12 meses</li>
-                        <li><strong>Ranking de Equipos:</strong> Top equipos por actividades completadas</li>
-                    </ul>
-                    <small class="text-muted">
-                        <strong>Mejoras implementadas:</strong> Inicialización correcta de Chart.js, manejo de errores mejorado, 
-                        actualización en tiempo real, y validación DOM antes de renderizar gráficas.
-                    </small>
-                </div>
             </main>
         </div>
     </div>

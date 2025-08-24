@@ -129,8 +129,8 @@ try {
                             </a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= function_exists('url') ? url('ranking/') : '../ranking/' ?>">
-                                <i class="fas fa-trophy me-2"></i>Ranking del Equipo
+                            <a class="nav-link text-white" href="<?= function_exists('url') ? url('tasks/') : '../tasks/' ?>">
+                                <i class="fas fa-clipboard-list me-2"></i>Tareas
                             </a>
                         </li>
                         <li class="nav-item mb-2">
