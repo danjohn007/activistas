@@ -198,7 +198,21 @@ class UserController {
             'nombre_completo' => cleanInput($_POST['nombre_completo'] ?? ''),
             'telefono' => cleanInput($_POST['telefono'] ?? ''),
             'direccion' => cleanInput($_POST['direccion'] ?? ''),
+            'facebook' => cleanInput($_POST['facebook'] ?? ''),
+            'instagram' => cleanInput($_POST['instagram'] ?? ''),
+            'tiktok' => cleanInput($_POST['tiktok'] ?? ''),
+            'x' => cleanInput($_POST['x'] ?? ''),
+            'cuenta_pago' => cleanInput($_POST['cuenta_pago'] ?? ''),
         ];
+        
+        // Validar URLs de redes sociales
+        $socialMediaFields = ['facebook', 'instagram', 'tiktok', 'x'];
+        foreach ($socialMediaFields as $field) {
+            if (!empty($updateData[$field]) && !isValidUrl($updateData[$field])) {
+                redirectWithMessage("admin/edit_user.php?id=$userId", "URL de $field no válida", 'error');
+                return;
+            }
+        }
         
         if (!empty($_POST['lider_id'])) {
             $updateData['lider_id'] = intval($_POST['lider_id']);
@@ -274,7 +288,21 @@ class UserController {
             'nombre_completo' => cleanInput($_POST['nombre_completo'] ?? ''),
             'telefono' => cleanInput($_POST['telefono'] ?? ''),
             'direccion' => cleanInput($_POST['direccion'] ?? ''),
+            'facebook' => cleanInput($_POST['facebook'] ?? ''),
+            'instagram' => cleanInput($_POST['instagram'] ?? ''),
+            'tiktok' => cleanInput($_POST['tiktok'] ?? ''),
+            'x' => cleanInput($_POST['x'] ?? ''),
+            'cuenta_pago' => cleanInput($_POST['cuenta_pago'] ?? ''),
         ];
+        
+        // Validar URLs de redes sociales
+        $socialMediaFields = ['facebook', 'instagram', 'tiktok', 'x'];
+        foreach ($socialMediaFields as $field) {
+            if (!empty($updateData[$field]) && !isValidUrl($updateData[$field])) {
+                redirectWithMessage('profile.php', "URL de $field no válida", 'error');
+                return;
+            }
+        }
         
         // Procesar nueva foto de perfil si se subió
         if (isset($_FILES['foto_perfil']) && $_FILES['foto_perfil']['error'] === UPLOAD_ERR_OK) {
