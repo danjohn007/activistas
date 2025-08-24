@@ -559,11 +559,12 @@ class Activity {
                 JOIN usuarios s ON a.solicitante_id = s.id
                 JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id
                 WHERE a.tarea_pendiente = 1 
+                AND a.usuario_id = ?
                 AND a.usuario_id != a.solicitante_id
                 AND a.estado != 'completada'
                 ORDER BY a.fecha_creacion DESC
             ");
-            $stmt->execute();
+            $stmt->execute([$userId]);
             return $stmt->fetchAll();
         } catch (Exception $e) {
             logActivity("Error al obtener tareas pendientes: " . $e->getMessage(), 'ERROR');
