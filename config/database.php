@@ -8,7 +8,7 @@ class Database {
     private $host = 'localhost';
     private $db_name = 'ejercito_activistas';
     private $username = 'ejercito_activistas';
-    private $password = 'Danjohn00!7';
+    private $password = 'Danjohn007!';
     private $charset = 'utf8mb4';
     private $conn;
 
