@@ -82,9 +82,9 @@ class ActivityController {
         $recipients = [];
         $shouldCreateForRecipients = false;
         
-        if ($currentUser['rol'] === 'SuperAdmin' && !empty($_POST['destinatario_lider'])) {
-            // SuperAdmin selected a leader as recipient
-            $recipients = [intval($_POST['destinatario_lider'])];
+        if ($currentUser['rol'] === 'SuperAdmin' && !empty($_POST['destinatarios_lideres'])) {
+            // SuperAdmin selected leaders as recipients
+            $recipients = array_map('intval', $_POST['destinatarios_lideres']);
             $shouldCreateForRecipients = true;
         } elseif ($currentUser['rol'] === 'Líder' && !empty($_POST['destinatarios_activistas'])) {
             // Leader selected activists as recipients
