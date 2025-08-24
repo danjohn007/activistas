@@ -36,8 +36,14 @@ class Activity {
             $tarea_pendiente = 0;
             $solicitante_id = null;
             
-            // If created by SuperAdmin or Líder, mark as pending task for others
-            if (isset($data['user_role']) && in_array($data['user_role'], ['SuperAdmin', 'Líder'])) {
+            // If created by SuperAdmin or Líder and has a solicitante_id, mark as pending task
+            if (isset($data['user_role']) && in_array($data['user_role'], ['SuperAdmin', 'Líder']) 
+                && isset($data['solicitante_id'])) {
+                $tarea_pendiente = 1;
+                $solicitante_id = $data['solicitante_id'];
+            }
+            // If created by SuperAdmin or Líder for themselves, also mark as pending task for others
+            elseif (isset($data['user_role']) && in_array($data['user_role'], ['SuperAdmin', 'Líder'])) {
                 $tarea_pendiente = 1;
                 $solicitante_id = $data['usuario_id'];
             }

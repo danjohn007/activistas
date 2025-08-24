@@ -129,46 +129,21 @@
                                 <div class="form-text">Describe brevemente los objetivos y detalles de la actividad.</div>
                             </div>
 
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="fecha_actividad" class="form-label">Fecha de la Actividad *</label>
-                                        <input type="date" class="form-control" id="fecha_actividad" name="fecha_actividad" 
-                                               value="<?= date('Y-m-d', strtotime($activity['fecha_actividad'])) ?>" 
-                                               required>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="alcance_estimado" class="form-label">Alcance Estimado (personas)</label>
-                                        <input type="number" class="form-control" id="alcance_estimado" name="alcance_estimado" 
-                                               value="<?= htmlspecialchars($activity['alcance_estimado']) ?>" 
-                                               min="0" max="999999">
-                                        <div class="form-text">Número estimado de personas a las que llegará la actividad.</div>
-                                    </div>
-                                </div>
+                            <div class="mb-3">
+                                <label for="fecha_actividad" class="form-label">Fecha de la Actividad *</label>
+                                <input type="date" class="form-control" id="fecha_actividad" name="fecha_actividad" 
+                                       value="<?= date('Y-m-d', strtotime($activity['fecha_actividad'])) ?>" 
+                                       required>
                             </div>
 
-                            <div class="row">
-                                <div class="col-md-8">
-                                    <div class="mb-3">
-                                        <label for="lugar" class="form-label">Lugar</label>
-                                        <input type="text" class="form-control" id="lugar" name="lugar" 
-                                               value="<?= htmlspecialchars($activity['lugar'] ?? '') ?>" 
-                                               maxlength="255" placeholder="Dirección, ciudad o plataforma digital">
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="mb-3">
-                                        <label for="estado" class="form-label">Estado</label>
-                                        <select class="form-select" id="estado" name="estado">
-                                            <option value="programada" <?= $activity['estado'] === 'programada' ? 'selected' : '' ?>>Programada</option>
-                                            <option value="en_progreso" <?= $activity['estado'] === 'en_progreso' ? 'selected' : '' ?>>En Progreso</option>
-                                            <option value="completada" <?= $activity['estado'] === 'completada' ? 'selected' : '' ?>>Completada</option>
-                                            <option value="cancelada" <?= $activity['estado'] === 'cancelada' ? 'selected' : '' ?>>Cancelada</option>
-                                        </select>
-                                    </div>
-                                </div>
+                            <div class="mb-3">
+                                <label for="estado" class="form-label">Estado</label>
+                                <select class="form-select" id="estado" name="estado">
+                                    <option value="programada" <?= $activity['estado'] === 'programada' ? 'selected' : '' ?>>Programada</option>
+                                    <option value="en_progreso" <?= $activity['estado'] === 'en_progreso' ? 'selected' : '' ?>>En Progreso</option>
+                                    <option value="completada" <?= $activity['estado'] === 'completada' ? 'selected' : '' ?>>Completada</option>
+                                    <option value="cancelada" <?= $activity['estado'] === 'cancelada' ? 'selected' : '' ?>>Cancelada</option>
+                                </select>
                             </div>
 
                             <div class="mb-3">
