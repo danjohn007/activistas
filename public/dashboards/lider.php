@@ -129,6 +129,11 @@ try {
                             </a>
                         </li>
                         <li class="nav-item mb-2">
+                            <a class="nav-link text-white" href="<?= function_exists('url') ? url('ranking/') : '../ranking/' ?>">
+                                <i class="fas fa-trophy me-2"></i>Ranking del Equipo
+                            </a>
+                        </li>
+                        <li class="nav-item mb-2">
                             <a class="nav-link text-white" href="<?= function_exists('url') ? url('profile.php') : '../profile.php' ?>">
                                 <i class="fas fa-user me-2"></i>Mi Perfil
                             </a>
