@@ -36,14 +36,14 @@ class Activity {
             $tarea_pendiente = 0;
             $solicitante_id = null;
             
-            // If created by SuperAdmin or Líder and has a solicitante_id, mark as pending task
-            if (isset($data['user_role']) && in_array($data['user_role'], ['SuperAdmin', 'Líder']) 
+            // If created by SuperAdmin, Gestor or Líder and has a solicitante_id, mark as pending task
+            if (isset($data['user_role']) && in_array($data['user_role'], ['SuperAdmin', 'Gestor', 'Líder']) 
                 && isset($data['solicitante_id'])) {
                 $tarea_pendiente = 1;
                 $solicitante_id = $data['solicitante_id'];
             }
-            // If created by SuperAdmin or Líder for themselves, also mark as pending task for others
-            elseif (isset($data['user_role']) && in_array($data['user_role'], ['SuperAdmin', 'Líder'])) {
+            // If created by SuperAdmin, Gestor or Líder for themselves, also mark as pending task for others
+            elseif (isset($data['user_role']) && in_array($data['user_role'], ['SuperAdmin', 'Gestor', 'Líder'])) {
                 $tarea_pendiente = 1;
                 $solicitante_id = $data['usuario_id'];
             }
@@ -180,11 +180,6 @@ class Activity {
             if (isset($data['lugar'])) {
                 $fields[] = "lugar = ?";
                 $params[] = $data['lugar'];
-            }
-            
-            if (isset($data['alcance_estimado'])) {
-                $fields[] = "alcance_estimado = ?";
-                $params[] = $data['alcance_estimado'];
             }
             
             if (isset($data['estado'])) {
@@ -327,8 +322,7 @@ class Activity {
                         COUNT(*) as total_actividades,
                         COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) as completadas,
                         COUNT(CASE WHEN a.estado = 'en_progreso' THEN 1 END) as en_progreso,
-                        COUNT(CASE WHEN a.estado = 'programada' THEN 1 END) as programadas,
-                        SUM(a.alcance_estimado) as alcance_total
+                        COUNT(CASE WHEN a.estado = 'programada' THEN 1 END) as programadas
                     FROM actividades a
                     JOIN usuarios u ON a.usuario_id = u.id
                     WHERE 1=1";

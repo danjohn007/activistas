@@ -1,0 +1,165 @@
+<?php
+/**
+ * Sidebar Component - Menú lateral estático para todos los perfiles
+ * Este archivo genera el menú lateral completo según el rol del usuario
+ */
+
+function renderSidebar($currentPage = '') {
+    if (!isset($_SESSION['user_role'])) {
+        return;
+    }
+    
+    $userRole = $_SESSION['user_role'];
+    $userName = $_SESSION['user_name'] ?? 'Usuario';
+    
+    // Configuración de roles
+    $roleConfig = [
+        'SuperAdmin' => [
+            'title' => 'SuperAdmin',
+            'icon' => 'fas fa-crown',
+            'gradient' => 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        ],
+        'Gestor' => [
+            'title' => 'Gestor', 
+            'icon' => 'fas fa-user-tie',
+            'gradient' => 'linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%)'
+        ],
+        'Líder' => [
+            'title' => 'Líder',
+            'icon' => 'fas fa-users-cog', 
+            'gradient' => 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        ],
+        'Activista' => [
+            'title' => 'Activista',
+            'icon' => 'fas fa-user',
+            'gradient' => 'linear-gradient(135deg, #28a745 0%, #20c997 100%)'
+        ]
+    ];
+    
+    $config = $roleConfig[$userRole] ?? $roleConfig['Activista'];
+    
+    // Menu items por rol
+    $menuItems = [];
+    
+    // Items comunes para todos
+    $menuItems[] = [
+        'url' => getDashboardUrl($userRole),
+        'icon' => 'fas fa-tachometer-alt',
+        'text' => 'Dashboard',
+        'active' => ($currentPage === 'dashboard')
+    ];
+    
+    // Items específicos por rol
+    if (in_array($userRole, ['SuperAdmin', 'Gestor'])) {
+        $menuItems[] = [
+            'url' => url('admin/users.php'),
+            'icon' => 'fas fa-users',
+            'text' => 'Gestión de Usuarios',
+            'active' => ($currentPage === 'users')
+        ];
+        
+        $menuItems[] = [
+            'url' => url('admin/pending_users.php'),
+            'icon' => 'fas fa-user-clock',
+            'text' => 'Usuarios Pendientes',
+            'active' => ($currentPage === 'pending_users'),
+            'badge' => getPendingUsersCount()
+        ];
+    }
+    
+    // Activities - texto específico por rol
+    $activitiesText = 'Mis Actividades';
+    if ($userRole === 'Líder') {
+        $activitiesText = 'Actividades del Equipo';
+    } elseif (in_array($userRole, ['SuperAdmin', 'Gestor'])) {
+        $activitiesText = 'Actividades';
+    }
+    
+    $menuItems[] = [
+        'url' => url('activities/'),
+        'icon' => 'fas fa-tasks',
+        'text' => $activitiesText,
+        'active' => ($currentPage === 'activities')
+    ];
+    
+    $menuItems[] = [
+        'url' => url('activities/create.php'),
+        'icon' => 'fas fa-plus',
+        'text' => 'Nueva Actividad',
+        'active' => ($currentPage === 'create_activity')
+    ];
+    
+    // Tasks para activistas y líderes
+    if (in_array($userRole, ['Activista', 'Líder'])) {
+        $menuItems[] = [
+            'url' => url('tasks/'),
+            'icon' => 'fas fa-clipboard-list',
+            'text' => 'Tareas',
+            'active' => ($currentPage === 'tasks')
+        ];
+    }
+    
+    // Ranking para admin y gestor
+    if (in_array($userRole, ['SuperAdmin', 'Gestor'])) {
+        $menuItems[] = [
+            'url' => url('ranking/'),
+            'icon' => 'fas fa-trophy',
+            'text' => $userRole === 'SuperAdmin' ? 'Ranking' : 'Ranking General',
+            'active' => ($currentPage === 'ranking')
+        ];
+    }
+    
+    // Items comunes finales
+    $menuItems[] = [
+        'url' => url('profile.php'),
+        'icon' => 'fas fa-user',
+        'text' => 'Mi Perfil',
+        'active' => ($currentPage === 'profile')
+    ];
+    
+    $menuItems[] = [
+        'url' => url('logout.php'),
+        'icon' => 'fas fa-sign-out-alt',
+        'text' => 'Cerrar Sesión',
+        'active' => false
+    ];
+    
+    // Generar HTML
+    echo '<nav class="col-md-2 d-none d-md-block sidebar" style="background: ' . $config['gradient'] . ';">';
+    echo '<div class="position-sticky pt-3">';
+    echo '<div class="text-center text-white mb-4">';
+    echo '<h4><i class="' . $config['icon'] . ' me-2"></i>' . $config['title'] . '</h4>';
+    echo '<small>' . htmlspecialchars($userName) . '</small>';
+    echo '</div>';
+    
+    echo '<ul class="nav flex-column">';
+    
+    foreach ($menuItems as $item) {
+        $activeClass = $item['active'] ? ' active' : '';
+        $isLast = $item === end($menuItems);
+        $mbClass = $isLast ? '' : ' mb-2';
+        
+        echo '<li class="nav-item' . $mbClass . '">';
+        echo '<a class="nav-link text-white' . $activeClass . '" href="' . $item['url'] . '">';
+        echo '<i class="' . $item['icon'] . ' me-2"></i>' . $item['text'];
+        
+        if (isset($item['badge']) && $item['badge'] > 0) {
+            echo '<span class="badge bg-warning text-dark">' . $item['badge'] . '</span>';
+        }
+        
+        echo '</a>';
+        echo '</li>';
+    }
+    
+    echo '</ul>';
+    echo '</div>';
+    echo '</nav>';
+}
+
+function getPendingUsersCount() {
+    if (isset($GLOBALS['pendingUsers']) && is_array($GLOBALS['pendingUsers'])) {
+        return count($GLOBALS['pendingUsers']);
+    }
+    return 0;
+}
+?>

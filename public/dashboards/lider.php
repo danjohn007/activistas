@@ -173,7 +173,6 @@ try {
                     <?php 
                     $totalTeamActivities = isset($teamStats['total_actividades']) ? $teamStats['total_actividades'] : 0;
                     $completedTeamActivities = isset($teamStats['completadas']) ? $teamStats['completadas'] : 0;
-                    $teamReach = isset($teamStats['alcance_total']) ? $teamStats['alcance_total'] : 0;
                     $teamSize = is_array($teamMembers) ? count($teamMembers) : 0;
                     ?>
                     
@@ -232,16 +231,16 @@ try {
                     </div>
                     
                     <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card bg-warning text-white card-stats">
+                        <div class="card bg-info text-white card-stats">
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col">
-                                        <h5 class="card-title text-uppercase text-white-50 mb-0">Alcance Total</h5>
-                                        <span class="h2 font-weight-bold mb-0"><?= number_format($teamReach) ?></span>
+                                        <h5 class="card-title text-uppercase text-white-50 mb-0">% Atención</h5>
+                                        <span class="h2 font-weight-bold mb-0"><?= $totalTeamActivities > 0 ? number_format(($completedTeamActivities / $totalTeamActivities) * 100, 1) : '0.0' ?>%</span>
                                     </div>
                                     <div class="col-auto">
                                         <div class="icon text-white-50">
-                                            <i class="fas fa-chart-line fa-2x"></i>
+                                            <i class="fas fa-percentage fa-2x"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -267,7 +266,6 @@ try {
                                                     <th>Actividades</th>
                                                     <th>Completadas</th>
                                                     <th>Evidencias</th>
-                                                    <th>Alcance</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -281,7 +279,6 @@ try {
                                                             </span>
                                                         </td>
                                                         <td><?= number_format($member['evidencias'] ?? 0) ?></td>
-                                                        <td><?= number_format($member['alcance_total'] ?? 0) ?></td>
                                                     </tr>
                                                 <?php endforeach; ?>
                                             </tbody>

@@ -7,10 +7,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        .sidebar {
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
         .card-activity {
             transition: transform 0.2s;
         }
@@ -23,42 +19,10 @@
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <nav class="col-md-2 d-none d-md-block sidebar">
-                <div class="position-sticky pt-3">
-                    <div class="text-center text-white mb-4">
-                        <h4><i class="fas fa-tasks me-2"></i>Actividades</h4>
-                        <small><?= htmlspecialchars($currentUser['rol']) ?></small>
-                    </div>
-                    
-                    <ul class="nav flex-column">
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= url('dashboards/' . strtolower($currentUser['rol']) . '.php') ?>">
-                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white active" href="<?= url('activities/') ?>">
-                                <i class="fas fa-tasks me-2"></i>Mis Actividades
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= url('activities/create.php') ?>">
-                                <i class="fas fa-plus me-2"></i>Nueva Actividad
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= url('profile.php') ?>">
-                                <i class="fas fa-user me-2"></i>Mi Perfil
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white" href="<?= url('logout.php') ?>">
-                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
+            <?php 
+            require_once __DIR__ . '/../../includes/sidebar.php';
+            renderSidebar('activities'); 
+            ?>
 
             <!-- Contenido principal -->
             <main class="col-md-10 ms-sm-auto px-md-4">
