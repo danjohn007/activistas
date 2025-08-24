@@ -100,7 +100,7 @@ class ActivityTypeController {
         ];
         
         // Validar datos
-        $errors = $this->validateActivityTypeData($data);
+        $errors = $this->validateActivityTypeData($data, $id);
         if (!empty($errors)) {
             $_SESSION['form_errors'] = $errors;
             $_SESSION['form_data'] = $_POST;
@@ -161,7 +161,7 @@ class ActivityTypeController {
     }
     
     // Validar datos del tipo de actividad
-    private function validateActivityTypeData($data) {
+    private function validateActivityTypeData($data, $excludeId = null) {
         $errors = [];
         
         if (empty($data['nombre'])) {
@@ -177,7 +177,7 @@ class ActivityTypeController {
         // Verificar si el nombre ya existe (excluyendo el actual en caso de edición)
         if (!empty($data['nombre'])) {
             $existing = $this->activityTypeModel->getActivityTypeByName($data['nombre']);
-            if ($existing && (empty($data['id']) || $existing['id'] != $data['id'])) {
+            if ($existing && (!$excludeId || $existing['id'] != $excludeId)) {
                 $errors[] = 'Ya existe un tipo de actividad con ese nombre';
             }
         }

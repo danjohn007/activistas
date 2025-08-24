@@ -264,8 +264,8 @@ class User {
         try {
             $sql = "SELECT u.*, l.nombre_completo as lider_nombre FROM usuarios u 
                     LEFT JOIN usuarios l ON u.lider_id = l.id 
-                    WHERE (u.nombre_completo LIKE ? OR u.email LIKE ?)";
-            $params = ["%$query%", "%$query%"];
+                    WHERE (u.nombre_completo LIKE ? OR u.email LIKE ? OR u.telefono LIKE ?)";
+            $params = ["%$query%", "%$query%", "%$query%"];
             
             if (!empty($filters['rol'])) {
                 $sql .= " AND u.rol = ?";
