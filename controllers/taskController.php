@@ -24,11 +24,8 @@ class TaskController {
         
         $currentUser = $this->auth->getCurrentUser();
         
-        // Activistas y Líderes pueden ver tareas pendientes asignadas a ellos
-        if (!in_array($currentUser['rol'], ['Activista', 'Líder'])) {
-            redirectWithMessage('dashboards/' . strtolower($currentUser['rol']) . '.php', 
-                'Solo los activistas y líderes pueden ver tareas pendientes', 'error');
-        }
+        // All authenticated users can view and manage their pending tasks
+        // Removed role restriction to allow all users to see their tasks
         
         // Obtener tareas pendientes para el usuario actual
         $pendingTasks = $this->activityModel->getPendingTasks($currentUser['id']);
@@ -42,9 +39,8 @@ class TaskController {
         
         $currentUser = $this->auth->getCurrentUser();
         
-        if (!in_array($currentUser['rol'], ['Activista', 'Líder'])) {
-            redirectWithMessage('tasks/', 'Solo los activistas y líderes pueden completar tareas', 'error');
-        }
+        // All authenticated users can complete tasks independently
+        // Removed role restriction to allow all users to complete tasks
         
         // Verificar que la tarea existe y pertenece al usuario
         $task = $this->activityModel->getActivityById($taskId);
@@ -79,9 +75,8 @@ class TaskController {
         
         $currentUser = $this->auth->getCurrentUser();
         
-        if (!in_array($currentUser['rol'], ['Activista', 'Líder'])) {
-            redirectWithMessage('tasks/', 'Solo los activistas y líderes pueden completar tareas', 'error');
-        }
+        // All authenticated users can complete tasks independently
+        // Removed role restriction to allow all users to complete tasks
         
         // Verificar que la tarea existe y pertenece al usuario
         $task = $this->activityModel->getActivityById($taskId);
