@@ -41,8 +41,8 @@ function isValidEmail($email) {
 
 // Verificar fortaleza de contraseña
 function isStrongPassword($password) {
-    // Mínimo 8 caracteres, al menos un número O una mayúscula
-    return strlen($password) >= 8 && (preg_match('/[A-Z]/', $password) || preg_match('/\d/', $password));
+    // Mínimo 6 caracteres
+    return strlen($password) >= 6;
 }
 
 // Generar token aleatorio
