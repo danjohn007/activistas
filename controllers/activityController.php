@@ -80,16 +80,15 @@ class ActivityController {
         
         $activityData = [
             'usuario_id' => $currentUser['id'],
+            'user_role' => $currentUser['rol'], // Add user role for pending task logic
             'tipo_actividad_id' => intval($_POST['tipo_actividad_id'] ?? 0),
             'titulo' => cleanInput($_POST['titulo'] ?? ''),
             'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
-            'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? ''),
-            'lugar' => cleanInput($_POST['lugar'] ?? ''),
-            'alcance_estimado' => intval($_POST['alcance_estimado'] ?? 0)
+            'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? '')
         ];
         
         // Validar datos
-        $errors = $this->validateActivityData($activityData);
+        $errors = $this->validateActivityData($activityData, $currentUser['rol']);
         if (!empty($errors)) {
             $_SESSION['form_errors'] = $errors;
             $_SESSION['form_data'] = $_POST;
@@ -262,7 +261,7 @@ class ActivityController {
     }
     
     // Validar datos de actividad
-    private function validateActivityData($data) {
+    private function validateActivityData($data, $userRole = null) {
         $errors = [];
         
         if (empty($data['titulo'])) {
@@ -279,7 +278,8 @@ class ActivityController {
             $errors[] = 'Formato de fecha inválido';
         }
         
-        if ($data['alcance_estimado'] < 0) {
+        // Only validate alcance_estimado for SuperAdmin and Gestor roles
+        if (in_array($userRole, ['SuperAdmin', 'Gestor']) && isset($data['alcance_estimado']) && $data['alcance_estimado'] < 0) {
             $errors[] = 'El alcance estimado no puede ser negativo';
         }
         

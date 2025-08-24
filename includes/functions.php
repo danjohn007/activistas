@@ -110,7 +110,7 @@ function getFlashMessage() {
 }
 
 // Subir archivo
-function uploadFile($file, $uploadDir, $allowedTypes = ['jpg', 'jpeg', 'png', 'gif']) {
+function uploadFile($file, $uploadDir, $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'], $isProfile = false) {
     if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
         return ['success' => false, 'error' => 'Error al subir el archivo'];
     }
@@ -122,9 +122,11 @@ function uploadFile($file, $uploadDir, $allowedTypes = ['jpg', 'jpeg', 'png', 'g
         return ['success' => false, 'error' => 'Tipo de archivo no permitido'];
     }
     
-    // Verificar tamaño (5MB máximo)
-    if ($file['size'] > 5242880) {
-        return ['success' => false, 'error' => 'El archivo es demasiado grande'];
+    // Verificar tamaño - 20MB para perfiles, 5MB para otros archivos
+    $maxSize = $isProfile ? 20971520 : 5242880; // 20MB : 5MB
+    if ($file['size'] > $maxSize) {
+        $maxSizeMB = $isProfile ? '20MB' : '5MB';
+        return ['success' => false, 'error' => "El archivo es demasiado grande. Máximo permitido: $maxSizeMB"];
     }
     
     $fileName = uniqid() . '.' . $extension;

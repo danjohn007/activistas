@@ -17,3 +17,7 @@ Thumbs.db
 *.bak
 *.backup
 *.sql.bak
+
+# Ignorar archivos de demo y pruebas
+demo_*.html
+test_*.php

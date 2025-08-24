@@ -137,6 +137,7 @@
                                                required>
                                     </div>
                                 </div>
+                                <?php if (in_array($_SESSION['user_role'] ?? '', ['SuperAdmin', 'Gestor'])): ?>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="alcance_estimado" class="form-label">Alcance Estimado (personas)</label>
@@ -146,14 +147,17 @@
                                         <div class="form-text">Número estimado de personas a las que llegará la actividad.</div>
                                     </div>
                                 </div>
+                                <?php endif; ?>
                             </div>
 
+                            <?php if (in_array($_SESSION['user_role'] ?? '', ['SuperAdmin', 'Gestor'])): ?>
                             <div class="mb-3">
                                 <label for="lugar" class="form-label">Lugar</label>
                                 <input type="text" class="form-control" id="lugar" name="lugar" 
                                        value="<?= htmlspecialchars($_SESSION['form_data']['lugar'] ?? '') ?>" 
                                        maxlength="255" placeholder="Dirección, ciudad o plataforma digital">
                             </div>
+                            <?php endif; ?>
 
                             <div class="mb-3">
                                 <label for="evidence_files" class="form-label">Evidencias (opcional)</label>
