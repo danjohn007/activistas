@@ -12,6 +12,7 @@ ini_set('log_errors', 1);
 try {
     // Cargar dependencias
     require_once __DIR__ . '/../../controllers/dashboardController.php';
+    require_once __DIR__ . '/../../includes/functions.php';
     
     // Asegurar que la sesión esté iniciada
     if (session_status() == PHP_SESSION_NONE) {
@@ -105,47 +106,10 @@ try {
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <nav class="col-md-2 d-none d-md-block sidebar">
-                <div class="position-sticky pt-3">
-                    <div class="text-center text-white mb-4">
-                        <h4><i class="fas fa-users-cog me-2"></i>Líder</h4>
-                        <small><?= isset($_SESSION['user_name']) ? htmlspecialchars($_SESSION['user_name']) : 'Usuario' ?></small>
-                    </div>
-                    
-                    <ul class="nav flex-column">
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white active" href="<?= function_exists('url') ? url('dashboards/lider.php') : 'lider.php' ?>">
-                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= function_exists('url') ? url('activities/') : '../activities/' ?>">
-                                <i class="fas fa-tasks me-2"></i>Actividades del Equipo
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= function_exists('url') ? url('activities/create.php') : '../activities/create.php' ?>">
-                                <i class="fas fa-plus me-2"></i>Nueva Actividad
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= function_exists('url') ? url('tasks/') : '../tasks/' ?>">
-                                <i class="fas fa-clipboard-list me-2"></i>Tareas
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= function_exists('url') ? url('profile.php') : '../profile.php' ?>">
-                                <i class="fas fa-user me-2"></i>Mi Perfil
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white" href="<?= function_exists('url') ? url('logout.php') : '../logout.php' ?>">
-                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
+            <?php 
+            require_once __DIR__ . '/../../includes/sidebar.php';
+            renderSidebar('dashboard'); 
+            ?>
 
             <!-- Contenido principal -->
             <main class="col-md-10 ms-sm-auto px-md-4">
