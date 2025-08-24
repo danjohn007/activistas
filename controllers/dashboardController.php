@@ -266,8 +266,12 @@ class DashboardController {
             $teammates = $this->userModel->getActivistsOfLeader($currentUser['lider_id']);
         }
         
-        // Variables disponibles para la vista:
-        // $myActivities, $myStats, $recentActivities, $lider, $teammates
+        // Establecer variables globales para la vista
+        $GLOBALS['myActivities'] = $myActivities;
+        $GLOBALS['myStats'] = $myStats;
+        $GLOBALS['recentActivities'] = $recentActivities;
+        $GLOBALS['lider'] = $lider;
+        $GLOBALS['teammates'] = $teammates;
     }
     
     // Obtener datos de actividades mensuales
