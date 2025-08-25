@@ -94,7 +94,7 @@
                                 <label for="search" class="form-label">Buscar</label>
                                 <input type="text" class="form-control" id="search" name="search" 
                                        value="<?= htmlspecialchars($_GET['search'] ?? '') ?>" 
-                                       placeholder="Nombre, correo o teléfono...">
+                                       placeholder="Nombre, correo, teléfono, título actividad...">
                             </div>
                             <div class="col-md-2">
                                 <label for="rol" class="form-label">Rol</label>

@@ -188,6 +188,9 @@
                         
                         <!-- Segundo lugar -->
                         <div class="col-md-4 order-md-1 mb-3">
+                            <?php if ($currentUser['rol'] === 'SuperAdmin'): ?>
+                                <a href="<?= url('admin/edit_user.php?id=' . $rankings[1]['id']) ?>" class="text-decoration-none">
+                            <?php endif; ?>
                             <div class="card ranking-card position-2 text-center">
                                 <div class="card-body">
                                     <div class="position-badge bg-light text-dark mx-auto mb-3">2</div>
@@ -204,10 +207,16 @@
                                     <small class="text-muted"><?= $rankings[1]['actividades_completadas'] ?> tareas</small>
                                 </div>
                             </div>
+                            <?php if ($currentUser['rol'] === 'SuperAdmin'): ?>
+                                </a>
+                            <?php endif; ?>
                         </div>
                         
                         <!-- Primer lugar -->
                         <div class="col-md-4 order-md-2 mb-3">
+                            <?php if ($currentUser['rol'] === 'SuperAdmin'): ?>
+                                <a href="<?= url('admin/edit_user.php?id=' . $rankings[0]['id']) ?>" class="text-decoration-none">
+                            <?php endif; ?>
                             <div class="card ranking-card position-1 text-center">
                                 <div class="card-body">
                                     <i class="fas fa-crown trophy-icon text-warning mb-2"></i>
@@ -225,10 +234,16 @@
                                     <small class="text-muted"><?= $rankings[0]['actividades_completadas'] ?> tareas</small>
                                 </div>
                             </div>
+                            <?php if ($currentUser['rol'] === 'SuperAdmin'): ?>
+                                </a>
+                            <?php endif; ?>
                         </div>
                         
                         <!-- Tercer lugar -->
                         <div class="col-md-4 order-md-3 mb-3">
+                            <?php if ($currentUser['rol'] === 'SuperAdmin'): ?>
+                                <a href="<?= url('admin/edit_user.php?id=' . $rankings[2]['id']) ?>" class="text-decoration-none">
+                            <?php endif; ?>
                             <div class="card ranking-card position-3 text-center">
                                 <div class="card-body">
                                     <div class="position-badge bg-light text-dark mx-auto mb-3">3</div>
@@ -245,6 +260,9 @@
                                     <small class="text-muted"><?= $rankings[2]['actividades_completadas'] ?> tareas</small>
                                 </div>
                             </div>
+                            <?php if ($currentUser['rol'] === 'SuperAdmin'): ?>
+                                </a>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -289,6 +307,7 @@
                                                 <td>
                                                     <?php if (isset($user['id']) && !empty($user['id'])): ?>
                                                         <a href="<?= url('profile.php?user_id=' . $user['id']) ?>" class="text-decoration-none">
+
                                                             <strong><?= htmlspecialchars($user['nombre_completo']) ?></strong>
                                                         </a>
                                                     <?php else: ?>
