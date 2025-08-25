@@ -415,8 +415,8 @@ class User {
                     case 'alto': // Verde - mayor a 60% (exclude users with no tasks)
                         $sql .= " HAVING COUNT(a.id) > 0 AND (COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) / COUNT(a.id)) > 0.6";
                         break;
-                    case 'medio': // Amarillo - 20-60%
-                        $sql .= " HAVING COUNT(a.id) > 0 AND (COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) / COUNT(a.id)) BETWEEN 0.2 AND 0.6";
+                    case 'medio': // Amarillo - 20-60% (inclusive)
+                        $sql .= " HAVING COUNT(a.id) > 0 AND (COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) / COUNT(a.id)) >= 0.2 AND (COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) / COUNT(a.id)) <= 0.6";
                         break;
                     case 'bajo': // Rojo - menos de 20%
                         $sql .= " HAVING COUNT(a.id) > 0 AND (COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) / COUNT(a.id)) < 0.2";
