@@ -698,5 +698,130 @@ class Activity {
                 return '#6c757d'; // Gris
         }
     }
+    
+    // Crear propuesta de actividad por activista
+    public function createProposal($data) {
+        try {
+            // Las propuestas se crean en estado 'programada' con tarea_pendiente = 2 (indica propuesta)
+            $stmt = $this->db->prepare("
+                INSERT INTO actividades (usuario_id, tipo_actividad_id, titulo, descripcion, fecha_actividad, estado, tarea_pendiente, solicitante_id)
+                VALUES (?, ?, ?, ?, ?, 'programada', 2, ?)
+            ");
+            
+            $result = $stmt->execute([
+                $data['usuario_id'], // El activista que propone
+                $data['tipo_actividad_id'],
+                $data['titulo'],
+                $data['descripcion'] ?? null,
+                $data['fecha_actividad'],
+                $data['usuario_id'] // El mismo activista es el solicitante de su propuesta
+            ]);
+            
+            if ($result) {
+                $activityId = $this->db->lastInsertId();
+                logActivity("Propuesta de actividad creada: ID $activityId por usuario {$data['usuario_id']}");
+                return $activityId;
+            }
+            
+            return false;
+        } catch (Exception $e) {
+            logActivity("Error al crear propuesta: " . $e->getMessage(), 'ERROR');
+            return false;
+        }
+    }
+    
+    // Obtener propuestas pendientes de aprobación
+    public function getPendingProposals($filters = []) {
+        try {
+            $sql = "SELECT a.*, u.nombre_completo as usuario_nombre, ta.nombre as tipo_nombre,
+                           u.email as usuario_email, u.telefono as usuario_telefono
+                    FROM actividades a 
+                    JOIN usuarios u ON a.usuario_id = u.id 
+                    JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id 
+                    WHERE a.tarea_pendiente = 2"; // 2 = propuesta pendiente
+            $params = [];
+            
+            if (!empty($filters['usuario_id'])) {
+                $sql .= " AND a.usuario_id = ?";
+                $params[] = $filters['usuario_id'];
+            }
+            
+            $sql .= " ORDER BY a.fecha_creacion DESC";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            logActivity("Error al obtener propuestas pendientes: " . $e->getMessage(), 'ERROR');
+            return [];
+        }
+    }
+    
+    // Aprobar o rechazar propuesta
+    public function approveProposal($activityId, $approved, $approverId) {
+        try {
+            if ($approved) {
+                // Aprobar: cambiar tarea_pendiente a 1 (tarea normal) y estado a programada
+                $stmt = $this->db->prepare("
+                    UPDATE actividades 
+                    SET tarea_pendiente = 1, estado = 'programada'
+                    WHERE id = ? AND tarea_pendiente = 2
+                ");
+                $result = $stmt->execute([$activityId]);
+                
+                if ($result) {
+                    logActivity("Propuesta ID $activityId aprobada por usuario $approverId");
+                    
+                    // Obtener información de la actividad para dar puntos bonus
+                    $stmt = $this->db->prepare("SELECT usuario_id FROM actividades WHERE id = ?");
+                    $stmt->execute([$activityId]);
+                    $activity = $stmt->fetch();
+                    
+                    if ($activity) {
+                        // Dar 100 puntos de bonus por propuesta aprobada
+                        $this->addProposalBonus($activity['usuario_id']);
+                    }
+                }
+            } else {
+                // Rechazar: cambiar estado a cancelada
+                $stmt = $this->db->prepare("
+                    UPDATE actividades 
+                    SET estado = 'cancelada'
+                    WHERE id = ? AND tarea_pendiente = 2
+                ");
+                $result = $stmt->execute([$activityId]);
+                
+                if ($result) {
+                    logActivity("Propuesta ID $activityId rechazada por usuario $approverId");
+                }
+            }
+            
+            return $result;
+        } catch (Exception $e) {
+            logActivity("Error al procesar propuesta: " . $e->getMessage(), 'ERROR');
+            return false;
+        }
+    }
+    
+    // Dar puntos bonus por propuesta aprobada
+    private function addProposalBonus($userId) {
+        try {
+            $stmt = $this->db->prepare("
+                UPDATE usuarios 
+                SET ranking_puntos = ranking_puntos + 100 
+                WHERE id = ?
+            ");
+            $result = $stmt->execute([$userId]);
+            
+            if ($result) {
+                logActivity("100 puntos de bonus por propuesta agregados al usuario $userId");
+            }
+            
+            return $result;
+        } catch (Exception $e) {
+            logActivity("Error al agregar bonus de propuesta: " . $e->getMessage(), 'ERROR');
+            return false;
+        }
+    }
 }
 ?>

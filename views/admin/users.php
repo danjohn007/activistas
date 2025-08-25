@@ -116,7 +116,16 @@
                                     <option value="desactivado" <?= ($_GET['estado'] ?? '') === 'desactivado' ? 'selected' : '' ?>>Desactivado</option>
                                 </select>
                             </div>
-                            <div class="col-md-5 d-flex align-items-end">
+                            <div class="col-md-2">
+                                <label for="cumplimiento" class="form-label">Cumplimiento</label>
+                                <select class="form-select" id="cumplimiento" name="cumplimiento">
+                                    <option value="">Todos los niveles</option>
+                                    <option value="alto" <?= ($_GET['cumplimiento'] ?? '') === 'alto' ? 'selected' : '' ?>>🟢 Alto (&gt;60%)</option>
+                                    <option value="medio" <?= ($_GET['cumplimiento'] ?? '') === 'medio' ? 'selected' : '' ?>>🟡 Medio (20-60%)</option>
+                                    <option value="bajo" <?= ($_GET['cumplimiento'] ?? '') === 'bajo' ? 'selected' : '' ?>>🔴 Bajo (&lt;20%)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
                                 <button type="submit" class="btn btn-primary me-2">
                                     <i class="fas fa-search me-1"></i>Buscar
                                 </button>
@@ -170,6 +179,7 @@
                                             <th>Email</th>
                                             <th>Rol</th>
                                             <th>Estado</th>
+                                            <th>Cumplimiento</th>
                                             <th>Líder</th>
                                             <th>Registro</th>
                                             <th>Acciones</th>
@@ -207,6 +217,37 @@
                                                 ][$user['estado']] ?? 'secondary';
                                                 ?>
                                                 <span class="badge bg-<?= $badgeClass ?>"><?= ucfirst($user['estado']) ?></span>
+                                            </td>
+                                            <td>
+                                                <?php
+                                                $porcentaje = $user['porcentaje_cumplimiento'] ?? 0;
+                                                $semaforo = '';
+                                                $colorClass = '';
+                                                $icono = '';
+                                                
+                                                if ($porcentaje == 0) {
+                                                    $semaforo = '⚫';
+                                                    $colorClass = 'secondary';
+                                                    $icono = 'circle';
+                                                } elseif ($porcentaje > 60) {
+                                                    $semaforo = '🟢';
+                                                    $colorClass = 'success';
+                                                    $icono = 'check-circle';
+                                                } elseif ($porcentaje >= 20) {
+                                                    $semaforo = '🟡';
+                                                    $colorClass = 'warning';
+                                                    $icono = 'exclamation-triangle';
+                                                } else {
+                                                    $semaforo = '🔴';
+                                                    $colorClass = 'danger';
+                                                    $icono = 'times-circle';
+                                                }
+                                                ?>
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fas fa-<?= $icono ?> text-<?= $colorClass ?> me-2"></i>
+                                                    <span class="fw-bold text-<?= $colorClass ?>"><?= $porcentaje ?>%</span>
+                                                    <small class="text-muted ms-2">(<?= $user['tareas_completadas'] ?? 0 ?>/<?= $user['total_tareas'] ?? 0 ?>)</small>
+                                                </div>
                                             </td>
                                             <td><?= htmlspecialchars($user['lider_nombre'] ?? 'N/A') ?></td>
                                             <td><?= formatDate($user['fecha_registro']) ?></td>

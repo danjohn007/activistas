@@ -80,7 +80,18 @@
             <!-- Contenido principal -->
             <main class="col-md-10 ms-sm-auto px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2">Mi Perfil</h1>
+                    <h1 class="h2">
+                        <?php if (isset($isOwnProfile) && $isOwnProfile): ?>
+                            Mi Perfil
+                        <?php else: ?>
+                            Perfil de <?= htmlspecialchars($user['nombre_completo'] ?? 'Usuario') ?>
+                        <?php endif; ?>
+                    </h1>
+                    <?php if (!$isOwnProfile): ?>
+                        <a href="<?= url('profile.php') ?>" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Mi Perfil
+                        </a>
+                    <?php endif; ?>
                 </div>
 
                 <?php $flash = getFlashMessage(); ?>
@@ -93,6 +104,7 @@
 
                 <div class="row">
                     <div class="col-md-8">
+                        <?php if (isset($isOwnProfile) && $isOwnProfile): ?>
                         <div class="card">
                             <div class="card-header">
                                 <h5 class="card-title mb-0">
@@ -220,6 +232,119 @@
                                 </form>
                             </div>
                         </div>
+                        <?php else: ?>
+                        <!-- Vista de solo lectura del perfil -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-eye me-2"></i>Información del Usuario
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Nombre Completo</label>
+                                            <p class="form-control-plaintext"><?= htmlspecialchars($user['nombre_completo'] ?? '') ?></p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Email</label>
+                                            <p class="form-control-plaintext"><?= htmlspecialchars($user['email'] ?? '') ?></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Teléfono</label>
+                                            <p class="form-control-plaintext"><?= htmlspecialchars($user['telefono'] ?? 'No especificado') ?></p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Rol</label>
+                                            <p class="form-control-plaintext">
+                                                <span class="badge bg-primary"><?= htmlspecialchars($user['rol'] ?? '') ?></span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Dirección</label>
+                                    <p class="form-control-plaintext"><?= htmlspecialchars($user['direccion'] ?? 'No especificada') ?></p>
+                                </div>
+                                
+                                <!-- Redes Sociales -->
+                                <?php if (!empty($user['facebook']) || !empty($user['instagram']) || !empty($user['tiktok']) || !empty($user['x'])): ?>
+                                <div class="card mt-4 mb-3">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">
+                                            <i class="fas fa-share-alt me-2"></i>Redes Sociales
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <?php if (!empty($user['facebook'])): ?>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-bold">
+                                                    <i class="fab fa-facebook text-primary me-2"></i>Facebook
+                                                </label>
+                                                <p class="form-control-plaintext">
+                                                    <a href="<?= htmlspecialchars($user['facebook']) ?>" target="_blank" class="text-decoration-none">
+                                                        Ver perfil <i class="fas fa-external-link-alt ms-1"></i>
+                                                    </a>
+                                                </p>
+                                            </div>
+                                            <?php endif; ?>
+                                            <?php if (!empty($user['instagram'])): ?>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-bold">
+                                                    <i class="fab fa-instagram text-danger me-2"></i>Instagram
+                                                </label>
+                                                <p class="form-control-plaintext">
+                                                    <a href="<?= htmlspecialchars($user['instagram']) ?>" target="_blank" class="text-decoration-none">
+                                                        Ver perfil <i class="fas fa-external-link-alt ms-1"></i>
+                                                    </a>
+                                                </p>
+                                            </div>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="row">
+                                            <?php if (!empty($user['tiktok'])): ?>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-bold">
+                                                    <i class="fab fa-tiktok text-dark me-2"></i>TikTok
+                                                </label>
+                                                <p class="form-control-plaintext">
+                                                    <a href="<?= htmlspecialchars($user['tiktok']) ?>" target="_blank" class="text-decoration-none">
+                                                        Ver perfil <i class="fas fa-external-link-alt ms-1"></i>
+                                                    </a>
+                                                </p>
+                                            </div>
+                                            <?php endif; ?>
+                                            <?php if (!empty($user['x'])): ?>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-bold">
+                                                    <i class="fab fa-x-twitter text-dark me-2"></i>X (Twitter)
+                                                </label>
+                                                <p class="form-control-plaintext">
+                                                    <a href="<?= htmlspecialchars($user['x']) ?>" target="_blank" class="text-decoration-none">
+                                                        Ver perfil <i class="fas fa-external-link-alt ms-1"></i>
+                                                    </a>
+                                                </p>
+                                            </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                     
                     <div class="col-md-4">
