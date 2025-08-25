@@ -119,7 +119,7 @@
                                     </div>
                                     <div class="mb-2">
                                         <small class="text-muted">Asignado por:</small><br>
-                                        <strong><?= htmlspecialchars($task['solicitante_nombre']) ?></strong>
+                                        <strong><?= htmlspecialchars($task['solicitante_nombre'] ?? 'N/A') ?></strong>
                                     </div>
                                     <div class="mb-2">
                                         <small class="text-muted">Fecha actividad:</small><br>

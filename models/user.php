@@ -289,6 +289,38 @@ class User {
         }
     }
     
+    // Enhanced search for SuperAdmin - includes activity titles
+    public function searchUsersWithActivities($query, $filters = []) {
+        try {
+            $sql = "SELECT DISTINCT u.*, l.nombre_completo as lider_nombre 
+                    FROM usuarios u 
+                    LEFT JOIN usuarios l ON u.lider_id = l.id 
+                    LEFT JOIN actividades a ON u.id = a.usuario_id
+                    WHERE (u.nombre_completo LIKE ? OR u.email LIKE ? OR u.telefono LIKE ? OR a.titulo LIKE ?)";
+            $params = ["%$query%", "%$query%", "%$query%", "%$query%"];
+            
+            if (!empty($filters['rol'])) {
+                $sql .= " AND u.rol = ?";
+                $params[] = $filters['rol'];
+            }
+            
+            if (!empty($filters['estado'])) {
+                $sql .= " AND u.estado = ?";
+                $params[] = $filters['estado'];
+            }
+            
+            $sql .= " ORDER BY u.nombre_completo";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            logActivity("Error en búsqueda avanzada de usuarios: " . $e->getMessage(), 'ERROR');
+            return [];
+        }
+    }
+    
         // Cambiar contraseña
     public function changePassword($userId, $newPassword) {
         try {

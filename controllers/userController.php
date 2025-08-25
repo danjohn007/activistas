@@ -112,6 +112,7 @@ class UserController {
     public function listUsers() {
         $this->auth->requireRole(['SuperAdmin', 'Gestor']);
         
+        $currentUser = $this->auth->getCurrentUser();
         $filters = [];
         if (!empty($_GET['rol'])) {
             $filters['rol'] = cleanInput($_GET['rol']);
@@ -120,10 +121,16 @@ class UserController {
             $filters['estado'] = cleanInput($_GET['estado']);
         }
         
-        // Si hay búsqueda, usar searchUsers en lugar de getAllUsers
+        // Si hay búsqueda, usar enhanced search for SuperAdmin or regular search for others
         $search = cleanInput($_GET['search'] ?? '');
         if (!empty($search)) {
-            $users = $this->userModel->searchUsers($search, $filters);
+            if ($currentUser['rol'] === 'SuperAdmin') {
+                // SuperAdmin gets enhanced search including activity titles
+                $users = $this->userModel->searchUsersWithActivities($search, $filters);
+            } else {
+                // Other roles use standard search
+                $users = $this->userModel->searchUsers($search, $filters);
+            }
         } else {
             $users = $this->userModel->getAllUsers($filters);
         }
