@@ -12,27 +12,28 @@ function renderSidebar($currentPage = '') {
     $userRole = $_SESSION['user_role'];
     $userName = $_SESSION['user_name'] ?? 'Usuario';
     
-    // Configuración de roles
+    // Configuración de roles - usando un solo color para todos los menús
+    $standardGradient = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
     $roleConfig = [
         'SuperAdmin' => [
             'title' => 'SuperAdmin',
             'icon' => 'fas fa-crown',
-            'gradient' => 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+            'gradient' => $standardGradient
         ],
         'Gestor' => [
             'title' => 'Gestor', 
             'icon' => 'fas fa-user-tie',
-            'gradient' => 'linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%)'
+            'gradient' => $standardGradient
         ],
         'Líder' => [
             'title' => 'Líder',
             'icon' => 'fas fa-users-cog', 
-            'gradient' => 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+            'gradient' => $standardGradient
         ],
         'Activista' => [
             'title' => 'Activista',
             'icon' => 'fas fa-user',
-            'gradient' => 'linear-gradient(135deg, #28a745 0%, #20c997 100%)'
+            'gradient' => $standardGradient
         ]
     ];
     
