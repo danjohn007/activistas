@@ -22,47 +22,11 @@
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <nav class="col-md-2 d-none d-md-block sidebar">
-                <div class="position-sticky pt-3">
-                    <div class="text-center text-white mb-4">
-                        <h4><i class="fas fa-users me-2"></i>Activistas</h4>
-                        <small>SuperAdmin</small>
-                    </div>
-                    
-                    <ul class="nav flex-column">
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= url('dashboards/admin.php') ?>">
-                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white active" href="<?= url('admin/users.php') ?>">
-                                <i class="fas fa-users me-2"></i>Gestión de Usuarios
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= url('admin/pending_users.php') ?>">
-                                <i class="fas fa-user-clock me-2"></i>Usuarios Pendientes
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= url('activities/') ?>">
-                                <i class="fas fa-tasks me-2"></i>Actividades
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= url('profile.php') ?>">
-                                <i class="fas fa-user me-2"></i>Mi Perfil
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white" href="<?= url('logout.php') ?>">
-                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
+            <!-- Sidebar -->
+            <?php 
+            require_once __DIR__ . '/../../includes/sidebar.php';
+            renderSidebar('users'); 
+            ?>
 
             <!-- Contenido principal -->
             <main class="col-md-10 ms-sm-auto px-md-4">
