@@ -17,7 +17,7 @@ $controller->activistaDashboard();
     <style>
         .sidebar {
             min-height: 100vh;
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         .card-stats {
             transition: transform 0.2s;
@@ -26,7 +26,7 @@ $controller->activistaDashboard();
             transform: translateY(-5px);
         }
         .metric-card {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
     </style>

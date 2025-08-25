@@ -124,6 +124,7 @@
                                     <option value="alto" <?= ($_GET['cumplimiento'] ?? '') === 'alto' ? 'selected' : '' ?>>🟢 Alto (&gt;60%)</option>
                                     <option value="medio" <?= ($_GET['cumplimiento'] ?? '') === 'medio' ? 'selected' : '' ?>>🟡 Medio (20-60%)</option>
                                     <option value="bajo" <?= ($_GET['cumplimiento'] ?? '') === 'bajo' ? 'selected' : '' ?>>🔴 Bajo (&lt;20%)</option>
+                                    <option value="sin_tareas" <?= ($_GET['cumplimiento'] ?? '') === 'sin_tareas' ? 'selected' : '' ?>>⚫ Sin tareas</option>
                                 </select>
                             </div>
                             <div class="col-md-3 d-flex align-items-end">
