@@ -194,7 +194,15 @@
                             <div class="card ranking-card position-2 text-center">
                                 <div class="card-body">
                                     <div class="position-badge bg-light text-dark mx-auto mb-3">2</div>
-                                    <h5 class="card-title"><?= htmlspecialchars($rankings[1]['nombre_completo']) ?></h5>
+                                    <?php if (isset($rankings[1]['id']) && !empty($rankings[1]['id'])): ?>
+                                        <h5 class="card-title">
+                                            <a href="<?= url('profile.php?user_id=' . $rankings[1]['id']) ?>" class="text-decoration-none text-dark">
+                                                <?= htmlspecialchars($rankings[1]['nombre_completo']) ?>
+                                            </a>
+                                        </h5>
+                                    <?php else: ?>
+                                        <h5 class="card-title"><?= htmlspecialchars($rankings[1]['nombre_completo']) ?></h5>
+                                    <?php endif; ?>
                                     <div class="points-display"><?= number_format($rankings[1]['ranking_puntos']) ?> pts</div>
                                     <small class="text-muted"><?= $rankings[1]['actividades_completadas'] ?> tareas</small>
                                 </div>
@@ -213,7 +221,15 @@
                                 <div class="card-body">
                                     <i class="fas fa-crown trophy-icon text-warning mb-2"></i>
                                     <div class="position-badge bg-warning text-dark mx-auto mb-3">1</div>
-                                    <h5 class="card-title"><?= htmlspecialchars($rankings[0]['nombre_completo']) ?></h5>
+                                    <?php if (isset($rankings[0]['id']) && !empty($rankings[0]['id'])): ?>
+                                        <h5 class="card-title">
+                                            <a href="<?= url('profile.php?user_id=' . $rankings[0]['id']) ?>" class="text-decoration-none text-dark">
+                                                <?= htmlspecialchars($rankings[0]['nombre_completo']) ?>
+                                            </a>
+                                        </h5>
+                                    <?php else: ?>
+                                        <h5 class="card-title"><?= htmlspecialchars($rankings[0]['nombre_completo']) ?></h5>
+                                    <?php endif; ?>
                                     <div class="points-display text-warning"><?= number_format($rankings[0]['ranking_puntos']) ?> pts</div>
                                     <small class="text-muted"><?= $rankings[0]['actividades_completadas'] ?> tareas</small>
                                 </div>
@@ -231,7 +247,15 @@
                             <div class="card ranking-card position-3 text-center">
                                 <div class="card-body">
                                     <div class="position-badge bg-light text-dark mx-auto mb-3">3</div>
-                                    <h5 class="card-title"><?= htmlspecialchars($rankings[2]['nombre_completo']) ?></h5>
+                                    <?php if (isset($rankings[2]['id']) && !empty($rankings[2]['id'])): ?>
+                                        <h5 class="card-title">
+                                            <a href="<?= url('profile.php?user_id=' . $rankings[2]['id']) ?>" class="text-decoration-none text-dark">
+                                                <?= htmlspecialchars($rankings[2]['nombre_completo']) ?>
+                                            </a>
+                                        </h5>
+                                    <?php else: ?>
+                                        <h5 class="card-title"><?= htmlspecialchars($rankings[2]['nombre_completo']) ?></h5>
+                                    <?php endif; ?>
                                     <div class="points-display"><?= number_format($rankings[2]['ranking_puntos']) ?> pts</div>
                                     <small class="text-muted"><?= $rankings[2]['actividades_completadas'] ?> tareas</small>
                                 </div>
@@ -281,8 +305,9 @@
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <?php if ($currentUser['rol'] === 'SuperAdmin'): ?>
-                                                        <a href="<?= url('admin/edit_user.php?id=' . $user['id']) ?>" class="text-decoration-none">
+                                                    <?php if (isset($user['id']) && !empty($user['id'])): ?>
+                                                        <a href="<?= url('profile.php?user_id=' . $user['id']) ?>" class="text-decoration-none">
+
                                                             <strong><?= htmlspecialchars($user['nombre_completo']) ?></strong>
                                                         </a>
                                                     <?php else: ?>

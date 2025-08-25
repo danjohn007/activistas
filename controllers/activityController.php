@@ -49,6 +49,22 @@ class ActivityController {
             $filters['fecha_hasta'] = cleanInput($_GET['fecha_hasta']);
         }
         
+        // Advanced search filters for SuperAdmin
+        if ($currentUser['rol'] === 'SuperAdmin') {
+            if (!empty($_GET['search_title'])) {
+                $filters['search_title'] = cleanInput($_GET['search_title']);
+            }
+            if (!empty($_GET['search_name'])) {
+                $filters['search_name'] = cleanInput($_GET['search_name']);
+            }
+            if (!empty($_GET['search_email'])) {
+                $filters['search_email'] = cleanInput($_GET['search_email']);
+            }
+            if (!empty($_GET['search_phone'])) {
+                $filters['search_phone'] = cleanInput($_GET['search_phone']);
+            }
+        }
+        
         // Pagination parameters
         $page = max(1, intval($_GET['page'] ?? 1));
         $perPage = 10; // Activities per page
