@@ -85,7 +85,7 @@ class Activity {
             }
             
             $sql = "SELECT a.*, u.nombre_completo as usuario_nombre, ta.nombre as tipo_nombre,
-                           s.nombre_completo as solicitante_nombre, u.correo as usuario_correo, u.telefono as usuario_telefono
+                           s.nombre_completo as solicitante_nombre, u.email as usuario_correo, u.telefono as usuario_telefono
                     FROM actividades a 
                     JOIN usuarios u ON a.usuario_id = u.id 
                     JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id 
@@ -136,7 +136,7 @@ class Activity {
             }
             
             if (!empty($filters['search_email'])) {
-                $sql .= " AND u.correo LIKE ?";
+                $sql .= " AND u.email LIKE ?";
                 $params[] = '%' . $filters['search_email'] . '%';
             }
             
@@ -226,7 +226,7 @@ class Activity {
             }
             
             if (!empty($filters['search_email'])) {
-                $sql .= " AND u.correo LIKE ?";
+                $sql .= " AND u.email LIKE ?";
                 $params[] = '%' . $filters['search_email'] . '%';
             }
             
