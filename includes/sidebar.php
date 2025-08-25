@@ -65,6 +65,14 @@ function renderSidebar($currentPage = '') {
             'active' => ($currentPage === 'pending_users'),
             'badge' => getPendingUsersCount()
         ];
+        
+        // Add the new menu item for authorization
+        $menuItems[] = [
+            'url' => url('activities/proposals.php'),
+            'icon' => 'fas fa-clipboard-check',
+            'text' => 'Actividades por autorizar',
+            'active' => ($currentPage === 'authorization')
+        ];
     }
     
     // Activities - texto específico por rol

@@ -85,13 +85,21 @@ class Activity {
             }
             
             $sql = "SELECT a.*, u.nombre_completo as usuario_nombre, ta.nombre as tipo_nombre,
-                           s.nombre_completo as solicitante_nombre, u.email as usuario_correo, u.telefono as usuario_telefono
+                           s.nombre_completo as solicitante_nombre, u.email as usuario_correo, u.telefono as usuario_telefono,
+                           p.nombre_completo as propuesto_por_nombre, auth.nombre_completo as autorizado_por_nombre
                     FROM actividades a 
                     JOIN usuarios u ON a.usuario_id = u.id 
                     JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id 
                     LEFT JOIN usuarios s ON a.solicitante_id = s.id
+                    LEFT JOIN usuarios p ON a.propuesto_por = p.id
+                    LEFT JOIN usuarios auth ON a.autorizado_por = auth.id
                     WHERE 1=1";
             $params = [];
+            
+            // Only show authorized activities in general listings (unless viewing proposals)
+            if (!isset($filters['include_unauthorized'])) {
+                $sql .= " AND (a.autorizada = 1 OR a.propuesto_por IS NULL)";
+            }
             
             if (!empty($filters['usuario_id'])) {
                 $sql .= " AND a.usuario_id = ?";
@@ -575,7 +583,7 @@ class Activity {
     // Calculate and update user rankings
     public function updateUserRankings() {
         try {
-            // Get all users with completed activities
+            // Get all users with completed activities (excluding admin user id=1, only count authorized activities)
             $stmt = $this->db->prepare("
                 SELECT 
                     u.id,
@@ -583,7 +591,8 @@ class Activity {
                     MIN(TIMESTAMPDIFF(MINUTE, a.fecha_creacion, a.hora_evidencia)) as mejor_tiempo_minutos
                 FROM usuarios u
                 LEFT JOIN actividades a ON u.id = a.usuario_id 
-                WHERE a.estado = 'completada' AND a.hora_evidencia IS NOT NULL
+                WHERE a.estado = 'completada' AND a.hora_evidencia IS NOT NULL 
+                  AND a.autorizada = 1 AND u.id != 1
                 GROUP BY u.id
             ");
             $stmt->execute();
@@ -644,8 +653,8 @@ class Activity {
                     COUNT(a.id) as actividades_completadas,
                     MIN(TIMESTAMPDIFF(MINUTE, a.fecha_creacion, a.hora_evidencia)) as mejor_tiempo_minutos
                 FROM usuarios u
-                LEFT JOIN actividades a ON u.id = a.usuario_id AND a.estado = 'completada'
-                WHERE u.estado = 'activo'
+                LEFT JOIN actividades a ON u.id = a.usuario_id AND a.estado = 'completada' AND a.autorizada = 1
+                WHERE u.estado = 'activo' AND u.id != 1
                 GROUP BY u.id, u.nombre_completo, u.ranking_puntos
                 ORDER BY u.ranking_puntos DESC
                 LIMIT ?
@@ -702,10 +711,10 @@ class Activity {
     // Crear propuesta de actividad por activista
     public function createProposal($data) {
         try {
-            // Las propuestas se crean en estado 'programada' con tarea_pendiente = 2 (indica propuesta)
+            // Las propuestas se crean en estado 'programada' con propuesto_por y autorizada=0
             $stmt = $this->db->prepare("
-                INSERT INTO actividades (usuario_id, tipo_actividad_id, titulo, descripcion, fecha_actividad, estado, tarea_pendiente, solicitante_id)
-                VALUES (?, ?, ?, ?, ?, 'programada', 2, ?)
+                INSERT INTO actividades (usuario_id, tipo_actividad_id, titulo, descripcion, fecha_actividad, estado, tarea_pendiente, solicitante_id, propuesto_por, autorizada)
+                VALUES (?, ?, ?, ?, ?, 'programada', 2, ?, ?, 0)
             ");
             
             $result = $stmt->execute([
@@ -714,7 +723,8 @@ class Activity {
                 $data['titulo'],
                 $data['descripcion'] ?? null,
                 $data['fecha_actividad'],
-                $data['usuario_id'] // El mismo activista es el solicitante de su propuesta
+                $data['usuario_id'], // El mismo activista es el solicitante de su propuesta
+                $data['usuario_id']  // Propuesto por el mismo activista
             ]);
             
             if ($result) {
@@ -734,16 +744,24 @@ class Activity {
     public function getPendingProposals($filters = []) {
         try {
             $sql = "SELECT a.*, u.nombre_completo as usuario_nombre, ta.nombre as tipo_nombre,
-                           u.email as usuario_email, u.telefono as usuario_telefono
+                           u.email as usuario_email, u.telefono as usuario_telefono,
+                           p.nombre_completo as propuesto_por_nombre
                     FROM actividades a 
                     JOIN usuarios u ON a.usuario_id = u.id 
                     JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id 
-                    WHERE a.tarea_pendiente = 2"; // 2 = propuesta pendiente
+                    LEFT JOIN usuarios p ON a.propuesto_por = p.id
+                    WHERE a.autorizada = 0 AND a.propuesto_por IS NOT NULL"; // Propuestas no autorizadas
             $params = [];
             
             if (!empty($filters['usuario_id'])) {
                 $sql .= " AND a.usuario_id = ?";
                 $params[] = $filters['usuario_id'];
+            }
+            
+            // Líder solo ve propuestas de sus activistas
+            if (!empty($filters['lider_id'])) {
+                $sql .= " AND u.lider_id = ?";
+                $params[] = $filters['lider_id'];
             }
             
             $sql .= " ORDER BY a.fecha_creacion DESC";
@@ -761,35 +779,36 @@ class Activity {
     public function approveProposal($activityId, $approved, $approverId) {
         try {
             if ($approved) {
-                // Aprobar: cambiar tarea_pendiente a 1 (tarea normal) y estado a programada
+                // Aprobar: marcar como autorizada y establecer quien autorizó
                 $stmt = $this->db->prepare("
                     UPDATE actividades 
-                    SET tarea_pendiente = 1, estado = 'programada'
-                    WHERE id = ? AND tarea_pendiente = 2
+                    SET autorizada = 1, autorizado_por = ?, tarea_pendiente = 1, estado = 'programada'
+                    WHERE id = ? AND autorizada = 0
                 ");
-                $result = $stmt->execute([$activityId]);
+                $result = $stmt->execute([$approverId, $activityId]);
                 
                 if ($result) {
-                    logActivity("Propuesta ID $activityId aprobada por usuario $approverId");
+                    logActivity("Propuesta ID $activityId autorizada por usuario $approverId");
                     
                     // Obtener información de la actividad para dar puntos bonus
-                    $stmt = $this->db->prepare("SELECT usuario_id FROM actividades WHERE id = ?");
+                    $stmt = $this->db->prepare("SELECT usuario_id, bonificacion_ranking FROM actividades WHERE id = ?");
                     $stmt->execute([$activityId]);
                     $activity = $stmt->fetch();
                     
                     if ($activity) {
-                        // Dar 100 puntos de bonus por propuesta aprobada
-                        $this->addProposalBonus($activity['usuario_id']);
+                        // Dar puntos de bonus (usar bonificacion_ranking si está definido, sino 100 por defecto)
+                        $bonusPoints = $activity['bonificacion_ranking'] > 0 ? $activity['bonificacion_ranking'] : 100;
+                        $this->addProposalBonus($activity['usuario_id'], $bonusPoints);
                     }
                 }
             } else {
-                // Rechazar: cambiar estado a cancelada
+                // Rechazar: cambiar estado a cancelada pero mantener registro de quien rechazó
                 $stmt = $this->db->prepare("
                     UPDATE actividades 
-                    SET estado = 'cancelada'
-                    WHERE id = ? AND tarea_pendiente = 2
+                    SET estado = 'cancelada', autorizado_por = ?
+                    WHERE id = ? AND autorizada = 0
                 ");
-                $result = $stmt->execute([$activityId]);
+                $result = $stmt->execute([$approverId, $activityId]);
                 
                 if ($result) {
                     logActivity("Propuesta ID $activityId rechazada por usuario $approverId");
@@ -804,17 +823,17 @@ class Activity {
     }
     
     // Dar puntos bonus por propuesta aprobada
-    private function addProposalBonus($userId) {
+    private function addProposalBonus($userId, $bonusPoints = 100) {
         try {
             $stmt = $this->db->prepare("
                 UPDATE usuarios 
-                SET ranking_puntos = ranking_puntos + 100 
+                SET ranking_puntos = ranking_puntos + ? 
                 WHERE id = ?
             ");
-            $result = $stmt->execute([$userId]);
+            $result = $stmt->execute([$bonusPoints, $userId]);
             
             if ($result) {
-                logActivity("100 puntos de bonus por propuesta agregados al usuario $userId");
+                logActivity("$bonusPoints puntos de bonus por propuesta agregados al usuario $userId");
             }
             
             return $result;

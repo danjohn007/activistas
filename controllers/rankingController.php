@@ -79,8 +79,8 @@ class RankingController {
                     COUNT(a.id) as actividades_completadas,
                     MIN(TIMESTAMPDIFF(MINUTE, a.fecha_creacion, a.hora_evidencia)) as mejor_tiempo_minutos
                 FROM usuarios u
-                LEFT JOIN actividades a ON u.id = a.usuario_id AND a.estado = 'completada'
-                WHERE u.estado = 'activo' AND u.lider_id = ?
+                LEFT JOIN actividades a ON u.id = a.usuario_id AND a.estado = 'completada' AND a.autorizada = 1
+                WHERE u.estado = 'activo' AND u.lider_id = ? AND u.id != 1
                 GROUP BY u.id, u.nombre_completo, u.ranking_puntos
                 ORDER BY u.ranking_puntos DESC
             ");
@@ -100,7 +100,7 @@ class RankingController {
                     COUNT(*) + 1 as posicion
                 FROM usuarios u1
                 JOIN usuarios u2 ON u2.id = ? 
-                WHERE u1.estado = 'activo' 
+                WHERE u1.estado = 'activo' AND u1.id != 1
                 AND u1.ranking_puntos > u2.ranking_puntos
             ");
             $stmt->execute([$userId]);
@@ -122,7 +122,7 @@ class RankingController {
                     MIN(u.ranking_puntos) as min_puntos,
                     COUNT(DISTINCT u.id) as total_usuarios
                 FROM usuarios u
-                WHERE u.estado = 'activo' AND u.ranking_puntos > 0
+                WHERE u.estado = 'activo' AND u.ranking_puntos > 0 AND u.id != 1
             ";
             
             $params = [];
