@@ -21,7 +21,7 @@
             <!-- Sidebar -->
             <?php 
             require_once __DIR__ . '/../../includes/sidebar.php';
-            renderSidebar('proposals'); 
+            renderSidebar('authorization'); 
             ?>
 
             <!-- Contenido principal -->

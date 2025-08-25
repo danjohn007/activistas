@@ -124,20 +124,44 @@ class UserController {
             $filters['cumplimiento'] = cleanInput($_GET['cumplimiento']);
         }
         
+        // Pagination
+        $page = max(1, intval($_GET['page'] ?? 1));
+        $perPage = 20; // 20 usuarios por página
+        
         // Si hay búsqueda, usar enhanced search for SuperAdmin or regular search for others
         $search = cleanInput($_GET['search'] ?? '');
         if (!empty($search)) {
             if ($currentUser['rol'] === 'SuperAdmin') {
                 // SuperAdmin gets enhanced search including activity titles
                 $users = $this->userModel->searchUsersWithActivities($search, $filters);
+                $totalUsers = count($users); // For search, we count all results
+                // Apply pagination to search results
+                $users = array_slice($users, ($page - 1) * $perPage, $perPage);
             } else {
                 // Other roles use standard search
                 $users = $this->userModel->searchUsers($search, $filters);
+                $totalUsers = count($users); // For search, we count all results
+                // Apply pagination to search results
+                $users = array_slice($users, ($page - 1) * $perPage, $perPage);
             }
         } else {
-            // Use the new method with compliance data
-            $users = $this->userModel->getAllUsersWithCompliance($filters);
+            // Use the new method with compliance data and pagination
+            $users = $this->userModel->getAllUsersWithCompliance($filters, $page, $perPage);
+            $totalUsers = $this->userModel->getTotalUsersWithFilters($filters);
         }
+        
+        // Calculate pagination info
+        $totalPages = ceil($totalUsers / $perPage);
+        $pagination = [
+            'current_page' => $page,
+            'total_pages' => $totalPages,
+            'total_users' => $totalUsers,
+            'per_page' => $perPage,
+            'has_prev' => $page > 1,
+            'has_next' => $page < $totalPages,
+            'prev_page' => max(1, $page - 1),
+            'next_page' => min($totalPages, $page + 1)
+        ];
         
         $stats = $this->userModel->getUserStats();
         
