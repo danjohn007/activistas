@@ -444,5 +444,101 @@ class ActivityController {
             }
         }
     }
+    
+    // Mostrar formulario de propuesta de actividad (solo para activistas)
+    public function showProposalForm() {
+        $this->auth->requireRole(['Activista']);
+        
+        $activityTypes = $this->activityModel->getActivityTypes();
+        
+        include __DIR__ . '/../views/activities/propose.php';
+    }
+    
+    // Crear propuesta de actividad
+    public function createProposal() {
+        $this->auth->requireRole(['Activista']);
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirectWithMessage('activities/propose.php', 'Método no permitido', 'error');
+        }
+        
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            redirectWithMessage('activities/propose.php', 'Token de seguridad inválido', 'error');
+        }
+        
+        $currentUser = $this->auth->getCurrentUser();
+        
+        $proposalData = [
+            'usuario_id' => $currentUser['id'],
+            'tipo_actividad_id' => intval($_POST['tipo_actividad_id'] ?? 0),
+            'titulo' => cleanInput($_POST['titulo'] ?? ''),
+            'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
+            'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? '')
+        ];
+        
+        // Validar datos
+        $errors = $this->validateActivityData($proposalData, 'Activista');
+        if (!empty($errors)) {
+            $_SESSION['form_errors'] = $errors;
+            $_SESSION['form_data'] = $_POST;
+            redirectWithMessage('activities/propose.php', 'Por favor corrige los errores', 'error');
+        }
+        
+        $proposalId = $this->activityModel->createProposal($proposalData);
+        
+        if ($proposalId) {
+            redirectWithMessage('activities/', 'Propuesta enviada exitosamente. Será revisada por los administradores.', 'success');
+        } else {
+            redirectWithMessage('activities/propose.php', 'Error al enviar propuesta', 'error');
+        }
+    }
+    
+    // Lista de propuestas pendientes (para SuperAdmin, Gestor, Líder)
+    public function listProposals() {
+        $this->auth->requireRole(['SuperAdmin', 'Gestor', 'Líder']);
+        
+        $currentUser = $this->auth->getCurrentUser();
+        $filters = [];
+        
+        // Líder solo ve propuestas de sus activistas
+        if ($currentUser['rol'] === 'Líder') {
+            $filters['lider_id'] = $currentUser['id'];
+        }
+        
+        $proposals = $this->activityModel->getPendingProposals($filters);
+        
+        include __DIR__ . '/../views/activities/proposals.php';
+    }
+    
+    // Aprobar o rechazar propuesta
+    public function processProposal() {
+        $this->auth->requireRole(['SuperAdmin', 'Gestor', 'Líder']);
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirectWithMessage('activities/proposals.php', 'Método no permitido', 'error');
+        }
+        
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            redirectWithMessage('activities/proposals.php', 'Token de seguridad inválido', 'error');
+        }
+        
+        $currentUser = $this->auth->getCurrentUser();
+        $proposalId = intval($_POST['proposal_id'] ?? 0);
+        $action = cleanInput($_POST['action'] ?? '');
+        
+        if ($proposalId <= 0 || !in_array($action, ['approve', 'reject'])) {
+            redirectWithMessage('activities/proposals.php', 'Datos inválidos', 'error');
+        }
+        
+        $approved = ($action === 'approve');
+        $result = $this->activityModel->approveProposal($proposalId, $approved, $currentUser['id']);
+        
+        if ($result) {
+            $message = $approved ? 'Propuesta aprobada exitosamente' : 'Propuesta rechazada';
+            redirectWithMessage('activities/proposals.php', $message, 'success');
+        } else {
+            redirectWithMessage('activities/proposals.php', 'Error al procesar propuesta', 'error');
+        }
+    }
 }
 ?>

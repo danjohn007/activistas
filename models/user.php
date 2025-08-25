@@ -356,5 +356,82 @@ class User {
             return [];
         }
     }
+    
+    // Calcular porcentaje de cumplimiento de tareas por usuario
+    public function getUserCompliancePercentage($userId) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT 
+                    COUNT(*) as total_tareas,
+                    COUNT(CASE WHEN estado = 'completada' THEN 1 END) as tareas_completadas
+                FROM actividades 
+                WHERE usuario_id = ? AND tarea_pendiente = 1
+            ");
+            $stmt->execute([$userId]);
+            $result = $stmt->fetch();
+            
+            if ($result['total_tareas'] == 0) {
+                return 0; // Sin tareas asignadas
+            }
+            
+            return round(($result['tareas_completadas'] / $result['total_tareas']) * 100, 1);
+        } catch (Exception $e) {
+            logActivity("Error al calcular cumplimiento: " . $e->getMessage(), 'ERROR');
+            return 0;
+        }
+    }
+    
+    // Obtener usuarios con información de cumplimiento para la gestión
+    public function getAllUsersWithCompliance($filters = []) {
+        try {
+            $sql = "SELECT u.*, l.nombre_completo as lider_nombre,
+                           COUNT(a.id) as total_tareas,
+                           COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) as tareas_completadas,
+                           CASE 
+                               WHEN COUNT(a.id) = 0 THEN 0
+                               ELSE ROUND((COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) / COUNT(a.id)) * 100, 1)
+                           END as porcentaje_cumplimiento
+                    FROM usuarios u 
+                    LEFT JOIN usuarios l ON u.lider_id = l.id 
+                    LEFT JOIN actividades a ON u.id = a.usuario_id AND a.tarea_pendiente = 1
+                    WHERE 1=1";
+            $params = [];
+            
+            if (!empty($filters['rol'])) {
+                $sql .= " AND u.rol = ?";
+                $params[] = $filters['rol'];
+            }
+            
+            if (!empty($filters['estado'])) {
+                $sql .= " AND u.estado = ?";
+                $params[] = $filters['estado'];
+            }
+            
+            if (!empty($filters['cumplimiento'])) {
+                switch($filters['cumplimiento']) {
+                    case 'alto': // Verde - mayor a 60%
+                        $sql .= " AND (COUNT(a.id) = 0 OR (COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) / COUNT(a.id)) > 0.6)";
+                        break;
+                    case 'medio': // Amarillo - 20-60%
+                        $sql .= " AND COUNT(a.id) > 0 AND (COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) / COUNT(a.id)) BETWEEN 0.2 AND 0.6";
+                        break;
+                    case 'bajo': // Rojo - menos de 20%
+                        $sql .= " AND COUNT(a.id) > 0 AND (COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) / COUNT(a.id)) < 0.2";
+                        break;
+                }
+            }
+            
+            $sql .= " GROUP BY u.id, u.nombre_completo, u.telefono, u.email, u.foto_perfil, u.direccion, u.rol, u.lider_id, u.estado, u.fecha_registro, l.nombre_completo";
+            $sql .= " ORDER BY u.fecha_registro DESC";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            logActivity("Error al obtener usuarios con cumplimiento: " . $e->getMessage(), 'ERROR');
+            return [];
+        }
+    }
 }
 ?>

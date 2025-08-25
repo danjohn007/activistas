@@ -120,6 +120,9 @@ class UserController {
         if (!empty($_GET['estado'])) {
             $filters['estado'] = cleanInput($_GET['estado']);
         }
+        if (!empty($_GET['cumplimiento'])) {
+            $filters['cumplimiento'] = cleanInput($_GET['cumplimiento']);
+        }
         
         // Si hay búsqueda, usar enhanced search for SuperAdmin or regular search for others
         $search = cleanInput($_GET['search'] ?? '');
@@ -132,7 +135,8 @@ class UserController {
                 $users = $this->userModel->searchUsers($search, $filters);
             }
         } else {
-            $users = $this->userModel->getAllUsers($filters);
+            // Use the new method with compliance data
+            $users = $this->userModel->getAllUsersWithCompliance($filters);
         }
         
         $stats = $this->userModel->getUserStats();
@@ -281,9 +285,31 @@ class UserController {
     public function profile() {
         $this->auth->requireAuth();
         
-        $user = $this->auth->getCurrentUser();
+        $currentUser = $this->auth->getCurrentUser();
+        $userId = intval($_GET['user_id'] ?? 0);
+        
+        // Si no se especifica user_id o es 0, mostrar perfil propio
+        if ($userId <= 0) {
+            $user = $currentUser;
+            $isOwnProfile = true;
+        } else {
+            // Verificar permisos para ver otros perfiles
+            if ($currentUser['rol'] === 'Activista' && $userId != $currentUser['id']) {
+                redirectWithMessage('profile.php', 'No tienes permisos para ver este perfil', 'error');
+            }
+            
+            $user = $this->userModel->getUserById($userId);
+            if (!$user) {
+                redirectWithMessage('profile.php', 'Usuario no encontrado', 'error');
+            }
+            
+            $isOwnProfile = ($userId == $currentUser['id']);
+        }
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!$isOwnProfile) {
+                redirectWithMessage('profile.php?user_id=' . $userId, 'No puedes editar este perfil', 'error');
+            }
             $this->processProfileUpdate();
             return;
         }
