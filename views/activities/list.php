@@ -88,6 +88,45 @@
                                     <i class="fas fa-undo me-1"></i>Limpiar
                                 </a>
                             </div>
+                            
+                            <?php 
+                            // Check if current user is SuperAdmin for advanced search
+                            $auth = getAuth();
+                            $currentUser = $auth->getCurrentUser();
+                            ?>
+                            <?php if (isset($currentUser) && $currentUser['rol'] === 'SuperAdmin'): ?>
+                            <!-- Advanced Search for SuperAdmin -->
+                            <div class="col-12">
+                                <hr class="my-3">
+                                <h6 class="text-muted mb-3">
+                                    <i class="fas fa-search-plus me-1"></i>Búsqueda Avanzada (SuperAdmin)
+                                </h6>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="search_title" class="form-label">Título de Actividad</label>
+                                <input type="text" class="form-control" id="search_title" name="search_title" 
+                                       placeholder="Buscar por título..." 
+                                       value="<?= htmlspecialchars($_GET['search_title'] ?? '') ?>">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="search_name" class="form-label">Nombre de Usuario</label>
+                                <input type="text" class="form-control" id="search_name" name="search_name" 
+                                       placeholder="Buscar por nombre..." 
+                                       value="<?= htmlspecialchars($_GET['search_name'] ?? '') ?>">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="search_email" class="form-label">Correo Electrónico</label>
+                                <input type="email" class="form-control" id="search_email" name="search_email" 
+                                       placeholder="Buscar por correo..." 
+                                       value="<?= htmlspecialchars($_GET['search_email'] ?? '') ?>">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="search_phone" class="form-label">Teléfono</label>
+                                <input type="text" class="form-control" id="search_phone" name="search_phone" 
+                                       placeholder="Buscar por teléfono..." 
+                                       value="<?= htmlspecialchars($_GET['search_phone'] ?? '') ?>">
+                            </div>
+                            <?php endif; ?>
                         </form>
                     </div>
                 </div>

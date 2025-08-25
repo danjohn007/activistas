@@ -85,7 +85,7 @@ class Activity {
             }
             
             $sql = "SELECT a.*, u.nombre_completo as usuario_nombre, ta.nombre as tipo_nombre,
-                           s.nombre_completo as solicitante_nombre
+                           s.nombre_completo as solicitante_nombre, u.correo as usuario_correo, u.telefono as usuario_telefono
                     FROM actividades a 
                     JOIN usuarios u ON a.usuario_id = u.id 
                     JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id 
@@ -122,6 +122,27 @@ class Activity {
             if (!empty($filters['fecha_hasta'])) {
                 $sql .= " AND a.fecha_actividad <= ?";
                 $params[] = $filters['fecha_hasta'];
+            }
+            
+            // Advanced search filters
+            if (!empty($filters['search_title'])) {
+                $sql .= " AND a.titulo LIKE ?";
+                $params[] = '%' . $filters['search_title'] . '%';
+            }
+            
+            if (!empty($filters['search_name'])) {
+                $sql .= " AND u.nombre_completo LIKE ?";
+                $params[] = '%' . $filters['search_name'] . '%';
+            }
+            
+            if (!empty($filters['search_email'])) {
+                $sql .= " AND u.correo LIKE ?";
+                $params[] = '%' . $filters['search_email'] . '%';
+            }
+            
+            if (!empty($filters['search_phone'])) {
+                $sql .= " AND u.telefono LIKE ?";
+                $params[] = '%' . $filters['search_phone'] . '%';
             }
             
             $sql .= " ORDER BY a.fecha_actividad DESC, a.fecha_creacion DESC";
@@ -193,6 +214,27 @@ class Activity {
                 $params[] = $filters['fecha_hasta'];
             }
             
+            // Advanced search filters
+            if (!empty($filters['search_title'])) {
+                $sql .= " AND a.titulo LIKE ?";
+                $params[] = '%' . $filters['search_title'] . '%';
+            }
+            
+            if (!empty($filters['search_name'])) {
+                $sql .= " AND u.nombre_completo LIKE ?";
+                $params[] = '%' . $filters['search_name'] . '%';
+            }
+            
+            if (!empty($filters['search_email'])) {
+                $sql .= " AND u.correo LIKE ?";
+                $params[] = '%' . $filters['search_email'] . '%';
+            }
+            
+            if (!empty($filters['search_phone'])) {
+                $sql .= " AND u.telefono LIKE ?";
+                $params[] = '%' . $filters['search_phone'] . '%';
+            }
+            
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
             $result = $stmt->fetch();
@@ -208,10 +250,12 @@ class Activity {
     public function getActivityById($id) {
         try {
             $stmt = $this->db->prepare("
-                SELECT a.*, u.nombre_completo as usuario_nombre, ta.nombre as tipo_nombre 
+                SELECT a.*, u.nombre_completo as usuario_nombre, ta.nombre as tipo_nombre,
+                       s.nombre_completo as solicitante_nombre
                 FROM actividades a 
                 JOIN usuarios u ON a.usuario_id = u.id 
                 JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id 
+                LEFT JOIN usuarios s ON a.solicitante_id = s.id
                 WHERE a.id = ?
             ");
             $stmt->execute([$id]);
@@ -594,6 +638,7 @@ class Activity {
         try {
             $stmt = $this->db->prepare("
                 SELECT 
+                    u.id,
                     u.nombre_completo,
                     u.ranking_puntos,
                     COUNT(a.id) as actividades_completadas,
