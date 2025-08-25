@@ -745,12 +745,12 @@ class Activity {
         try {
             $sql = "SELECT a.*, u.nombre_completo as usuario_nombre, ta.nombre as tipo_nombre,
                            u.email as usuario_email, u.telefono as usuario_telefono,
-                           p.nombre_completo as propuesto_por_nombre
+                           s.nombre_completo as solicitante_nombre
                     FROM actividades a 
                     JOIN usuarios u ON a.usuario_id = u.id 
                     JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id 
-                    LEFT JOIN usuarios p ON a.propuesto_por = p.id
-                    WHERE a.autorizada = 0 AND a.propuesto_por IS NOT NULL"; // Propuestas no autorizadas
+                    LEFT JOIN usuarios s ON a.solicitante_id = s.id
+                    WHERE a.tarea_pendiente = 2 AND a.autorizada = 0"; // Propuestas pendientes
             $params = [];
             
             if (!empty($filters['usuario_id'])) {
