@@ -23,47 +23,10 @@
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <nav class="col-md-2 d-none d-md-block sidebar">
-                <div class="position-sticky pt-3">
-                    <div class="text-center text-white mb-4">
-                        <h4><i class="fas fa-users me-2"></i>Activistas</h4>
-                        <small>SuperAdmin</small>
-                    </div>
-                    
-                    <ul class="nav flex-column">
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= url('dashboards/admin.php') ?>">
-                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white active" href="<?= url('admin/users.php') ?>">
-                                <i class="fas fa-users me-2"></i>Gestión de Usuarios
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= url('admin/pending_users.php') ?>">
-                                <i class="fas fa-user-clock me-2"></i>Usuarios Pendientes
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= url('activities/') ?>">
-                                <i class="fas fa-tasks me-2"></i>Actividades
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= url('profile.php') ?>">
-                                <i class="fas fa-user me-2"></i>Mi Perfil
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white" href="<?= url('logout.php') ?>">
-                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
+            <?php 
+            require_once __DIR__ . '/../../includes/sidebar.php';
+            renderSidebar('users'); 
+            ?>
 
             <!-- Contenido principal -->
             <main class="col-md-10 ms-sm-auto px-md-4">
@@ -285,6 +248,77 @@
                                     </tbody>
                                 </table>
                             </div>
+                        <?php endif; ?>
+                        
+                        <!-- Pagination -->
+                        <?php if (isset($pagination) && !$pagination['has_search'] && $pagination['total_pages'] > 1): ?>
+                        <div class="d-flex justify-content-between align-items-center mt-4">
+                            <div class="text-muted">
+                                Mostrando <?= min($pagination['limit'], $pagination['total_users']) ?> de <?= $pagination['total_users'] ?> usuarios
+                            </div>
+                            <nav aria-label="Paginación de usuarios">
+                                <ul class="pagination mb-0">
+                                    <!-- Página anterior -->
+                                    <?php if ($pagination['current_page'] > 1): ?>
+                                        <li class="page-item">
+                                            <a class="page-link" href="<?= url('admin/users.php?' . http_build_query(array_merge($_GET, ['page' => $pagination['current_page'] - 1]))) ?>">
+                                                <i class="fas fa-chevron-left"></i>
+                                            </a>
+                                        </li>
+                                    <?php else: ?>
+                                        <li class="page-item disabled">
+                                            <span class="page-link"><i class="fas fa-chevron-left"></i></span>
+                                        </li>
+                                    <?php endif; ?>
+                                    
+                                    <!-- Páginas numeradas -->
+                                    <?php
+                                    $start = max(1, $pagination['current_page'] - 2);
+                                    $end = min($pagination['total_pages'], $pagination['current_page'] + 2);
+                                    
+                                    if ($start > 1): ?>
+                                        <li class="page-item">
+                                            <a class="page-link" href="<?= url('admin/users.php?' . http_build_query(array_merge($_GET, ['page' => 1]))) ?>">1</a>
+                                        </li>
+                                        <?php if ($start > 2): ?>
+                                            <li class="page-item disabled">
+                                                <span class="page-link">...</span>
+                                            </li>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                    
+                                    <?php for ($i = $start; $i <= $end; $i++): ?>
+                                        <li class="page-item <?= $i === $pagination['current_page'] ? 'active' : '' ?>">
+                                            <a class="page-link" href="<?= url('admin/users.php?' . http_build_query(array_merge($_GET, ['page' => $i]))) ?>"><?= $i ?></a>
+                                        </li>
+                                    <?php endfor; ?>
+                                    
+                                    <?php if ($end < $pagination['total_pages']): ?>
+                                        <?php if ($end < $pagination['total_pages'] - 1): ?>
+                                            <li class="page-item disabled">
+                                                <span class="page-link">...</span>
+                                            </li>
+                                        <?php endif; ?>
+                                        <li class="page-item">
+                                            <a class="page-link" href="<?= url('admin/users.php?' . http_build_query(array_merge($_GET, ['page' => $pagination['total_pages']]))) ?>"><?= $pagination['total_pages'] ?></a>
+                                        </li>
+                                    <?php endif; ?>
+                                    
+                                    <!-- Página siguiente -->
+                                    <?php if ($pagination['current_page'] < $pagination['total_pages']): ?>
+                                        <li class="page-item">
+                                            <a class="page-link" href="<?= url('admin/users.php?' . http_build_query(array_merge($_GET, ['page' => $pagination['current_page'] + 1]))) ?>">
+                                                <i class="fas fa-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    <?php else: ?>
+                                        <li class="page-item disabled">
+                                            <span class="page-link"><i class="fas fa-chevron-right"></i></span>
+                                        </li>
+                                    <?php endif; ?>
+                                </ul>
+                            </nav>
+                        </div>
                         <?php endif; ?>
                     </div>
                 </div>

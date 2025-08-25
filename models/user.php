@@ -382,7 +382,7 @@ class User {
     }
     
     // Obtener usuarios con información de cumplimiento para la gestión
-    public function getAllUsersWithCompliance($filters = []) {
+    public function getAllUsersWithCompliance($filters = [], $page = 1, $limit = 20) {
         try {
             $sql = "SELECT u.*, l.nombre_completo as lider_nombre,
                            COUNT(a.id) as total_tareas,
@@ -429,6 +429,12 @@ class User {
             
             $sql .= " ORDER BY u.fecha_registro DESC";
             
+            // Add pagination
+            $offset = ($page - 1) * $limit;
+            $sql .= " LIMIT ? OFFSET ?";
+            $params[] = $limit;
+            $params[] = $offset;
+            
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
             
@@ -436,6 +442,76 @@ class User {
         } catch (Exception $e) {
             logActivity("Error al obtener usuarios con cumplimiento: " . $e->getMessage(), 'ERROR');
             return [];
+        }
+    }
+    
+    // Obtener total de usuarios con cumplimiento (para paginación)
+    public function getTotalUsersWithCompliance($filters = []) {
+        try {
+            $sql = "SELECT COUNT(DISTINCT u.id) as total
+                    FROM usuarios u 
+                    LEFT JOIN usuarios l ON u.lider_id = l.id 
+                    LEFT JOIN actividades a ON u.id = a.usuario_id AND a.tarea_pendiente = 1 AND a.autorizada = 1
+                    WHERE 1=1";
+            $params = [];
+            
+            if (!empty($filters['rol'])) {
+                $sql .= " AND u.rol = ?";
+                $params[] = $filters['rol'];
+            }
+            
+            if (!empty($filters['estado'])) {
+                $sql .= " AND u.estado = ?";
+                $params[] = $filters['estado'];
+            }
+            
+            // For compliance filters, we need to use a subquery approach
+            if (!empty($filters['cumplimiento'])) {
+                $subSql = "SELECT u2.id
+                          FROM usuarios u2 
+                          LEFT JOIN actividades a2 ON u2.id = a2.usuario_id AND a2.tarea_pendiente = 1 AND a2.autorizada = 1
+                          WHERE 1=1";
+                $subParams = [];
+                
+                if (!empty($filters['rol'])) {
+                    $subSql .= " AND u2.rol = ?";
+                    $subParams[] = $filters['rol'];
+                }
+                
+                if (!empty($filters['estado'])) {
+                    $subSql .= " AND u2.estado = ?";
+                    $subParams[] = $filters['estado'];
+                }
+                
+                $subSql .= " GROUP BY u2.id";
+                
+                switch($filters['cumplimiento']) {
+                    case 'alto': // Verde - mayor a 60% (exclude users with no tasks)
+                        $subSql .= " HAVING COUNT(a2.id) > 0 AND (COUNT(CASE WHEN a2.estado = 'completada' THEN 1 END) / COUNT(a2.id)) > 0.6";
+                        break;
+                    case 'medio': // Amarillo - 20-60%
+                        $subSql .= " HAVING COUNT(a2.id) > 0 AND (COUNT(CASE WHEN a2.estado = 'completada' THEN 1 END) / COUNT(a2.id)) BETWEEN 0.2 AND 0.6";
+                        break;
+                    case 'bajo': // Rojo - menos de 20%
+                        $subSql .= " HAVING COUNT(a2.id) > 0 AND (COUNT(CASE WHEN a2.estado = 'completada' THEN 1 END) / COUNT(a2.id)) < 0.2";
+                        break;
+                    case 'sin_tareas': // Gris - sin tareas asignadas
+                        $subSql .= " HAVING COUNT(a2.id) = 0";
+                        break;
+                }
+                
+                $sql = "SELECT COUNT(*) as total FROM ($subSql) as filtered_users";
+                $params = $subParams;
+            }
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetch();
+            
+            return $result['total'] ?? 0;
+        } catch (Exception $e) {
+            logActivity("Error al obtener total de usuarios con cumplimiento: " . $e->getMessage(), 'ERROR');
+            return 0;
         }
     }
 }

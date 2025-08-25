@@ -124,22 +124,41 @@ class UserController {
             $filters['cumplimiento'] = cleanInput($_GET['cumplimiento']);
         }
         
+        // Pagination parameters
+        $page = max(1, intval($_GET['page'] ?? 1));
+        $limit = 20; // Users per page
+        
         // Si hay búsqueda, usar enhanced search for SuperAdmin or regular search for others
         $search = cleanInput($_GET['search'] ?? '');
         if (!empty($search)) {
             if ($currentUser['rol'] === 'SuperAdmin') {
                 // SuperAdmin gets enhanced search including activity titles
                 $users = $this->userModel->searchUsersWithActivities($search, $filters);
+                $totalUsers = count($users); // For search, we don't paginate initially
+                $totalPages = 1;
             } else {
                 // Other roles use standard search
                 $users = $this->userModel->searchUsers($search, $filters);
+                $totalUsers = count($users);
+                $totalPages = 1;
             }
         } else {
-            // Use the new method with compliance data
-            $users = $this->userModel->getAllUsersWithCompliance($filters);
+            // Use the new method with compliance data and pagination
+            $users = $this->userModel->getAllUsersWithCompliance($filters, $page, $limit);
+            $totalUsers = $this->userModel->getTotalUsersWithCompliance($filters);
+            $totalPages = max(1, ceil($totalUsers / $limit));
         }
         
         $stats = $this->userModel->getUserStats();
+        
+        // Pass pagination data to view
+        $pagination = [
+            'current_page' => $page,
+            'total_pages' => $totalPages,
+            'total_users' => $totalUsers,
+            'limit' => $limit,
+            'has_search' => !empty($search)
+        ];
         
         include __DIR__ . '/../views/admin/users.php';
     }
