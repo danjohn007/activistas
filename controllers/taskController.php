@@ -149,7 +149,7 @@ class TaskController {
         $uploadPath = $uploadDir . $filename;
         
         if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
-            return 'evidencias/' . $filename;
+            return 'assets/uploads/evidencias/' . $filename;
         }
         
         return false;

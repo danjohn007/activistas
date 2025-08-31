@@ -162,6 +162,27 @@ class User {
         }
     }
     
+    // Actualizar solo la vigencia de un usuario
+    public function updateUserVigencia($userId, $vigenciaHasta = null) {
+        try {
+            $sql = "UPDATE usuarios SET vigencia_hasta = ? WHERE id = ?";
+            $params = [$vigenciaHasta, $userId];
+            
+            $stmt = $this->db->prepare($sql);
+            $result = $stmt->execute($params);
+            
+            if ($result) {
+                $vigenciaText = $vigenciaHasta ? " hasta $vigenciaHasta" : " (sin vigencia)";
+                logActivity("Vigencia actualizada para usuario ID $userId$vigenciaText");
+            }
+            
+            return $result;
+        } catch (Exception $e) {
+            logActivity("Error al actualizar vigencia de usuario: " . $e->getMessage(), 'ERROR');
+            return false;
+        }
+    }
+    
     // Actualizar información de usuario
     public function updateUser($userId, $data) {
         try {
@@ -436,7 +457,7 @@ class User {
                 $params[] = $filters['estado'];
             }
             
-            $sql .= " GROUP BY u.id, u.nombre_completo, u.telefono, u.email, u.foto_perfil, u.direccion, u.rol, u.lider_id, u.estado, u.fecha_registro, l.nombre_completo";
+            $sql .= " GROUP BY u.id, u.nombre_completo, u.telefono, u.email, u.foto_perfil, u.direccion, u.rol, u.lider_id, u.estado, u.vigencia_hasta, u.fecha_registro, l.nombre_completo";
             
             // Add compliance filter using HAVING clause
             if (!empty($filters['cumplimiento'])) {

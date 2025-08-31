@@ -120,9 +120,6 @@ class UserController {
         if (!empty($_GET['estado'])) {
             $filters['estado'] = cleanInput($_GET['estado']);
         }
-        if (!empty($_GET['cumplimiento'])) {
-            $filters['cumplimiento'] = cleanInput($_GET['cumplimiento']);
-        }
         
         // Pagination
         $page = max(1, intval($_GET['page'] ?? 1));
