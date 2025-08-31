@@ -240,4 +240,45 @@ function getDashboardUrl($role) {
     $filename = $dashboardMap[$role] ?? 'activista.php';
     return url('dashboards/' . $filename);
 }
+
+// Get user notifications
+function getUserNotifications($userId) {
+    if (!isset($_SESSION['user_notifications'][$userId])) {
+        return [];
+    }
+    
+    return $_SESSION['user_notifications'][$userId];
+}
+
+// Clear user notifications
+function clearUserNotifications($userId) {
+    if (isset($_SESSION['user_notifications'][$userId])) {
+        unset($_SESSION['user_notifications'][$userId]);
+    }
+}
+
+// Display notifications HTML
+function displayNotifications($userId) {
+    $notifications = getUserNotifications($userId);
+    
+    if (empty($notifications)) {
+        return '';
+    }
+    
+    $html = '';
+    foreach ($notifications as $notification) {
+        $html .= '<div class="alert alert-' . $notification['type'] . ' alert-dismissible fade show" role="alert">';
+        $html .= htmlspecialchars($notification['message']);
+        if (!empty($notification['url'])) {
+            $html .= ' <a href="' . $notification['url'] . '" class="alert-link">Ver actividad</a>';
+        }
+        $html .= '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+        $html .= '</div>';
+    }
+    
+    // Clear notifications after displaying
+    clearUserNotifications($userId);
+    
+    return $html;
+}
 ?>

@@ -605,10 +605,8 @@ class Activity {
             // Find the best response time for comparison
             $bestTime = min(array_column($users, 'mejor_tiempo_minutos'));
             
-            // Calculate rankings
+            // Calculate rankings - Only count time response points (removed task completion points)
             foreach ($users as $user) {
-                $puntosTareas = $user['tareas_completadas'] * 200; // 200 points per completed task
-                
                 // Calculate time points (800 for best time, decreasing for others)
                 $puntostiempo = 0;
                 if ($user['mejor_tiempo_minutos'] == $bestTime) {
@@ -625,7 +623,8 @@ class Activity {
                     // Allow negative values as specified
                 }
                 
-                $puntosTotal = $puntosTareas + $puntostiempo;
+                // Total points is now only time response points
+                $puntosTotal = $puntostiempo;
                 
                 // Update user ranking
                 $updateStmt = $this->db->prepare("
@@ -839,6 +838,47 @@ class Activity {
             return $result;
         } catch (Exception $e) {
             logActivity("Error al agregar bonus de propuesta: " . $e->getMessage(), 'ERROR');
+            return false;
+        }
+    }
+    
+    // Send notification for new activity
+    public function notifyNewActivity($activityId, $userId, $titulo) {
+        try {
+            // Get user info
+            $stmt = $this->db->prepare("SELECT nombre_completo, email FROM usuarios WHERE id = ?");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch();
+            
+            if (!$user) {
+                return false;
+            }
+            
+            // Create flash message for immediate notification
+            $message = "Nueva actividad asignada: '$titulo'. Haz clic aquí para subir evidencia.";
+            $evidenceUrl = url("activities/add_evidence.php?actividad_id=$activityId");
+            
+            // Store notification in session for the target user
+            if (!isset($_SESSION['user_notifications'])) {
+                $_SESSION['user_notifications'] = [];
+            }
+            
+            if (!isset($_SESSION['user_notifications'][$userId])) {
+                $_SESSION['user_notifications'][$userId] = [];
+            }
+            
+            $_SESSION['user_notifications'][$userId][] = [
+                'message' => $message,
+                'url' => $evidenceUrl,
+                'type' => 'info',
+                'timestamp' => time()
+            ];
+            
+            logActivity("Notificación enviada al usuario {$user['nombre_completo']} para actividad ID $activityId");
+            
+            return true;
+        } catch (Exception $e) {
+            logActivity("Error al enviar notificación: " . $e->getMessage(), 'ERROR');
             return false;
         }
     }

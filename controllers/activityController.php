@@ -149,6 +149,10 @@ class ActivityController {
                 if ($activityId) {
                     // Procesar evidencias si se subieron
                     $this->processEvidenceFiles($activityId);
+                    
+                    // Send notification to recipient
+                    $this->activityModel->notifyNewActivity($activityId, $recipientId, $activityData['titulo']);
+                    
                     $successCount++;
                 }
             }

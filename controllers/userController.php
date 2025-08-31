@@ -196,11 +196,20 @@ class UserController {
             redirectWithMessage('admin/pending_users.php', 'Datos inválidos', 'error');
         }
         
-        $status = $action === 'approve' ? 'activo' : 'desactivado';
-        $result = $this->userModel->updateUserStatus($userId, $status);
+        if ($action === 'approve') {
+            // Handle approval with vigencia
+            $vigenciaHasta = cleanInput($_POST['vigencia_hasta'] ?? '');
+            $vigenciaHasta = !empty($vigenciaHasta) ? $vigenciaHasta : null;
+            
+            $result = $this->userModel->approveUserWithVigencia($userId, $vigenciaHasta);
+            $message = $result ? 'Usuario aprobado exitosamente' : 'Error al aprobar usuario';
+        } else {
+            // Handle rejection
+            $result = $this->userModel->updateUserStatus($userId, 'desactivado');
+            $message = $result ? 'Usuario rechazado' : 'Error al rechazar usuario';
+        }
         
         if ($result) {
-            $message = $action === 'approve' ? 'Usuario aprobado exitosamente' : 'Usuario rechazado';
             redirectWithMessage('admin/pending_users.php', $message, 'success');
         } else {
             redirectWithMessage('admin/pending_users.php', 'Error al procesar la solicitud', 'error');

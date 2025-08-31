@@ -133,6 +133,35 @@ class User {
         }
     }
     
+    // Aprobar usuario con vigencia
+    public function approveUserWithVigencia($userId, $vigenciaHasta = null) {
+        try {
+            $sql = "UPDATE usuarios SET estado = 'activo'";
+            $params = [];
+            
+            if ($vigenciaHasta && !empty($vigenciaHasta)) {
+                $sql .= ", vigencia_hasta = ?";
+                $params[] = $vigenciaHasta;
+            }
+            
+            $sql .= " WHERE id = ?";
+            $params[] = $userId;
+            
+            $stmt = $this->db->prepare($sql);
+            $result = $stmt->execute($params);
+            
+            if ($result) {
+                $vigenciaText = $vigenciaHasta ? " con vigencia hasta $vigenciaHasta" : "";
+                logActivity("Usuario ID $userId aprobado$vigenciaText");
+            }
+            
+            return $result;
+        } catch (Exception $e) {
+            logActivity("Error al aprobar usuario con vigencia: " . $e->getMessage(), 'ERROR');
+            return false;
+        }
+    }
+    
     // Actualizar información de usuario
     public function updateUser($userId, $data) {
         try {

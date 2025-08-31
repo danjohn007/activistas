@@ -357,8 +357,8 @@
                             <i class="fas fa-rocket me-2"></i>¡Sube en el Ranking!
                         </h5>
                         <p class="card-text">
-                            Completa más tareas y hazlo rápido para ganar puntos y subir posiciones. 
-                            ¡Cada tarea completada te acerca más al primer lugar!
+                            ¡El ranking se basa únicamente en tu tiempo de respuesta! 
+                            Sube evidencia lo más rápido posible para ganar más puntos y subir posiciones.
                         </p>
                         <a href="<?= url('tasks/') ?>" class="btn btn-success">
                             <i class="fas fa-clipboard-list me-1"></i>Ver Mis Tareas
