@@ -243,6 +243,41 @@
                                     </div>
                                     <?php endif; ?>
                                     
+                                    <!-- Vigencia -->
+                                    <?php 
+                                    $currentUserRole = $_SESSION['user_role'] ?? '';
+                                    $canEditVigencia = in_array($currentUserRole, ['SuperAdmin', 'Gestor']);
+                                    ?>
+                                    <?php if ($canEditVigencia): ?>
+                                    <div class="card mt-4 mb-3">
+                                        <div class="card-header">
+                                            <h6 class="card-title mb-0">
+                                                <i class="fas fa-calendar-alt me-2"></i>Vigencia del Usuario
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label for="vigencia_hasta" class="form-label">Fecha de Vigencia</label>
+                                                <input type="date" class="form-control" id="vigencia_hasta" name="vigencia_hasta" 
+                                                       value="<?= htmlspecialchars($user['vigencia_hasta'] ?? '') ?>"
+                                                       min="<?= date('Y-m-d') ?>">
+                                                <small class="text-muted">
+                                                    Fecha hasta la cual el usuario tendrá acceso al sistema. 
+                                                    Dejar vacío para vigencia indefinida.
+                                                </small>
+                                                <?php if (!empty($user['vigencia_hasta'])): ?>
+                                                    <div class="mt-2">
+                                                        <small class="<?= $user['vigencia_hasta'] < date('Y-m-d') ? 'text-danger' : 'text-success' ?>">
+                                                            <i class="fas fa-info-circle me-1"></i>
+                                                            Estado actual: <?= $user['vigencia_hasta'] < date('Y-m-d') ? 'Vencida' : 'Vigente' ?>
+                                                        </small>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <?php endif; ?>
+                                    
                                     <div class="mb-3">
                                         <label for="foto_perfil" class="form-label">Nueva Foto de Perfil</label>
                                         <input type="file" class="form-control" id="foto_perfil" name="foto_perfil" 

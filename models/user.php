@@ -240,6 +240,11 @@ class User {
                 $params[] = $data['cuenta_pago'];
             }
             
+            if (isset($data['vigencia_hasta'])) {
+                $fields[] = "vigencia_hasta = ?";
+                $params[] = $data['vigencia_hasta'];
+            }
+            
             if (empty($fields)) {
                 return false;
             }
