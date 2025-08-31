@@ -347,7 +347,13 @@
                             csrf_token: '<?= generateCSRFToken() ?>'
                         })
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        // Check if response is ok before trying to parse JSON
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         this.disabled = false;
                         this.style.opacity = '1';
@@ -364,7 +370,16 @@
                     .catch(error => {
                         this.disabled = false;
                         this.style.opacity = '1';
-                        showAlert('danger', 'Error de conexión al actualizar vigencia');
+                        
+                        // Provide more specific error messages
+                        let errorMessage = 'Error de conexión al actualizar vigencia';
+                        if (error.message && error.message.includes('HTTP error')) {
+                            errorMessage = 'Error del servidor al actualizar vigencia. Por favor, inténtelo de nuevo.';
+                        } else if (error.message && error.message.includes('Failed to fetch')) {
+                            errorMessage = 'Error de conexión de red. Verifique su conexión a internet.';
+                        }
+                        
+                        showAlert('danger', errorMessage);
                         console.error('Error:', error);
                     });
                 });

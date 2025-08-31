@@ -94,6 +94,17 @@ try {
     
     // Actualizar vigencia
     $userModel = new User();
+    
+    // Verificar que el modelo de usuario tenga conexión válida a la base de datos
+    if (!$userModel->hasValidConnection()) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Error de conexión a la base de datos. Por favor, inténtelo de nuevo más tarde.'
+        ]);
+        exit;
+    }
+    
     $result = $userModel->updateUserVigencia($userId, $vigenciaHasta);
     
     if ($result) {

@@ -21,13 +21,15 @@ class Database {
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
-                PDO::ATTR_TIMEOUT => 5, // Timeout de 5 segundos
+                PDO::ATTR_TIMEOUT => 10, // Aumentar timeout a 10 segundos
+                PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . $this->charset,
+                PDO::ATTR_PERSISTENT => false, // Evitar conexiones persistentes que pueden causar problemas
             ];
             
             $this->conn = new PDO($dsn, $this->username, $this->password, $options);
             
-            // Test the connection
-            $this->conn->query("SELECT 1");
+            // Test the connection with a more robust test
+            $this->conn->query("SELECT 1")->fetchColumn();
             
         } catch(PDOException $exception) {
             // Log the error but don't expose it to the user interface

@@ -18,10 +18,20 @@ class User {
             if (!$this->db) {
                 throw new Exception("No se pudo establecer conexión a la base de datos");
             }
+            
+            // Realizar una prueba de conexión simple
+            $this->db->query("SELECT 1");
+            
         } catch (Exception $e) {
             error_log("User Model Error: " . $e->getMessage());
+            logActivity("Error en modelo User: " . $e->getMessage(), 'ERROR');
             $this->db = null;
         }
+    }
+    
+    // Verificar si el modelo tiene una conexión válida a la base de datos
+    public function hasValidConnection() {
+        return $this->db !== null;
     }
     
     // Obtener todos los usuarios
@@ -114,6 +124,12 @@ class User {
     // Actualizar estado de usuario
     public function updateUserStatus($userId, $status) {
         try {
+            // Verificar que la conexión a la base de datos esté disponible
+            if (!$this->db) {
+                logActivity("Error: No hay conexión a la base de datos para actualizar estado del usuario ID $userId", 'ERROR');
+                return false;
+            }
+            
             $validStatuses = ['pendiente', 'activo', 'suspendido', 'desactivado'];
             if (!in_array($status, $validStatuses)) {
                 return false;
@@ -165,6 +181,12 @@ class User {
     // Actualizar solo la vigencia de un usuario
     public function updateUserVigencia($userId, $vigenciaHasta = null) {
         try {
+            // Verificar que la conexión a la base de datos esté disponible
+            if (!$this->db) {
+                logActivity("Error: No hay conexión a la base de datos para actualizar vigencia del usuario ID $userId", 'ERROR');
+                return false;
+            }
+            
             $sql = "UPDATE usuarios SET vigencia_hasta = ? WHERE id = ?";
             $params = [$vigenciaHasta, $userId];
             
