@@ -40,9 +40,13 @@ try {
     
     switch ($action) {
         case 'approve':
-            $result = $userModel->updateUserStatus($userId, 'activo');
+            $vigenciaHasta = $input['vigencia_hasta'] ?? $_POST['vigencia_hasta'] ?? null;
+            $vigenciaHasta = !empty($vigenciaHasta) ? $vigenciaHasta : null;
+            
+            $result = $userModel->approveUserWithVigencia($userId, $vigenciaHasta);
             if ($result) {
-                logActivity("Usuario ID $userId aprobado por " . $currentUser['nombre_completo']);
+                $vigenciaText = $vigenciaHasta ? " con vigencia hasta $vigenciaHasta" : "";
+                logActivity("Usuario ID $userId aprobado$vigenciaText por " . $currentUser['nombre_completo']);
                 $response = [
                     'success' => true,
                     'message' => 'Usuario aprobado exitosamente'

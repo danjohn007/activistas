@@ -123,7 +123,7 @@
                                         <div class="card-footer bg-transparent">
                                             <div class="d-grid gap-2">
                                                 <button type="button" class="btn btn-success btn-sm" 
-                                                        onclick="processUser(<?= $user['id'] ?>, 'approve')">
+                                                        onclick="showApprovalModal(<?= $user['id'] ?>, '<?= htmlspecialchars($user['nombre_completo'], ENT_QUOTES) ?>')">
                                                     <i class="fas fa-check me-1"></i>Aprobar
                                                 </button>
                                                 <button type="button" class="btn btn-danger btn-sm" 
@@ -148,15 +148,65 @@
         <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
         <input type="hidden" name="user_id" id="processUserId">
         <input type="hidden" name="action" id="processAction">
+        <input type="hidden" name="vigencia_hasta" id="vigenciaHasta">
     </form>
+
+    <!-- Modal para selección de vigencia -->
+    <div class="modal fade" id="approvalModal" tabindex="-1" aria-labelledby="approvalModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="approvalModalLabel">Aprobar Usuario</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que quieres aprobar a <strong id="userName"></strong>?</p>
+                    <div class="mb-3">
+                        <label for="vigenciaInput" class="form-label">Vigencia hasta (opcional):</label>
+                        <input type="date" class="form-control" id="vigenciaInput" min="<?= date('Y-m-d') ?>">
+                        <div class="form-text">Si no se especifica, el usuario tendrá acceso permanente.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" onclick="confirmApproval()">
+                        <i class="fas fa-check me-1"></i>Aprobar Usuario
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        function showApprovalModal(userId, userName) {
+            document.getElementById('processUserId').value = userId;
+            document.getElementById('userName').textContent = userName;
+            document.getElementById('vigenciaInput').value = '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
+            modal.show();
+        }
+        
+        function confirmApproval() {
+            const vigencia = document.getElementById('vigenciaInput').value;
+            document.getElementById('processAction').value = 'approve';
+            document.getElementById('vigenciaHasta').value = vigencia || '';
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('approvalModal'));
+            modal.hide();
+            
+            // Submit form
+            document.getElementById('processForm').submit();
+        }
+        
         function processUser(userId, action) {
             const actionText = action === 'approve' ? 'aprobar' : 'rechazar';
             if (confirm(`¿Estás seguro de que quieres ${actionText} este usuario?`)) {
                 document.getElementById('processUserId').value = userId;
                 document.getElementById('processAction').value = action;
+                document.getElementById('vigenciaHasta').value = '';
                 document.getElementById('processForm').submit();
             }
         }
