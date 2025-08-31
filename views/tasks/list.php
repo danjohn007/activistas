@@ -129,6 +129,15 @@
                             ?>
                             <div class="col-lg-6 col-xl-4 mb-4">
                                 <div class="card card-task <?= $cardClass ?> h-100">
+                                    <?php if (!empty($task['imagen_actividad'])): ?>
+                                        <div class="card-img-top-container" style="height: 200px; overflow: hidden;">
+                                            <img src="<?= url($task['imagen_actividad']) ?>" 
+                                                 class="card-img-top" 
+                                                 style="width: 100%; height: 100%; object-fit: cover;" 
+                                                 alt="Imagen de la actividad"
+                                                 onerror="this.style.display='none';">
+                                        </div>
+                                    <?php endif; ?>
                                     <div class="card-header bg-light">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <h6 class="card-title mb-0 fw-bold">

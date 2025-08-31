@@ -215,12 +215,21 @@ class DashboardController {
                 $memberMetrics = [];
             }
             
+            // Tareas pendientes del equipo
+            try {
+                $teamPendingTasks = $this->getTeamPendingTasks($liderId);
+            } catch (Exception $e) {
+                logActivity("Error al obtener tareas pendientes del equipo del líder $liderId: " . $e->getMessage(), 'ERROR');
+                $teamPendingTasks = [];
+            }
+            
             // Establecer variables globales para la vista
             $GLOBALS['teamActivities'] = $teamActivities;
             $GLOBALS['teamStats'] = $teamStats;
             $GLOBALS['teamMembers'] = $teamMembers;
             $GLOBALS['recentActivities'] = $recentActivities;
             $GLOBALS['memberMetrics'] = $memberMetrics;
+            $GLOBALS['teamPendingTasks'] = $teamPendingTasks;
             
         } catch (Exception $e) {
             logActivity("Error crítico en liderDashboard: " . $e->getMessage(), 'ERROR');
@@ -231,6 +240,7 @@ class DashboardController {
             $GLOBALS['teamMembers'] = [];
             $GLOBALS['recentActivities'] = [];
             $GLOBALS['memberMetrics'] = [];
+            $GLOBALS['teamPendingTasks'] = [];
             
             // Re-lanzar la excepción para que sea capturada por el archivo lider.php
             throw $e;
@@ -254,6 +264,9 @@ class DashboardController {
             'limit' => 10
         ]);
         
+        // Tareas pendientes del activista
+        $pendingTasks = $this->activityModel->getPendingTasks($userId);
+        
         // Información del líder
         $lider = null;
         if ($currentUser['lider_id']) {
@@ -270,6 +283,7 @@ class DashboardController {
         $GLOBALS['myActivities'] = $myActivities;
         $GLOBALS['myStats'] = $myStats;
         $GLOBALS['recentActivities'] = $recentActivities;
+        $GLOBALS['pendingTasks'] = $pendingTasks;
         $GLOBALS['lider'] = $lider;
         $GLOBALS['teammates'] = $teammates;
     }
@@ -416,6 +430,11 @@ class DashboardController {
         header('Content-Type: application/json');
         echo json_encode($stats);
         exit();
+    }
+    
+    // Obtener tareas pendientes del equipo para el líder
+    private function getTeamPendingTasks($liderId) {
+        return $this->activityModel->getTeamPendingTasks($liderId);
     }
 }
 ?>

@@ -673,7 +673,14 @@ class Activity {
                 SELECT 
                     a.*,
                     s.nombre_completo as solicitante_nombre,
-                    ta.nombre as tipo_nombre
+                    ta.nombre as tipo_nombre,
+                    COALESCE(a.imagen, 
+                        (SELECT e.archivo FROM evidencias e 
+                         WHERE e.actividad_id = a.id 
+                         AND e.tipo_evidencia IN ('foto', 'video') 
+                         AND e.archivo IS NOT NULL 
+                         ORDER BY e.fecha_subida ASC LIMIT 1)
+                    ) as imagen_actividad
                 FROM actividades a
                 JOIN usuarios s ON a.solicitante_id = s.id
                 JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id
@@ -687,6 +694,39 @@ class Activity {
             return $stmt->fetchAll();
         } catch (Exception $e) {
             logActivity("Error al obtener tareas pendientes: " . $e->getMessage(), 'ERROR');
+            return [];
+        }
+    }
+    
+    // Obtener tareas pendientes del equipo para el líder
+    public function getTeamPendingTasks($liderId) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT 
+                    a.*,
+                    s.nombre_completo as solicitante_nombre,
+                    ta.nombre as tipo_nombre,
+                    u.nombre_completo as usuario_nombre,
+                    COALESCE(a.imagen, 
+                        (SELECT e.archivo FROM evidencias e 
+                         WHERE e.actividad_id = a.id 
+                         AND e.tipo_evidencia IN ('foto', 'video') 
+                         AND e.archivo IS NOT NULL 
+                         ORDER BY e.fecha_subida ASC LIMIT 1)
+                    ) as imagen_actividad
+                FROM actividades a
+                JOIN usuarios s ON a.solicitante_id = s.id
+                JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id
+                JOIN usuarios u ON a.usuario_id = u.id
+                WHERE a.tarea_pendiente = 1 
+                AND u.lider_id = ?
+                AND a.estado != 'completada'
+                ORDER BY a.fecha_creacion DESC
+            ");
+            $stmt->execute([$liderId]);
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            logActivity("Error al obtener tareas pendientes del equipo: " . $e->getMessage(), 'ERROR');
             return [];
         }
     }

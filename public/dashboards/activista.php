@@ -252,6 +252,76 @@ $controller->activistaDashboard();
                     </div>
                 </div>
 
+                <!-- Tareas Pendientes -->
+                <?php if (!empty($pendingTasks)): ?>
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-clipboard-list me-2"></i>Mis Tareas Pendientes
+                                    <span class="badge bg-danger ms-2"><?= count($pendingTasks) ?></span>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <?php foreach (array_slice($pendingTasks, 0, 3) as $task): ?>
+                                        <?php
+                                        $isUrgent = strtotime($task['fecha_actividad']) <= strtotime('+3 days');
+                                        ?>
+                                        <div class="col-md-4 mb-3">
+                                            <div class="card h-100 border-warning">
+                                                <?php if (!empty($task['imagen_actividad'])): ?>
+                                                    <div class="card-img-top-container" style="height: 150px; overflow: hidden;">
+                                                        <img src="<?= url($task['imagen_actividad']) ?>" 
+                                                             class="card-img-top" 
+                                                             style="width: 100%; height: 100%; object-fit: cover;" 
+                                                             alt="Imagen de la actividad"
+                                                             onerror="this.style.display='none';">
+                                                    </div>
+                                                <?php endif; ?>
+                                                <div class="card-body">
+                                                    <h6 class="card-title"><?= htmlspecialchars($task['titulo']) ?></h6>
+                                                    <p class="card-text small text-muted">
+                                                        <?= htmlspecialchars(substr($task['descripcion'], 0, 100)) ?>...
+                                                    </p>
+                                                    <div class="small">
+                                                        <div><strong>Asignado por:</strong> <?= htmlspecialchars($task['solicitante_nombre']) ?></div>
+                                                        <div><strong>Fecha:</strong> <?= date('d/m/Y', strtotime($task['fecha_actividad'])) ?></div>
+                                                        <?php if ($isUrgent): ?>
+                                                            <span class="badge bg-danger">Urgente</span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                                <div class="card-footer">
+                                                    <a href="<?= url('tasks/complete.php?id=' . $task['id']) ?>" 
+                                                       class="btn btn-success btn-sm w-100">
+                                                        <i class="fas fa-upload me-1"></i>Completar
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <?php if (count($pendingTasks) > 3): ?>
+                                    <div class="text-center mt-3">
+                                        <a href="<?= url('tasks/') ?>" class="btn btn-warning">
+                                            Ver todas mis tareas pendientes (<?= count($pendingTasks) ?>)
+                                        </a>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="text-center mt-3">
+                                        <a href="<?= url('tasks/') ?>" class="btn btn-warning">
+                                            Ver detalles de tareas pendientes
+                                        </a>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
                 <!-- Actividades recientes -->
                 <div class="row mb-4">
                     <div class="col-12">
