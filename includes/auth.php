@@ -169,7 +169,7 @@ class Auth {
     // Actualizar último acceso
     private function updateLastAccess($userId) {
         try {
-            $stmt = $this->db->prepare("UPDATE usuarios SET fecha_actualizacion = NOW() WHERE id = ?");
+            $stmt = $this->db->prepare("UPDATE usuarios SET fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?");
             $stmt->execute([$userId]);
         } catch (Exception $e) {
             logActivity("Error al actualizar último acceso: " . $e->getMessage(), 'ERROR');
