@@ -176,21 +176,10 @@
                                             <td>
                                                 <?php
                                                 $vigenciaHasta = $user['vigencia_hasta'] ?? null;
-                                                $currentUserRole = $_SESSION['user_role'] ?? '';
-                                                $canEditVigencia = in_array($currentUserRole, ['SuperAdmin', 'Gestor']);
                                                 ?>
-                                                <?php if ($canEditVigencia): ?>
-                                                    <input type="date" 
-                                                           class="form-control form-control-sm vigencia-input" 
-                                                           value="<?= $vigenciaHasta ?>" 
-                                                           data-user-id="<?= $user['id'] ?>"
-                                                           min="<?= date('Y-m-d') ?>"
-                                                           style="max-width: 150px;">
-                                                <?php else: ?>
-                                                    <span class="<?= $vigenciaHasta ? ($vigenciaHasta < date('Y-m-d') ? 'text-danger' : 'text-success') : 'text-muted' ?>">
-                                                        <?= $vigenciaHasta ? formatDate($vigenciaHasta) : 'Sin vigencia' ?>
-                                                    </span>
-                                                <?php endif; ?>
+                                                <span class="<?= $vigenciaHasta ? ($vigenciaHasta < date('Y-m-d') ? 'text-danger' : 'text-success') : 'text-muted' ?>">
+                                                    <?= $vigenciaHasta ? formatDate($vigenciaHasta) : 'Sin vigencia' ?>
+                                                </span>
                                             </td>
                                             <td><?= htmlspecialchars($user['lider_nombre'] ?? 'N/A') ?></td>
                                             <td><?= formatDate($user['fecha_registro']) ?></td>
@@ -320,56 +309,6 @@
                 document.getElementById('statusForm').submit();
             }
         }
-
-        // Handle vigencia updates
-        document.addEventListener('DOMContentLoaded', function() {
-            const vigenciaInputs = document.querySelectorAll('.vigencia-input');
-            
-            vigenciaInputs.forEach(input => {
-                input.addEventListener('change', function() {
-                    const userId = this.dataset.userId;
-                    const vigenciaHasta = this.value;
-                    
-                    // Show loading state
-                    this.disabled = true;
-                    this.style.opacity = '0.5';
-                    
-                    // AJAX request to update vigencia
-                    fetch('<?= url("admin/update_vigencia.php") ?>', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: JSON.stringify({
-                            user_id: userId,
-                            vigencia_hasta: vigenciaHasta,
-                            csrf_token: '<?= generateCSRFToken() ?>'
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        this.disabled = false;
-                        this.style.opacity = '1';
-                        
-                        if (data.success) {
-                            // Show success message
-                            showAlert('success', 'Vigencia actualizada correctamente');
-                        } else {
-                            // Show error and revert value
-                            showAlert('danger', data.error || 'Error al actualizar vigencia');
-                            this.value = data.original_value || '';
-                        }
-                    })
-                    .catch(error => {
-                        this.disabled = false;
-                        this.style.opacity = '1';
-                        showAlert('danger', 'Error de conexión al actualizar vigencia');
-                        console.error('Error:', error);
-                    });
-                });
-            });
-        });
 
         function showAlert(type, message) {
             const alertDiv = document.createElement('div');

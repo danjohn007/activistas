@@ -266,6 +266,29 @@ class UserController {
             $updateData['lider_id'] = intval($_POST['lider_id']);
         }
         
+        // Handle vigencia (only for SuperAdmin and Gestor)
+        $currentUser = $this->auth->getCurrentUser();
+        if (in_array($currentUser['rol'], ['SuperAdmin', 'Gestor'])) {
+            $vigenciaHasta = cleanInput($_POST['vigencia_hasta'] ?? '');
+            
+            // Validate vigencia date if provided
+            if (!empty($vigenciaHasta)) {
+                $date = DateTime::createFromFormat('Y-m-d', $vigenciaHasta);
+                if (!$date || $date->format('Y-m-d') !== $vigenciaHasta) {
+                    redirectWithMessage("admin/edit_user.php?id=$userId", 'Formato de fecha de vigencia inválido', 'error');
+                    return;
+                }
+                
+                // Verificar que la fecha no sea anterior a hoy
+                if ($date < new DateTime()) {
+                    redirectWithMessage("admin/edit_user.php?id=$userId", 'La fecha de vigencia no puede ser anterior al día actual', 'error');
+                    return;
+                }
+            }
+            
+            $updateData['vigencia_hasta'] = !empty($vigenciaHasta) ? $vigenciaHasta : null;
+        }
+        
         // Procesar nueva foto de perfil si se subió
         if (isset($_FILES['foto_perfil']) && $_FILES['foto_perfil']['error'] === UPLOAD_ERR_OK) {
             $uploadResult = uploadFile($_FILES['foto_perfil'], __DIR__ . '/../public/assets/uploads/profiles', ['jpg', 'jpeg', 'png', 'gif'], true);
