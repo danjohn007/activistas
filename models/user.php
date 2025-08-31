@@ -434,16 +434,10 @@ class User {
     // Obtener usuarios con información de cumplimiento para la gestión
     public function getAllUsersWithCompliance($filters = [], $page = 1, $perPage = 20) {
         try {
-            $sql = "SELECT u.*, l.nombre_completo as lider_nombre,
-                           COUNT(a.id) as total_tareas,
-                           COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) as tareas_completadas,
-                           CASE 
-                               WHEN COUNT(a.id) = 0 THEN 0
-                               ELSE ROUND((COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) / COUNT(a.id)) * 100, 1)
-                           END as porcentaje_cumplimiento
+            // Simplified query since we removed cumplimiento filter
+            $sql = "SELECT u.*, l.nombre_completo as lider_nombre
                     FROM usuarios u 
                     LEFT JOIN usuarios l ON u.lider_id = l.id 
-                    LEFT JOIN actividades a ON u.id = a.usuario_id AND a.tarea_pendiente = 1 AND a.autorizada = 1
                     WHERE 1=1";
             $params = [];
             
@@ -455,26 +449,6 @@ class User {
             if (!empty($filters['estado'])) {
                 $sql .= " AND u.estado = ?";
                 $params[] = $filters['estado'];
-            }
-            
-            $sql .= " GROUP BY u.id, u.nombre_completo, u.telefono, u.email, u.foto_perfil, u.direccion, u.rol, u.lider_id, u.estado, u.vigencia_hasta, u.fecha_registro, l.nombre_completo";
-            
-            // Add compliance filter using HAVING clause
-            if (!empty($filters['cumplimiento'])) {
-                switch($filters['cumplimiento']) {
-                    case 'alto': // Verde - mayor a 60% (exclude users with no tasks)
-                        $sql .= " HAVING COUNT(a.id) > 0 AND (COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) / COUNT(a.id)) > 0.6";
-                        break;
-                    case 'medio': // Amarillo - 20-60%
-                        $sql .= " HAVING COUNT(a.id) > 0 AND (COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) / COUNT(a.id)) BETWEEN 0.2 AND 0.6";
-                        break;
-                    case 'bajo': // Rojo - menos de 20%
-                        $sql .= " HAVING COUNT(a.id) > 0 AND (COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) / COUNT(a.id)) < 0.2";
-                        break;
-                    case 'sin_tareas': // Gris - sin tareas asignadas
-                        $sql .= " HAVING COUNT(a.id) = 0";
-                        break;
-                }
             }
             
             $sql .= " ORDER BY u.fecha_registro DESC";
