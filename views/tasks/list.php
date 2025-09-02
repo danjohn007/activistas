@@ -180,11 +180,24 @@
                                         </div>
                                     </div>
                                     <div class="card-footer bg-transparent">
-                                        <div class="d-grid">
-                                            <a href="<?= url('tasks/complete.php?id=' . $task['id']) ?>" 
-                                               class="btn btn-success">
-                                                <i class="fas fa-upload me-1"></i>Completar Tarea
-                                            </a>
+                                        <!-- Added VER DETALLE button as requested for all user levels -->
+                                        <div class="row g-2">
+                                            <div class="col">
+                                                <div class="d-grid">
+                                                    <a href="<?= url('activities/detail.php?id=' . $task['id']) ?>" 
+                                                       class="btn btn-outline-primary">
+                                                        <i class="fas fa-eye me-1"></i>Ver Detalle
+                                                    </a>
+                                                </div>
+                                            </div>
+                                            <div class="col">
+                                                <div class="d-grid">
+                                                    <a href="<?= url('tasks/complete.php?id=' . $task['id']) ?>" 
+                                                       class="btn btn-success">
+                                                        <i class="fas fa-upload me-1"></i>Completar Tarea
+                                                    </a>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
