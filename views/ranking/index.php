@@ -58,55 +58,10 @@
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <nav class="col-md-2 d-none d-md-block sidebar">
-                <div class="position-sticky pt-3">
-                    <div class="text-center text-white mb-4">
-                        <h4><i class="fas fa-trophy me-2"></i>Ranking</h4>
-                        <small><?= htmlspecialchars($currentUser['nombre_completo']) ?></small>
-                    </div>
-                    
-                    <ul class="nav flex-column">
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= url('dashboards/' . strtolower($currentUser['rol']) . '.php') ?>">
-                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
-                            </a>
-                        </li>
-                        <?php if ($currentUser['rol'] === 'Activista'): ?>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= url('activities/') ?>">
-                                <i class="fas fa-tasks me-2"></i>Mis Actividades
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= url('tasks/') ?>">
-                                <i class="fas fa-clipboard-list me-2"></i>Tareas Pendientes
-                            </a>
-                        </li>
-                        <?php else: ?>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= url('activities/') ?>">
-                                <i class="fas fa-tasks me-2"></i>Actividades
-                            </a>
-                        </li>
-                        <?php endif; ?>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white active" href="<?= url('ranking/') ?>">
-                                <i class="fas fa-trophy me-2"></i>Ranking
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link text-white" href="<?= url('profile.php') ?>">
-                                <i class="fas fa-user me-2"></i>Mi Perfil
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white" href="<?= url('logout.php') ?>">
-                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
+            <?php 
+            require_once __DIR__ . '/../../includes/sidebar.php';
+            renderSidebar('ranking'); 
+            ?>
 
             <!-- Contenido principal -->
             <main class="col-md-10 ms-sm-auto px-md-4">
