@@ -153,7 +153,7 @@
                                     <!-- All users tab -->
                                     <div class="tab-pane fade" id="all-users" role="tabpanel">
                                         <div class="form-check mb-2">
-                                            <input class="form-check-input" type="checkbox" id="select_all_users">
+                                            <input class="form-check-input" type="checkbox" id="select_all_users" checked>
                                             <label class="form-check-label fw-bold" for="select_all_users">
                                                 Seleccionar/Deseleccionar todos los usuarios
                                             </label>
@@ -166,7 +166,7 @@
                                                 <div class="form-check">
                                                     <input class="form-check-input all-user-checkbox" type="checkbox" 
                                                            id="user_<?= $user['id'] ?>" name="destinatarios_todos[]" 
-                                                           value="<?= $user['id'] ?>">
+                                                           value="<?= $user['id'] ?>" checked>
                                                     <label class="form-check-label" for="user_<?= $user['id'] ?>">
                                                         <?= htmlspecialchars($user['nombre_completo']) ?> 
                                                         <span class="badge bg-secondary ms-1"><?= $user['rol'] ?></span>
@@ -315,15 +315,20 @@
         // Funcionalidad para seleccionar/deseleccionar todos los usuarios (SuperAdmin)
         const selectAllUsersCheckbox = document.getElementById('select_all_users');
         if (selectAllUsersCheckbox) {
+            // Pre-seleccionar todos los usuarios por defecto para actividades de admin
+            const userCheckboxes = document.querySelectorAll('.all-user-checkbox');
+            userCheckboxes.forEach(checkbox => {
+                checkbox.checked = true; // Pre-seleccionar todos por defecto
+            });
+            selectAllUsersCheckbox.checked = true; // Marcar el "seleccionar todos" también
+            
             selectAllUsersCheckbox.addEventListener('change', function() {
-                const userCheckboxes = document.querySelectorAll('.all-user-checkbox');
                 userCheckboxes.forEach(checkbox => {
                     checkbox.checked = this.checked;
                 });
             });
 
             // Actualizar el estado del checkbox "seleccionar todos" cuando se cambian los individuales
-            const userCheckboxes = document.querySelectorAll('.all-user-checkbox');
             userCheckboxes.forEach(checkbox => {
                 checkbox.addEventListener('change', function() {
                     const allChecked = Array.from(userCheckboxes).every(cb => cb.checked);

@@ -96,19 +96,27 @@
                 <div class="card mb-4">
                     <div class="card-header bg-primary text-white">
                         <h5 class="card-title mb-0">
-                            <i class="fas fa-calculator me-2"></i>Sistema de Puntos
+                            <i class="fas fa-calculator me-2"></i>Sistema de Puntos - Nuevo Modelo
                         </h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-6">
-                                <h6><i class="fas fa-check-circle text-success me-2"></i>Tareas Completadas</h6>
-                                <p class="mb-3"><strong>200 puntos</strong> por cada tarea completada exitosamente.</p>
-                            </div>
-                            <div class="col-md-6">
-                                <h6><i class="fas fa-clock text-warning me-2"></i>Tiempo de Respuesta</h6>
-                                <p class="mb-0">Hasta <strong>800 puntos</strong> por mejor tiempo de respuesta. 
-                                Se resta 1 punto por cada posición posterior en tiempo (puede llegar a valores negativos).</p>
+                            <div class="col-md-12">
+                                <h6><i class="fas fa-trophy text-warning me-2"></i>Nuevo Sistema de Ranking por Orden de Respuesta</h6>
+                                <div class="alert alert-light">
+                                    <ul class="mb-0">
+                                        <li><strong>Base:</strong> 100 puntos</li>
+                                        <li><strong>Primer respondedor:</strong> 100 + número total de usuarios activos en el sistema</li>
+                                        <li><strong>Segundo respondedor:</strong> (100 + total usuarios) - 1</li>
+                                        <li><strong>Tercer respondedor:</strong> (100 + total usuarios) - 2</li>
+                                        <li><strong>Y así sucesivamente...</strong> hasta el último en responder</li>
+                                    </ul>
+                                </div>
+                                <div class="text-muted">
+                                    <small><i class="fas fa-info-circle me-1"></i>
+                                    Los puntos se acumulan por cada tarea completada. Responder rápido a las tareas te dará más puntos en el ranking.
+                                    </small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -236,9 +244,9 @@
                                         <tr>
                                             <th width="80">Posición</th>
                                             <th>Activista</th>
-                                            <th width="150" class="text-center">Puntos</th>
-                                            <th width="120" class="text-center">Tareas</th>
-                                            <th width="150" class="text-center">Mejor Tiempo</th>
+                                            <th width="150" class="text-center">Puntos Totales</th>
+                                            <th width="120" class="text-center">Tareas Completadas</th>
+                                            <th width="150" class="text-center">Mejor Tiempo de Respuesta</th>
                                         </tr>
                                     </thead>
                                     <tbody>
