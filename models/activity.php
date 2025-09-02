@@ -344,39 +344,59 @@ class Activity {
     }
     
     // Agregar evidencia a actividad
-    public function addEvidence($activityId, $type, $file = null, $content = null) {
+    /**
+     * Add evidence to an activity
+     * 
+     * @param int $activityId The activity ID
+     * @param string $type Evidence type (foto, video, audio, comentario, live)
+     * @param string|null $file File path if applicable
+     * @param string|null $content Text content if applicable  
+     * @param int $blocked Whether evidence is blocked (0=initial attachment, 1=completion evidence)
+     * @return array Success status and details
+     * 
+     * REQUIREMENT IMPLEMENTATION:
+     * - blocked=0: Initial attachments uploaded during activity creation (displayed in pending tasks)
+     * - blocked=1: Completion evidence uploaded when finishing task (triggers completion and rankings)
+     */
+    public function addEvidence($activityId, $type, $file = null, $content = null, $blocked = 1) {
         try {
-            // Check if evidence is already blocked
-            $stmt = $this->db->prepare("
-                SELECT bloqueada FROM evidencias 
-                WHERE actividad_id = ? AND bloqueada = 1 
-                LIMIT 1
-            ");
-            $stmt->execute([$activityId]);
-            $isBlocked = $stmt->fetch();
-            
-            if ($isBlocked) {
-                return ['success' => false, 'error' => 'Las evidencias de esta actividad ya han sido bloqueadas y no pueden modificarse'];
+            // Check if evidence is already blocked (only for completion evidence, not initial attachments)
+            if ($blocked == 1) {
+                $stmt = $this->db->prepare("
+                    SELECT bloqueada FROM evidencias 
+                    WHERE actividad_id = ? AND bloqueada = 1 
+                    LIMIT 1
+                ");
+                $stmt->execute([$activityId]);
+                $isBlocked = $stmt->fetch();
+                
+                if ($isBlocked) {
+                    return ['success' => false, 'error' => 'Las evidencias de esta actividad ya han sido bloqueadas y no pueden modificarse'];
+                }
             }
             
             $stmt = $this->db->prepare("
                 INSERT INTO evidencias (actividad_id, tipo_evidencia, archivo, contenido, fecha_subida, bloqueada)
-                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, 1)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
             ");
             
-            $result = $stmt->execute([$activityId, $type, $file, $content]);
+            $result = $stmt->execute([$activityId, $type, $file, $content, $blocked]);
             
             if ($result) {
                 $evidenceId = $this->db->lastInsertId();
                 
-                // Update activity with evidence timestamp and mark as completed
-                $this->updateActivityEvidenceTimestamp($activityId);
+                // Only update activity timestamp and rankings for completion evidence (blocked=1)
+                // Initial attachments (blocked=0) should not mark activity as completed
+                if ($blocked == 1) {
+                    // Update activity with evidence timestamp and mark as completed
+                    $this->updateActivityEvidenceTimestamp($activityId);
+                    
+                    // Update rankings after evidence is uploaded
+                    // This ensures all user roles (Activista, Líder, Admin) get proper ranking updates
+                    $this->updateUserRankings();
+                }
                 
-                // Update rankings after evidence is uploaded
-                // This ensures all user roles (Activista, Líder, Admin) get proper ranking updates
-                $this->updateUserRankings();
-                
-                logActivity("Evidencia agregada: ID $evidenceId para actividad $activityId");
+                logActivity("Evidencia agregada: ID $evidenceId para actividad $activityId" . ($blocked == 0 ? " (archivo inicial)" : " (evidencia de completado)"));
                 return ['success' => true, 'evidenceId' => $evidenceId];
             }
             
@@ -695,25 +715,68 @@ class Activity {
         }
     }
     
-    // Get pending tasks for a user
+    /**
+     * Get pending tasks for a user with initial attachments
+     * 
+     * REQUIREMENT IMPLEMENTATION: 
+     * "En la vista de tareas pendientes, mostrar los archivos adjuntos que se agregaron 
+     * cuando la tarea fue creada, esto aplica para todos los niveles de usuario."
+     * 
+     * This method retrieves pending tasks and includes any initial attachments (bloqueada=0)
+     * that were uploaded during task creation, distinguishing them from completion evidence.
+     * 
+     * @param int $userId The user ID to get pending tasks for
+     * @return array Array of pending tasks with initial_attachments field
+     */
     public function getPendingTasks($userId) {
         try {
             $stmt = $this->db->prepare("
                 SELECT 
                     a.*,
                     s.nombre_completo as solicitante_nombre,
-                    ta.nombre as tipo_nombre
+                    ta.nombre as tipo_nombre,
+                    GROUP_CONCAT(
+                        CONCAT(e.id, ':', e.tipo_evidencia, ':', IFNULL(e.archivo, ''), ':', IFNULL(e.contenido, ''))
+                        SEPARATOR '|'
+                    ) as archivos_iniciales
                 FROM actividades a
                 JOIN usuarios s ON a.solicitante_id = s.id
                 JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id
+                LEFT JOIN evidencias e ON a.id = e.actividad_id AND e.bloqueada = 0
                 WHERE a.tarea_pendiente = 1 
                 AND a.usuario_id = ?
                 AND a.usuario_id != a.solicitante_id
                 AND a.estado != 'completada'
+                GROUP BY a.id
                 ORDER BY a.fecha_creacion DESC
             ");
             $stmt->execute([$userId]);
-            return $stmt->fetchAll();
+            $tasks = $stmt->fetchAll();
+            
+            // Process the initial files for each task
+            foreach ($tasks as &$task) {
+                $task['initial_attachments'] = [];
+                if (!empty($task['archivos_iniciales'])) {
+                    $files = explode('|', $task['archivos_iniciales']);
+                    foreach ($files as $file) {
+                        if (!empty($file)) {
+                            $parts = explode(':', $file, 4);
+                            if (count($parts) == 4) {
+                                $task['initial_attachments'][] = [
+                                    'id' => $parts[0],
+                                    'tipo_evidencia' => $parts[1],
+                                    'archivo' => $parts[2],
+                                    'contenido' => $parts[3]
+                                ];
+                            }
+                        }
+                    }
+                }
+                // Remove the raw string from the result
+                unset($task['archivos_iniciales']);
+            }
+            
+            return $tasks;
         } catch (Exception $e) {
             logActivity("Error al obtener tareas pendientes: " . $e->getMessage(), 'ERROR');
             return [];

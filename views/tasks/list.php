@@ -110,6 +110,58 @@
                                             <p class="card-text"><?= nl2br(htmlspecialchars($task['descripcion'])) ?></p>
                                         <?php endif; ?>
                                         
+                                        <!-- Display initial attachments if any -->
+                                        <!-- REQUIREMENT IMPLEMENTATION: Show files attached during task creation -->
+                                        <!-- This displays initial attachments (bloqueada=0) for all user levels -->
+                                        <?php if (!empty($task['initial_attachments'])): ?>
+                                            <div class="mb-3">
+                                                <h6 class="text-muted mb-2">
+                                                    <i class="fas fa-paperclip me-1"></i>Archivos adjuntos:
+                                                </h6>
+                                                <div class="row">
+                                                    <?php foreach ($task['initial_attachments'] as $attachment): ?>
+                                                        <?php if (!empty($attachment['archivo'])): ?>
+                                                            <div class="col-md-6 mb-2">
+                                                                <div class="d-flex align-items-center p-2 bg-light rounded">
+                                                                    <?php 
+                                                                    $iconClass = 'fas fa-file';
+                                                                    switch ($attachment['tipo_evidencia']) {
+                                                                        case 'foto':
+                                                                            $iconClass = 'fas fa-image text-primary';
+                                                                            break;
+                                                                        case 'video':
+                                                                            $iconClass = 'fas fa-video text-danger';
+                                                                            break;
+                                                                        case 'audio':
+                                                                            $iconClass = 'fas fa-music text-success';
+                                                                            break;
+                                                                    }
+                                                                    ?>
+                                                                    <i class="<?= $iconClass ?> me-2"></i>
+                                                                    <small>
+                                                                        <a href="<?= url('assets/uploads/evidence/' . htmlspecialchars($attachment['archivo'])) ?>" 
+                                                                           target="_blank" class="text-decoration-none">
+                                                                            <?= htmlspecialchars(basename($attachment['archivo'])) ?>
+                                                                        </a>
+                                                                    </small>
+                                                                </div>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                        <?php if (!empty($attachment['contenido'])): ?>
+                                                            <div class="col-12 mb-2">
+                                                                <div class="p-2 bg-light rounded">
+                                                                    <small class="text-muted">
+                                                                        <i class="fas fa-comment me-1"></i>Comentario inicial: 
+                                                                        <?= htmlspecialchars($attachment['contenido']) ?>
+                                                                    </small>
+                                                                </div>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
+                                        
                                         <div class="task-meta mb-3">
                                             <div class="mb-1">
                                                 <i class="fas fa-user text-primary me-1"></i>

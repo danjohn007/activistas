@@ -109,7 +109,24 @@ class ActivityController {
         if ($currentUser['rol'] === 'SuperAdmin') {
             if (!empty($_POST['destinatarios_lideres'])) {
                 // SuperAdmin selected leaders as recipients
-                $recipients = array_map('intval', $_POST['destinatarios_lideres']);
+                // REQUIREMENT IMPLEMENTATION: Include both leaders AND all activists under those leaders
+                // This addresses the requirement: "Al generar una actividad desde el admin, debe enviarse 
+                // tanto a los líderes como a todos los activistas de cada líder (no solo a líderes)."
+                
+                $selectedLeaders = array_map('intval', $_POST['destinatarios_lideres']);
+                $recipients = $selectedLeaders; // Start with the leaders themselves
+                
+                // Add all activists under the selected leaders
+                // For each selected leader, get their activists and add them to recipients
+                foreach ($selectedLeaders as $liderId) {
+                    $activists = $this->userModel->getActivistsOfLeader($liderId);
+                    foreach ($activists as $activist) {
+                        $recipients[] = intval($activist['id']);
+                    }
+                }
+                
+                // Remove duplicates in case there are any overlapping assignments
+                $recipients = array_unique($recipients);
                 $shouldCreateForRecipients = true;
             } elseif (!empty($_POST['destinatarios_todos'])) {
                 // SuperAdmin selected all users as recipients
@@ -442,7 +459,10 @@ class ActivityController {
                             $evidenceType = 'audio';
                         }
                         
-                        $this->activityModel->addEvidence($activityId, $evidenceType, $uploadResult['filename']);
+                        // Add initial attachment evidence (not blocked yet)
+                        // REQUIREMENT IMPLEMENTATION: Store initial attachments with bloqueada=0
+                        // This allows them to be displayed in pending tasks but doesn't mark activity as completed
+                        $this->activityModel->addEvidence($activityId, $evidenceType, $uploadResult['filename'], null, 0);
                     }
                 }
             }
