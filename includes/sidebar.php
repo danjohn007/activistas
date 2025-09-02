@@ -108,12 +108,20 @@ function renderSidebar($currentPage = '') {
         ];
     }
     
-    // Ranking para admin y gestor
+    // Ranking - separar lógica para LÍDER
     if (in_array($userRole, ['SuperAdmin', 'Gestor'])) {
         $menuItems[] = [
             'url' => url('ranking/'),
             'icon' => 'fas fa-trophy',
             'text' => $userRole === 'SuperAdmin' ? 'Ranking' : 'Ranking General',
+            'active' => ($currentPage === 'ranking')
+        ];
+    } elseif ($userRole === 'Líder') {
+        // Menú específico para LÍDER - Ranking del Equipo
+        $menuItems[] = [
+            'url' => url('ranking/'),
+            'icon' => 'fas fa-trophy',
+            'text' => 'Ranking del Equipo',
             'active' => ($currentPage === 'ranking')
         ];
     }
