@@ -26,33 +26,53 @@ class RankingController {
         $rankings = [];
         $title = '';
         $description = '';
+        $showMonthSelector = false;
+        $availablePeriods = [];
+        $currentYear = null;
+        $currentMonth = null;
         
-        switch ($currentUser['rol']) {
-            case 'SuperAdmin':
-            case 'Gestor':
-                // SuperAdmin y Gestor pueden ver ranking completo
-                $rankings = $this->activityModel->getUserRanking(50); // Top 50
-                $title = 'Ranking General de Activistas';
-                $description = 'Ranking completo de todos los activistas del sistema basado en tareas completadas y tiempo de respuesta.';
-                break;
-                
-            case 'Líder':
-                // Líder puede ver ranking de su equipo
-                $rankings = $this->getTeamRanking($currentUser['id']);
-                $title = 'Ranking de Mi Equipo';
-                $description = 'Ranking de los activistas de tu equipo basado en tareas completadas y tiempo de respuesta.';
-                break;
-                
-            case 'Activista':
-                // Activista puede ver ranking general (limitado)
-                $rankings = $this->activityModel->getUserRanking(20); // Top 20
-                $title = 'Ranking de Activistas';
-                $description = 'Ranking de activistas basado en tareas completadas y tiempo de respuesta. ¡Sube en el ranking completando más tareas!';
-                break;
-                
-            default:
-                redirectWithMessage('dashboards/' . strtolower($currentUser['rol']) . '.php', 
-                    'No tienes permisos para ver el ranking', 'error');
+        // Handle month selection for admins
+        if (in_array($currentUser['rol'], ['SuperAdmin', 'Gestor'])) {
+            $currentYear = intval($_GET['year'] ?? date('Y'));
+            $currentMonth = intval($_GET['month'] ?? date('n'));
+            $showMonthSelector = true;
+            $availablePeriods = $this->activityModel->getAvailableRankingPeriods();
+            
+            // Check if we're viewing a historical month
+            $isHistorical = ($currentYear < date('Y')) || 
+                           ($currentYear == date('Y') && $currentMonth < date('n'));
+            
+            if ($isHistorical && !empty($availablePeriods)) {
+                // Show historical monthly ranking
+                $rankings = $this->activityModel->getMonthlyRanking($currentYear, $currentMonth, 50);
+                $title = 'Ranking Mensual - ' . $this->getMonthName($currentMonth) . ' ' . $currentYear;
+                $description = 'Ranking histórico de activistas para el mes seleccionado.';
+            } else {
+                // Show current ranking
+                $rankings = $this->activityModel->getUserRanking(50);
+                $title = 'Ranking Actual de Activistas';
+                $description = 'Ranking actual de todos los activistas del sistema basado en tareas completadas.';
+            }
+        } else {
+            switch ($currentUser['rol']) {
+                case 'Líder':
+                    // Líder puede ver ranking de su equipo
+                    $rankings = $this->getTeamRanking($currentUser['id']);
+                    $title = 'Ranking de Mi Equipo';
+                    $description = 'Ranking de los activistas de tu equipo basado en tareas completadas y tiempo de respuesta.';
+                    break;
+                    
+                case 'Activista':
+                    // Activista puede ver ranking general (limitado)
+                    $rankings = $this->activityModel->getUserRanking(20); // Top 20
+                    $title = 'Ranking de Activistas';
+                    $description = 'Ranking de activistas basado en tareas completadas y tiempo de respuesta. ¡Sube en el ranking completando más tareas!';
+                    break;
+                    
+                default:
+                    redirectWithMessage('dashboards/' . strtolower($currentUser['rol']) . '.php', 
+                        'No tienes permisos para ver el ranking', 'error');
+            }
         }
         
         // Agregar posición de cada usuario
@@ -146,6 +166,16 @@ class RankingController {
                 'total_usuarios' => 0
             ];
         }
+    }
+    
+    // Helper method to get month name in Spanish
+    private function getMonthName($month) {
+        $months = [
+            1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+            5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+            9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+        ];
+        return $months[$month] ?? 'Mes Desconocido';
     }
 }
 ?>

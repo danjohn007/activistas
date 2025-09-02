@@ -86,6 +86,73 @@
                     </div>
                 <?php endif; ?>
 
+                <!-- Month Selector for Admin -->
+                <?php if (isset($showMonthSelector) && $showMonthSelector): ?>
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-calendar me-2"></i>Seleccionar Período</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="GET" class="row g-3">
+                                <div class="col-md-4">
+                                    <label for="year" class="form-label">Año</label>
+                                    <select class="form-select" id="year" name="year">
+                                        <?php
+                                        $startYear = date('Y') - 2;
+                                        $endYear = date('Y');
+                                        for ($y = $endYear; $y >= $startYear; $y--): ?>
+                                            <option value="<?= $y ?>" <?= ($currentYear == $y) ? 'selected' : '' ?>>
+                                                <?= $y ?>
+                                            </option>
+                                        <?php endfor; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="month" class="form-label">Mes</label>
+                                    <select class="form-select" id="month" name="month">
+                                        <?php
+                                        $months = [
+                                            1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+                                            5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+                                            9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+                                        ];
+                                        foreach ($months as $num => $name): ?>
+                                            <option value="<?= $num ?>" <?= ($currentMonth == $num) ? 'selected' : '' ?>>
+                                                <?= $name ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary me-2">
+                                        <i class="fas fa-search me-1"></i>Ver Ranking
+                                    </button>
+                                    <a href="?" class="btn btn-outline-secondary">
+                                        <i class="fas fa-calendar-day me-1"></i>Actual
+                                    </a>
+                                </div>
+                            </form>
+                            
+                            <?php if (!empty($availablePeriods)): ?>
+                                <div class="mt-3">
+                                    <small class="text-muted">
+                                        <strong>Períodos disponibles:</strong>
+                                        <?php foreach (array_slice($availablePeriods, 0, 6) as $period): ?>
+                                            <a href="?year=<?= $period['anio'] ?>&month=<?= $period['mes'] ?>" 
+                                               class="badge bg-secondary text-decoration-none me-1">
+                                                <?= $months[$period['mes']] ?> <?= $period['anio'] ?>
+                                            </a>
+                                        <?php endforeach; ?>
+                                        <?php if (count($availablePeriods) > 6): ?>
+                                            <span class="text-muted">y <?= count($availablePeriods) - 6 ?> más...</span>
+                                        <?php endif; ?>
+                                    </small>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
                 <!-- Descripción del ranking -->
                 <div class="alert alert-info mb-4">
                     <i class="fas fa-info-circle me-2"></i>

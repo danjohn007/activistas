@@ -91,12 +91,15 @@ function renderSidebar($currentPage = '') {
         'active' => ($currentPage === 'activities')
     ];
     
-    $menuItems[] = [
-        'url' => url('activities/create.php'),
-        'icon' => 'fas fa-plus',
-        'text' => 'Nueva Actividad',
-        'active' => ($currentPage === 'create_activity')
-    ];
+    // Nueva Actividad - solo para SuperAdmin, Gestor y Activista (NO para Líder)
+    if (in_array($userRole, ['SuperAdmin', 'Gestor', 'Activista'])) {
+        $menuItems[] = [
+            'url' => url('activities/create.php'),
+            'icon' => 'fas fa-plus',
+            'text' => 'Nueva Actividad',
+            'active' => ($currentPage === 'create_activity')
+        ];
+    }
     
     // Tasks para activistas y líderes
     if (in_array($userRole, ['Activista', 'Líder'])) {
@@ -116,6 +119,14 @@ function renderSidebar($currentPage = '') {
             'text' => $userRole === 'SuperAdmin' ? 'Ranking' : 'Ranking General',
             'active' => ($currentPage === 'ranking')
         ];
+        
+        // Reporte de Activistas - solo para SuperAdmin y Gestor
+        $menuItems[] = [
+            'url' => url('reports/activists.php'),
+            'icon' => 'fas fa-chart-bar',
+            'text' => 'Reporte de Activistas',
+            'active' => ($currentPage === 'activist_report')
+        ];
     } elseif ($userRole === 'Líder') {
         // Menú específico para LÍDER - Ranking del Equipo
         $menuItems[] = [
@@ -123,6 +134,14 @@ function renderSidebar($currentPage = '') {
             'icon' => 'fas fa-trophy',
             'text' => 'Ranking del Equipo',
             'active' => ($currentPage === 'ranking')
+        ];
+        
+        // Reporte de Activistas - para líder (solo sus activistas)
+        $menuItems[] = [
+            'url' => url('reports/activists.php'),
+            'icon' => 'fas fa-chart-bar',
+            'text' => 'Reporte de mi Equipo',
+            'active' => ($currentPage === 'activist_report')
         ];
     }
     

@@ -150,6 +150,8 @@ class ActivityController {
                     'titulo' => cleanInput($_POST['titulo'] ?? ''),
                     'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
                     'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? ''),
+                    'fecha_cierre' => cleanInput($_POST['fecha_cierre'] ?? ''),
+                    'hora_cierre' => cleanInput($_POST['hora_cierre'] ?? ''),
                     'solicitante_id' => $currentUser['id'] // Track who created the task
                 ];
                 
@@ -187,7 +189,9 @@ class ActivityController {
                 'tipo_actividad_id' => intval($_POST['tipo_actividad_id'] ?? 0),
                 'titulo' => cleanInput($_POST['titulo'] ?? ''),
                 'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
-                'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? '')
+                'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? ''),
+                'fecha_cierre' => cleanInput($_POST['fecha_cierre'] ?? ''),
+                'hora_cierre' => cleanInput($_POST['hora_cierre'] ?? '')
             ];
             
             // Validar datos
