@@ -51,8 +51,8 @@ class Activity {
             }
             
             $stmt = $this->db->prepare("
-                INSERT INTO actividades (usuario_id, tipo_actividad_id, titulo, descripcion, fecha_actividad, tarea_pendiente, solicitante_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO actividades (usuario_id, tipo_actividad_id, titulo, descripcion, fecha_actividad, fecha_cierre, hora_cierre, tarea_pendiente, solicitante_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $result = $stmt->execute([
@@ -61,6 +61,8 @@ class Activity {
                 $data['titulo'],
                 $data['descripcion'] ?? null,
                 $data['fecha_actividad'],
+                !empty($data['fecha_cierre']) ? $data['fecha_cierre'] : null,
+                !empty($data['hora_cierre']) ? $data['hora_cierre'] : null,
                 $tarea_pendiente,
                 $solicitante_id
             ]);
@@ -608,9 +610,9 @@ class Activity {
     
     // Calculate and update user rankings with new point system
     // Nuevo sistema de ranking implementado según requerimientos:
-    // - Base: 100 puntos
-    // - Primer respondedor: 100 + total de usuarios activos
-    // - Siguientes: (100 + total usuarios) - posición (0-indexed)
+    // - Base: 1000 puntos
+    // - Primer respondedor: 1000 + total de usuarios activos
+    // - Siguientes: (1000 + total usuarios) - posición (0-indexed)
     // Los puntos se acumulan por cada tarea completada
     public function updateUserRankings() {
         try {
@@ -663,12 +665,12 @@ class Activity {
                 
                 // Assign points based on completion order
                 foreach ($tasks as $position => $task) {
-                    // New point system: Base 100 + total users, minus position (0-indexed)
+                    // Updated point system: Base 1000 + total users, minus position (0-indexed)
                     // Ejemplo: Si hay 50 usuarios activos:
-                    // - Primer lugar: 100 + 50 = 150 puntos
-                    // - Segundo lugar: 150 - 1 = 149 puntos
-                    // - Tercer lugar: 150 - 2 = 148 puntos, etc.
-                    $basePoints = 100;
+                    // - Primer lugar: 1000 + 50 = 1050 puntos
+                    // - Segundo lugar: 1050 - 1 = 1049 puntos
+                    // - Tercer lugar: 1050 - 2 = 1048 puntos, etc.
+                    $basePoints = 1000;
                     $maxPoints = $basePoints + $totalUsers;
                     $puntos = $maxPoints - $position; // First responder gets max points, subsequent get -1 each
                     
@@ -684,7 +686,7 @@ class Activity {
                 }
             }
             
-            logActivity("Rankings actualizados con nuevo sistema: Base 100 + $totalUsers usuarios totales. Actividades procesadas: " . count($tasksByActivity));
+            logActivity("Rankings actualizados con nuevo sistema: Base 1000 + $totalUsers usuarios totales. Actividades procesadas: " . count($tasksByActivity));
         } catch (Exception $e) {
             logActivity("Error al actualizar rankings: " . $e->getMessage(), 'ERROR');
         }
@@ -747,6 +749,8 @@ class Activity {
                 AND a.usuario_id = ?
                 AND a.usuario_id != a.solicitante_id
                 AND a.estado != 'completada'
+                AND (a.fecha_cierre IS NULL OR a.fecha_cierre > CURDATE() 
+                     OR (a.fecha_cierre = CURDATE() AND (a.hora_cierre IS NULL OR a.hora_cierre > CURTIME())))
                 GROUP BY a.id
                 ORDER BY a.fecha_creacion DESC
             ");
@@ -972,6 +976,206 @@ class Activity {
         } catch (Exception $e) {
             logActivity("Error al enviar notificación: " . $e->getMessage(), 'ERROR');
             return false;
+        }
+    }
+    
+    /**
+     * Save current month rankings and reset for new month
+     * This method implements the monthly ranking reset functionality
+     */
+    public function saveMonthlyRankingsAndReset() {
+        try {
+            $year = date('Y');
+            $month = date('n'); // 1-12 format
+            
+            // Get all active users with their current ranking points
+            $stmt = $this->db->prepare("
+                SELECT 
+                    u.id,
+                    u.ranking_puntos,
+                    COUNT(a.id) as actividades_completadas,
+                    ROUND(
+                        CASE 
+                            WHEN COUNT(CASE WHEN a.tarea_pendiente = 1 THEN 1 END) > 0 
+                            THEN (COUNT(CASE WHEN a.estado = 'completada' AND a.tarea_pendiente = 1 THEN 1 END) * 100.0) / COUNT(CASE WHEN a.tarea_pendiente = 1 THEN 1 END)
+                            ELSE 0 
+                        END, 2
+                    ) as porcentaje_cumplimiento
+                FROM usuarios u
+                LEFT JOIN actividades a ON u.id = a.usuario_id 
+                    AND YEAR(a.fecha_creacion) = ? 
+                    AND MONTH(a.fecha_creacion) = ?
+                WHERE u.estado = 'activo' AND u.id != 1
+                GROUP BY u.id, u.ranking_puntos
+            ");
+            $stmt->execute([$year, $month]);
+            $users = $stmt->fetchAll();
+            
+            // Sort by ranking points to assign positions
+            usort($users, function($a, $b) {
+                return $b['ranking_puntos'] - $a['ranking_puntos'];
+            });
+            
+            // Save monthly rankings
+            $position = 1;
+            foreach ($users as $user) {
+                $insertStmt = $this->db->prepare("
+                    INSERT INTO rankings_mensuales 
+                    (usuario_id, anio, mes, puntos, posicion, actividades_completadas, porcentaje_cumplimiento)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE
+                    puntos = VALUES(puntos),
+                    posicion = VALUES(posicion),
+                    actividades_completadas = VALUES(actividades_completadas),
+                    porcentaje_cumplimiento = VALUES(porcentaje_cumplimiento)
+                ");
+                
+                $insertStmt->execute([
+                    $user['id'],
+                    $year,
+                    $month,
+                    $user['ranking_puntos'],
+                    $position,
+                    $user['actividades_completadas'],
+                    $user['porcentaje_cumplimiento']
+                ]);
+                
+                $position++;
+            }
+            
+            // Reset current ranking points for all users
+            $resetStmt = $this->db->prepare("UPDATE usuarios SET ranking_puntos = 0 WHERE id != 1");
+            $resetStmt->execute();
+            
+            logActivity("Ranking mensual guardado para $month/$year y puntos reiniciados. Usuarios procesados: " . count($users));
+            
+            return true;
+        } catch (Exception $e) {
+            logActivity("Error al guardar ranking mensual: " . $e->getMessage(), 'ERROR');
+            return false;
+        }
+    }
+    
+    /**
+     * Get monthly rankings for a specific month and year
+     */
+    public function getMonthlyRanking($year = null, $month = null, $limit = 50) {
+        try {
+            if (!$year) $year = date('Y');
+            if (!$month) $month = date('n');
+            
+            $stmt = $this->db->prepare("
+                SELECT 
+                    rm.*,
+                    u.nombre_completo,
+                    u.rol
+                FROM rankings_mensuales rm
+                JOIN usuarios u ON rm.usuario_id = u.id
+                WHERE rm.anio = ? AND rm.mes = ?
+                ORDER BY rm.posicion ASC
+                LIMIT ?
+            ");
+            $stmt->execute([$year, $month, $limit]);
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            logActivity("Error al obtener ranking mensual: " . $e->getMessage(), 'ERROR');
+            return [];
+        }
+    }
+    
+    /**
+     * Get available months and years for rankings
+     */
+    public function getAvailableRankingPeriods() {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT DISTINCT anio, mes, COUNT(*) as usuarios
+                FROM rankings_mensuales 
+                ORDER BY anio DESC, mes DESC
+            ");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            logActivity("Error al obtener períodos de ranking: " . $e->getMessage(), 'ERROR');
+            return [];
+        }
+    }
+    
+    /**
+     * Get activist performance report
+     * For admins and leaders to view task completion statistics
+     */
+    public function getActivistReport($filters = []) {
+        try {
+            $sql = "
+                SELECT 
+                    u.id,
+                    u.nombre_completo,
+                    u.email,
+                    u.telefono,
+                    u.rol,
+                    l.nombre_completo as lider_nombre,
+                    COUNT(CASE WHEN a.tarea_pendiente = 1 THEN 1 END) as total_tareas_asignadas,
+                    COUNT(CASE WHEN a.estado = 'completada' AND a.tarea_pendiente = 1 THEN 1 END) as tareas_completadas,
+                    ROUND(
+                        CASE 
+                            WHEN COUNT(CASE WHEN a.tarea_pendiente = 1 THEN 1 END) > 0 
+                            THEN (COUNT(CASE WHEN a.estado = 'completada' AND a.tarea_pendiente = 1 THEN 1 END) * 100.0) / COUNT(CASE WHEN a.tarea_pendiente = 1 THEN 1 END)
+                            ELSE 0 
+                        END, 2
+                    ) as porcentaje_cumplimiento,
+                    u.ranking_puntos as puntos_actuales
+                FROM usuarios u
+                LEFT JOIN usuarios l ON u.lider_id = l.id
+                LEFT JOIN actividades a ON u.id = a.usuario_id
+            ";
+            
+            $params = [];
+            $where = ["u.estado = 'activo'", "u.id != 1"];
+            
+            // Filter by leader (for leader dashboard)
+            if (!empty($filters['lider_id'])) {
+                $where[] = "u.lider_id = ?";
+                $params[] = $filters['lider_id'];
+            }
+            
+            // Filter by date range
+            if (!empty($filters['fecha_desde'])) {
+                $where[] = "a.fecha_actividad >= ?";
+                $params[] = $filters['fecha_desde'];
+            }
+            
+            if (!empty($filters['fecha_hasta'])) {
+                $where[] = "a.fecha_actividad <= ?";
+                $params[] = $filters['fecha_hasta'];
+            }
+            
+            // Search filters
+            if (!empty($filters['search_name'])) {
+                $where[] = "u.nombre_completo LIKE ?";
+                $params[] = '%' . $filters['search_name'] . '%';
+            }
+            
+            if (!empty($filters['search_email'])) {
+                $where[] = "u.email LIKE ?";
+                $params[] = '%' . $filters['search_email'] . '%';
+            }
+            
+            if (!empty($filters['search_phone'])) {
+                $where[] = "u.telefono LIKE ?";
+                $params[] = '%' . $filters['search_phone'] . '%';
+            }
+            
+            $sql .= " WHERE " . implode(' AND ', $where);
+            $sql .= " GROUP BY u.id, u.nombre_completo, u.email, u.telefono, u.rol, l.nombre_completo, u.ranking_puntos";
+            $sql .= " ORDER BY porcentaje_cumplimiento DESC, tareas_completadas DESC";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            logActivity("Error al obtener reporte de activistas: " . $e->getMessage(), 'ERROR');
+            return [];
         }
     }
 }

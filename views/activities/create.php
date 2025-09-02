@@ -92,11 +92,33 @@
                                 <div class="form-text">Describe brevemente los objetivos y detalles de la actividad.</div>
                             </div>
 
-                            <div class="mb-3">
-                                <label for="fecha_actividad" class="form-label">Fecha de la Actividad *</label>
-                                <input type="date" class="form-control" id="fecha_actividad" name="fecha_actividad" 
-                                       value="<?= htmlspecialchars($_SESSION['form_data']['fecha_actividad'] ?? '') ?>" 
-                                       required>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="fecha_actividad" class="form-label">Fecha de la Actividad *</label>
+                                        <input type="date" class="form-control" id="fecha_actividad" name="fecha_actividad" 
+                                               value="<?= htmlspecialchars($_SESSION['form_data']['fecha_actividad'] ?? '') ?>" 
+                                               required>
+                                    </div>
+                                </div>
+                                <?php if (in_array($_SESSION['user_role'], ['SuperAdmin', 'Gestor'])): ?>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="fecha_cierre" class="form-label">Fecha de Cierre</label>
+                                        <input type="date" class="form-control" id="fecha_cierre" name="fecha_cierre" 
+                                               value="<?= htmlspecialchars($_SESSION['form_data']['fecha_cierre'] ?? '') ?>">
+                                        <div class="form-text">Después de esta fecha la actividad no aparecerá en tareas pendientes</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="hora_cierre" class="form-label">Hora de Cierre</label>
+                                        <input type="time" class="form-control" id="hora_cierre" name="hora_cierre" 
+                                               value="<?= htmlspecialchars($_SESSION['form_data']['hora_cierre'] ?? '') ?>">
+                                        <div class="form-text">Hora límite para completar la actividad</div>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
                             </div>
 
                             <!-- Selección de destinatarios -->

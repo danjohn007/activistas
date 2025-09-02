@@ -83,6 +83,13 @@ class ActivityController {
     public function showCreateForm() {
         $this->auth->requireAuth();
         
+        $currentUser = $this->auth->getCurrentUser();
+        
+        // Prevent leaders from accessing activity creation form
+        if ($currentUser['rol'] === 'Líder') {
+            redirectWithMessage('activities/', 'Los líderes no pueden crear actividades directamente', 'error');
+        }
+        
         $activityTypes = $this->activityModel->getActivityTypes();
         
         include __DIR__ . '/../views/activities/create.php';
@@ -91,6 +98,13 @@ class ActivityController {
     // Crear nueva actividad
     public function createActivity() {
         $this->auth->requireAuth();
+        
+        $currentUser = $this->auth->getCurrentUser();
+        
+        // Prevent leaders from creating activities
+        if ($currentUser['rol'] === 'Líder') {
+            redirectWithMessage('activities/', 'Los líderes no pueden crear actividades directamente', 'error');
+        }
         
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             redirectWithMessage('activities/create.php', 'Método no permitido', 'error');
@@ -150,6 +164,8 @@ class ActivityController {
                     'titulo' => cleanInput($_POST['titulo'] ?? ''),
                     'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
                     'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? ''),
+                    'fecha_cierre' => cleanInput($_POST['fecha_cierre'] ?? ''),
+                    'hora_cierre' => cleanInput($_POST['hora_cierre'] ?? ''),
                     'solicitante_id' => $currentUser['id'] // Track who created the task
                 ];
                 
@@ -187,7 +203,9 @@ class ActivityController {
                 'tipo_actividad_id' => intval($_POST['tipo_actividad_id'] ?? 0),
                 'titulo' => cleanInput($_POST['titulo'] ?? ''),
                 'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
-                'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? '')
+                'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? ''),
+                'fecha_cierre' => cleanInput($_POST['fecha_cierre'] ?? ''),
+                'hora_cierre' => cleanInput($_POST['hora_cierre'] ?? '')
             ];
             
             // Validar datos
