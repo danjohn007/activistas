@@ -172,10 +172,10 @@
                                 <h6><i class="fas fa-trophy text-warning me-2"></i>Nuevo Sistema de Ranking por Orden de Respuesta</h6>
                                 <div class="alert alert-light">
                                     <ul class="mb-0">
-                                        <li><strong>Base:</strong> 100 puntos</li>
-                                        <li><strong>Primer respondedor:</strong> 100 + número total de usuarios activos en el sistema</li>
-                                        <li><strong>Segundo respondedor:</strong> (100 + total usuarios) - 1</li>
-                                        <li><strong>Tercer respondedor:</strong> (100 + total usuarios) - 2</li>
+                                        <li><strong>Base:</strong> 1000 puntos</li>
+                                        <li><strong>Primer respondedor:</strong> 1000 + número total de usuarios activos en el sistema</li>
+                                        <li><strong>Segundo respondedor:</strong> (1000 + total usuarios) - 1</li>
+                                        <li><strong>Tercer respondedor:</strong> (1000 + total usuarios) - 2</li>
                                         <li><strong>Y así sucesivamente...</strong> hasta el último en responder</li>
                                     </ul>
                                 </div>

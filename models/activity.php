@@ -610,9 +610,9 @@ class Activity {
     
     // Calculate and update user rankings with new point system
     // Nuevo sistema de ranking implementado según requerimientos:
-    // - Base: 100 puntos
-    // - Primer respondedor: 100 + total de usuarios activos
-    // - Siguientes: (100 + total usuarios) - posición (0-indexed)
+    // - Base: 1000 puntos
+    // - Primer respondedor: 1000 + total de usuarios activos
+    // - Siguientes: (1000 + total usuarios) - posición (0-indexed)
     // Los puntos se acumulan por cada tarea completada
     public function updateUserRankings() {
         try {

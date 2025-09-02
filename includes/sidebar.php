@@ -120,6 +120,16 @@ function renderSidebar($currentPage = '') {
             'active' => ($currentPage === 'ranking')
         ];
         
+        // Reset Mensual - solo para SuperAdmin
+        if ($userRole === 'SuperAdmin') {
+            $menuItems[] = [
+                'url' => url('admin/monthly_reset.php'),
+                'icon' => 'fas fa-calendar-alt',
+                'text' => 'Reset Ranking Mensual',
+                'active' => ($currentPage === 'monthly_reset')
+            ];
+        }
+        
         // Reporte de Activistas - solo para SuperAdmin y Gestor
         $menuItems[] = [
             'url' => url('reports/activists.php'),
