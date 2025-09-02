@@ -111,6 +111,8 @@
                                         <?php endif; ?>
                                         
                                         <!-- Display initial attachments if any -->
+                                        <!-- REQUIREMENT IMPLEMENTATION: Show files attached during task creation -->
+                                        <!-- This displays initial attachments (bloqueada=0) for all user levels -->
                                         <?php if (!empty($task['initial_attachments'])): ?>
                                             <div class="mb-3">
                                                 <h6 class="text-muted mb-2">

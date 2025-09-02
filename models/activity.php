@@ -344,6 +344,20 @@ class Activity {
     }
     
     // Agregar evidencia a actividad
+    /**
+     * Add evidence to an activity
+     * 
+     * @param int $activityId The activity ID
+     * @param string $type Evidence type (foto, video, audio, comentario, live)
+     * @param string|null $file File path if applicable
+     * @param string|null $content Text content if applicable  
+     * @param int $blocked Whether evidence is blocked (0=initial attachment, 1=completion evidence)
+     * @return array Success status and details
+     * 
+     * REQUIREMENT IMPLEMENTATION:
+     * - blocked=0: Initial attachments uploaded during activity creation (displayed in pending tasks)
+     * - blocked=1: Completion evidence uploaded when finishing task (triggers completion and rankings)
+     */
     public function addEvidence($activityId, $type, $file = null, $content = null, $blocked = 1) {
         try {
             // Check if evidence is already blocked (only for completion evidence, not initial attachments)
@@ -701,7 +715,19 @@ class Activity {
         }
     }
     
-    // Get pending tasks for a user with initial attachments
+    /**
+     * Get pending tasks for a user with initial attachments
+     * 
+     * REQUIREMENT IMPLEMENTATION: 
+     * "En la vista de tareas pendientes, mostrar los archivos adjuntos que se agregaron 
+     * cuando la tarea fue creada, esto aplica para todos los niveles de usuario."
+     * 
+     * This method retrieves pending tasks and includes any initial attachments (bloqueada=0)
+     * that were uploaded during task creation, distinguishing them from completion evidence.
+     * 
+     * @param int $userId The user ID to get pending tasks for
+     * @return array Array of pending tasks with initial_attachments field
+     */
     public function getPendingTasks($userId) {
         try {
             $stmt = $this->db->prepare("
