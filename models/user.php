@@ -474,6 +474,25 @@ class User {
         }
     }
     
+    // Obtener el total de usuarios activos del sistema
+    // Método necesario para el nuevo sistema de ranking
+    // Excluye el usuario admin (id=1) y solo cuenta usuarios activos
+    public function getTotalActiveUsers() {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT COUNT(*) as total 
+                FROM usuarios 
+                WHERE estado = 'activo' AND id != 1
+            ");
+            $stmt->execute();
+            $result = $stmt->fetch();
+            return $result['total'] ?? 0;
+        } catch (Exception $e) {
+            logActivity("Error al obtener total de usuarios activos: " . $e->getMessage(), 'ERROR');
+            return 0;
+        }
+    }
+
     // Obtener el total de usuarios con filtros para paginación
     public function getTotalUsersWithFilters($filters = []) {
         try {

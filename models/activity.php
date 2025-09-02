@@ -580,62 +580,85 @@ class Activity {
         }
     }
     
-    // Calculate and update user rankings
+    // Calculate and update user rankings with new point system
+    // Nuevo sistema de ranking implementado según requerimientos:
+    // - Base: 100 puntos
+    // - Primer respondedor: 100 + total de usuarios activos
+    // - Siguientes: (100 + total usuarios) - posición (0-indexed)
+    // Los puntos se acumulan por cada tarea completada
     public function updateUserRankings() {
         try {
+            // Get total number of active users for point calculation
+            require_once __DIR__ . '/user.php';
+            $userModel = new User();
+            $totalUsers = $userModel->getTotalActiveUsers();
+            
             // Get all users with completed activities (excluding admin user id=1, only count authorized activities)
+            // Group by task to calculate points per task completion
             $stmt = $this->db->prepare("
                 SELECT 
-                    u.id,
-                    COUNT(a.id) as tareas_completadas,
-                    MIN(TIMESTAMPDIFF(MINUTE, a.fecha_creacion, a.hora_evidencia)) as mejor_tiempo_minutos
-                FROM usuarios u
-                LEFT JOIN actividades a ON u.id = a.usuario_id 
-                WHERE a.estado = 'completada' AND a.hora_evidencia IS NOT NULL 
-                  AND a.autorizada = 1 AND u.id != 1
-                GROUP BY u.id
+                    a.id as actividad_id,
+                    a.usuario_id,
+                    a.titulo,
+                    a.hora_evidencia,
+                    TIMESTAMPDIFF(MINUTE, a.fecha_creacion, a.hora_evidencia) as tiempo_respuesta_minutos
+                FROM actividades a
+                JOIN usuarios u ON a.usuario_id = u.id
+                WHERE a.estado = 'completada' 
+                  AND a.hora_evidencia IS NOT NULL 
+                  AND a.autorizada = 1 
+                  AND a.tarea_pendiente = 1
+                  AND u.id != 1
+                ORDER BY a.id, a.hora_evidencia ASC
             ");
             $stmt->execute();
-            $users = $stmt->fetchAll();
+            $completedTasks = $stmt->fetchAll();
             
-            if (empty($users)) {
+            if (empty($completedTasks)) {
                 return;
             }
             
-            // Find the best response time for comparison
-            $bestTime = min(array_column($users, 'mejor_tiempo_minutos'));
+            // Reset all user rankings to 0
+            $resetStmt = $this->db->prepare("UPDATE usuarios SET ranking_puntos = 0 WHERE id != 1");
+            $resetStmt->execute();
             
-            // Calculate rankings - Only count time response points (removed task completion points)
-            foreach ($users as $user) {
-                // Calculate time points (800 for best time, decreasing for others)
-                $puntostiempo = 0;
-                if ($user['mejor_tiempo_minutos'] == $bestTime) {
-                    $puntostiempo = 800;
-                } else {
-                    // Each position away from best time reduces points
-                    $positionPenalty = 0;
-                    foreach ($users as $otherUser) {
-                        if ($otherUser['mejor_tiempo_minutos'] < $user['mejor_tiempo_minutos']) {
-                            $positionPenalty++;
-                        }
-                    }
-                    $puntostiempo = 800 - $positionPenalty;
-                    // Allow negative values as specified
-                }
-                
-                // Total points is now only time response points
-                $puntosTotal = $puntostiempo;
-                
-                // Update user ranking
-                $updateStmt = $this->db->prepare("
-                    UPDATE usuarios 
-                    SET ranking_puntos = ? 
-                    WHERE id = ?
-                ");
-                $updateStmt->execute([$puntosTotal, $user['id']]);
+            // Group tasks by activity ID to calculate position-based points
+            $tasksByActivity = [];
+            foreach ($completedTasks as $task) {
+                $tasksByActivity[$task['actividad_id']][] = $task;
             }
             
-            logActivity("Rankings actualizados para " . count($users) . " usuarios");
+            // Calculate points for each task completion
+            foreach ($tasksByActivity as $activityId => $tasks) {
+                // Sort by completion time (hora_evidencia) to determine order
+                usort($tasks, function($a, $b) {
+                    return strtotime($a['hora_evidencia']) - strtotime($b['hora_evidencia']);
+                });
+                
+                // Assign points based on completion order
+                foreach ($tasks as $position => $task) {
+                    // New point system: Base 100 + total users, minus position (0-indexed)
+                    // Ejemplo: Si hay 50 usuarios activos:
+                    // - Primer lugar: 100 + 50 = 150 puntos
+                    // - Segundo lugar: 150 - 1 = 149 puntos
+                    // - Tercer lugar: 150 - 2 = 148 puntos, etc.
+                    $basePoints = 100;
+                    $maxPoints = $basePoints + $totalUsers;
+                    $puntos = $maxPoints - $position; // First responder gets max points, subsequent get -1 each
+                    
+                    // Update user ranking points (accumulative)
+                    $updateStmt = $this->db->prepare("
+                        UPDATE usuarios 
+                        SET ranking_puntos = ranking_puntos + ? 
+                        WHERE id = ?
+                    ");
+                    $updateStmt->execute([$puntos, $task['usuario_id']]);
+                    
+                    logActivity("Puntos asignados: Usuario {$task['usuario_id']} recibió $puntos puntos por actividad $activityId (posición " . ($position + 1) . ")");
+                }
+            }
+            
+            logActivity("Rankings actualizados con nuevo sistema: Base 100 + $totalUsers usuarios totales. Actividades procesadas: " . count($tasksByActivity));
         } catch (Exception $e) {
             logActivity("Error al actualizar rankings: " . $e->getMessage(), 'ERROR');
         }
