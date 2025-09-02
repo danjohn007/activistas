@@ -316,6 +316,7 @@
         const selectAllUsersCheckbox = document.getElementById('select_all_users');
         if (selectAllUsersCheckbox) {
             // Pre-seleccionar todos los usuarios por defecto para actividades de admin
+            // Implementación del requerimiento: "preseleccionar todos los usuarios en 'Nueva Actividad'"
             const userCheckboxes = document.querySelectorAll('.all-user-checkbox');
             userCheckboxes.forEach(checkbox => {
                 checkbox.checked = true; // Pre-seleccionar todos por defecto

@@ -475,6 +475,8 @@ class User {
     }
     
     // Obtener el total de usuarios activos del sistema
+    // Método necesario para el nuevo sistema de ranking
+    // Excluye el usuario admin (id=1) y solo cuenta usuarios activos
     public function getTotalActiveUsers() {
         try {
             $stmt = $this->db->prepare("

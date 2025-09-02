@@ -581,6 +581,11 @@ class Activity {
     }
     
     // Calculate and update user rankings with new point system
+    // Nuevo sistema de ranking implementado según requerimientos:
+    // - Base: 100 puntos
+    // - Primer respondedor: 100 + total de usuarios activos
+    // - Siguientes: (100 + total usuarios) - posición (0-indexed)
+    // Los puntos se acumulan por cada tarea completada
     public function updateUserRankings() {
         try {
             // Get total number of active users for point calculation
@@ -633,6 +638,10 @@ class Activity {
                 // Assign points based on completion order
                 foreach ($tasks as $position => $task) {
                     // New point system: Base 100 + total users, minus position (0-indexed)
+                    // Ejemplo: Si hay 50 usuarios activos:
+                    // - Primer lugar: 100 + 50 = 150 puntos
+                    // - Segundo lugar: 150 - 1 = 149 puntos
+                    // - Tercer lugar: 150 - 2 = 148 puntos, etc.
                     $basePoints = 100;
                     $maxPoints = $basePoints + $totalUsers;
                     $puntos = $maxPoints - $position; // First responder gets max points, subsequent get -1 each
