@@ -45,7 +45,9 @@ class Activity {
             // If created by SuperAdmin, Gestor or Líder for themselves, also mark as pending task for others
             elseif (isset($data['user_role']) && in_array($data['user_role'], ['SuperAdmin', 'Gestor', 'Líder'])) {
                 $tarea_pendiente = 1;
-                $solicitante_id = $data['usuario_id'];
+                // FIXED: Use the ID of who's creating the activity, not the recipient
+                // This was causing activities to be incorrectly auto-completed for user ID 4
+                $solicitante_id = isset($data['solicitante_id']) ? $data['solicitante_id'] : $data['usuario_id'];
             }
             
             $stmt = $this->db->prepare("
@@ -65,7 +67,10 @@ class Activity {
             
             if ($result) {
                 $activityId = $this->db->lastInsertId();
-                logActivity("Nueva actividad creada: ID $activityId por usuario {$data['usuario_id']}");
+                // Enhanced logging to track activity creation and task assignment
+                $taskStatus = $tarea_pendiente ? 'pending task' : 'regular activity';
+                $requesterInfo = $solicitante_id ? " (requested by user $solicitante_id)" : '';
+                logActivity("Nueva actividad creada: ID $activityId por usuario {$data['usuario_id']} - $taskStatus$requesterInfo");
                 return $activityId;
             }
             
@@ -368,6 +373,7 @@ class Activity {
                 $this->updateActivityEvidenceTimestamp($activityId);
                 
                 // Update rankings after evidence is uploaded
+                // This ensures all user roles (Activista, Líder, Admin) get proper ranking updates
                 $this->updateUserRankings();
                 
                 logActivity("Evidencia agregada: ID $evidenceId para actividad $activityId");
