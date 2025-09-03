@@ -138,10 +138,15 @@
                                     <small class="text-muted">
                                         <strong>Períodos disponibles:</strong>
                                         <?php foreach (array_slice($availablePeriods, 0, 6) as $period): ?>
+                                            <?php 
+                                            // Fix: Validate period data to prevent "Undefined array key" errors
+                                            if (isset($period['mes']) && isset($period['anio']) && 
+                                                !empty($period['mes']) && isset($months[$period['mes']])): ?>
                                             <a href="?year=<?= $period['anio'] ?>&month=<?= $period['mes'] ?>" 
                                                class="badge bg-secondary text-decoration-none me-1">
                                                 <?= $months[$period['mes']] ?> <?= $period['anio'] ?>
                                             </a>
+                                            <?php endif; ?>
                                         <?php endforeach; ?>
                                         <?php if (count($availablePeriods) > 6): ?>
                                             <span class="text-muted">y <?= count($availablePeriods) - 6 ?> más...</span>
