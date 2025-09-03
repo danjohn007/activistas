@@ -316,9 +316,12 @@
                                         <tr>
                                             <th width="80">Posición</th>
                                             <th>Activista</th>
-                                            <th width="150" class="text-center">Puntos Totales</th>
-                                            <th width="120" class="text-center">Tareas Completadas</th>
-                                            <th width="150" class="text-center">Mejor Tiempo de Respuesta</th>
+                                            <th width="130" class="text-center">Puntos Totales</th>
+                                            <th width="110" class="text-center">Tareas Completadas</th>
+                                            <th width="110" class="text-center">Tareas Asignadas</th>
+                                            <th width="120" class="text-center">% Cumplimiento</th>
+                                            <th width="130" class="text-center">Mejor Tiempo</th>
+                                            <th width="130" class="text-center">Tiempo Promedio</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -359,16 +362,43 @@
                                                     <span class="badge bg-success"><?= $user['actividades_completadas'] ?></span>
                                                 </td>
                                                 <td class="text-center">
+                                                    <span class="badge bg-info"><?= $user['tareas_asignadas'] ?? 0 ?></span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <?php 
+                                                    $porcentaje = $user['porcentaje_cumplimiento'] ?? 0;
+                                                    $badgeClass = $porcentaje >= 80 ? 'bg-success' : ($porcentaje >= 60 ? 'bg-warning' : 'bg-danger');
+                                                    ?>
+                                                    <span class="badge <?= $badgeClass ?>"><?= $porcentaje ?>%</span>
+                                                </td>
+                                                <td class="text-center">
                                                     <?php if ($user['mejor_tiempo_minutos']): ?>
                                                         <?php 
                                                         $horas = floor($user['mejor_tiempo_minutos'] / 60);
                                                         $minutos = $user['mejor_tiempo_minutos'] % 60;
                                                         ?>
-                                                        <small class="text-muted">
+                                                        <small class="text-success fw-bold">
                                                             <?php if ($horas > 0): ?>
                                                                 <?= $horas ?>h <?= $minutos ?>m
                                                             <?php else: ?>
                                                                 <?= $minutos ?>m
+                                                            <?php endif; ?>
+                                                        </small>
+                                                    <?php else: ?>
+                                                        <small class="text-muted">-</small>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="text-center">
+                                                    <?php if (!empty($user['tiempo_promedio_minutos'])): ?>
+                                                        <?php 
+                                                        $avgHoras = floor($user['tiempo_promedio_minutos'] / 60);
+                                                        $avgMinutos = round($user['tiempo_promedio_minutos'] % 60);
+                                                        ?>
+                                                        <small class="text-muted">
+                                                            <?php if ($avgHoras > 0): ?>
+                                                                <?= $avgHoras ?>h <?= $avgMinutos ?>m
+                                                            <?php else: ?>
+                                                                <?= $avgMinutos ?>m
                                                             <?php endif; ?>
                                                         </small>
                                                     <?php else: ?>

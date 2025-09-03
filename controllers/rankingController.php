@@ -89,17 +89,27 @@ class RankingController {
         include __DIR__ . '/../views/ranking/index.php';
     }
     
-    // Obtener ranking del equipo de un líder
+    // Obtener ranking del equipo de un líder con información detallada
     private function getTeamRanking($liderId) {
         try {
             $stmt = $this->activityModel->getDb()->prepare("
                 SELECT 
+                    u.id,
                     u.nombre_completo,
                     u.ranking_puntos,
                     COUNT(a.id) as actividades_completadas,
-                    MIN(TIMESTAMPDIFF(MINUTE, a.fecha_creacion, a.hora_evidencia)) as mejor_tiempo_minutos
+                    COUNT(at.id) as tareas_asignadas,
+                    ROUND(
+                        CASE 
+                            WHEN COUNT(at.id) > 0 THEN (COUNT(a.id) * 100.0 / COUNT(at.id))
+                            ELSE 0 
+                        END, 2
+                    ) as porcentaje_cumplimiento,
+                    MIN(TIMESTAMPDIFF(MINUTE, a.fecha_creacion, a.hora_evidencia)) as mejor_tiempo_minutos,
+                    AVG(TIMESTAMPDIFF(MINUTE, a.fecha_creacion, a.hora_evidencia)) as tiempo_promedio_minutos
                 FROM usuarios u
                 LEFT JOIN actividades a ON u.id = a.usuario_id AND a.estado = 'completada' AND a.autorizada = 1
+                LEFT JOIN actividades at ON u.id = at.usuario_id AND at.tarea_pendiente = 1
                 WHERE u.estado = 'activo' AND u.lider_id = ? AND u.id != 1
                 GROUP BY u.id, u.nombre_completo, u.ranking_puntos
                 ORDER BY u.ranking_puntos DESC

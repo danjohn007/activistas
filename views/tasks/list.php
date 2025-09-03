@@ -86,19 +86,60 @@
                     <!-- Lista de tareas pendientes -->
                     <div class="row">
                         <?php foreach ($pendingTasks as $task): ?>
-                            <?php
-                            $isUrgent = strtotime($task['fecha_actividad']) <= strtotime('+3 days');
-                            $cardClass = $isUrgent ? 'task-urgent' : 'task-pending';
+                            <?php 
+                            // Calcular urgencia basada en fecha de cierre (vigencia)
+                            $isUrgent = false;
+                            $urgencyClass = 'task-pending';
+                            $urgencyDays = null;
+                            $urgencyText = '';
+                            
+                            if (!empty($task['fecha_cierre'])) {
+                                $today = new DateTime();
+                                $closeDate = new DateTime($task['fecha_cierre']);
+                                
+                                // Si tiene hora de cierre, ajustarla
+                                if (!empty($task['hora_cierre'])) {
+                                    $closeDate->setTime(
+                                        ...(explode(':', $task['hora_cierre']))
+                                    );
+                                }
+                                
+                                $diff = $today->diff($closeDate);
+                                $urgencyDays = $closeDate > $today ? $diff->days : -$diff->days;
+                                
+                                // Marcar como urgente si queda 1 día o menos
+                                if ($urgencyDays <= 1 && $closeDate > $today) {
+                                    $isUrgent = true;
+                                    $urgencyClass = 'task-urgent';
+                                    $urgencyText = $urgencyDays == 0 ? 'Vence hoy' : 'Vence mañana';
+                                } elseif ($closeDate <= $today) {
+                                    $isUrgent = true;
+                                    $urgencyClass = 'task-urgent';
+                                    $urgencyText = 'Vencida';
+                                } else {
+                                    $urgencyText = "Vence en {$urgencyDays} días";
+                                }
+                            } else {
+                                // Fallback: usar fecha de actividad para urgencia si no hay fecha de cierre
+                                $isUrgent = strtotime($task['fecha_actividad']) <= strtotime('+3 days');
+                                $urgencyClass = $isUrgent ? 'task-urgent' : 'task-pending';
+                            }
                             ?>
                             <div class="col-lg-6 col-xl-4 mb-4">
-                                <div class="card card-task <?= $cardClass ?> h-100">
+                                <div class="card card-task <?= $urgencyClass ?> h-100">
                                     <div class="card-header bg-light">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <h6 class="card-title mb-0 fw-bold">
                                                 <?= htmlspecialchars($task['titulo']) ?>
                                             </h6>
                                             <?php if ($isUrgent): ?>
-                                                <span class="badge bg-danger">Urgente</span>
+                                                <span class="badge bg-danger">
+                                                    <?= $urgencyText ?: 'Urgente' ?>
+                                                </span>
+                                            <?php elseif (!empty($urgencyText)): ?>
+                                                <span class="badge bg-warning text-dark">
+                                                    <?= $urgencyText ?>
+                                                </span>
                                             <?php endif; ?>
                                         </div>
                                         <small class="text-muted">
@@ -172,6 +213,21 @@
                                                 <strong>Fecha actividad:</strong> 
                                                 <?= date('d/m/Y', strtotime($task['fecha_actividad'])) ?>
                                             </div>
+                                            <?php if (!empty($task['fecha_cierre'])): ?>
+                                                <div class="mb-1">
+                                                    <i class="fas fa-clock text-danger me-1"></i>
+                                                    <strong>Vigencia:</strong> 
+                                                    <?= date('d/m/Y', strtotime($task['fecha_cierre'])) ?>
+                                                    <?php if (!empty($task['hora_cierre'])): ?>
+                                                        <?= date('H:i', strtotime($task['hora_cierre'])) ?>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($urgencyText)): ?>
+                                                        <span class="text-<?= $isUrgent ? 'danger' : 'warning' ?> fw-bold">
+                                                            (<?= $urgencyText ?>)
+                                                        </span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php endif; ?>
                                             <div class="mb-1">
                                                 <i class="fas fa-clock text-warning me-1"></i>
                                                 <strong>Asignada:</strong> 
