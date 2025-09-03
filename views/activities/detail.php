@@ -64,6 +64,34 @@ require_once __DIR__ . '/../../includes/functions.php';
                                         <p><strong>Tipo:</strong> <?= htmlspecialchars($activity['tipo_nombre']) ?></p>
                                         <p><strong>Fecha:</strong> <?= formatDate($activity['fecha_actividad'], 'd/m/Y') ?></p>
                                         <p><strong>Lugar:</strong> <?= htmlspecialchars($activity['lugar'] ?? 'No especificado') ?></p>
+                                        <?php if (!empty($activity['fecha_cierre'])): ?>
+                                            <p><strong>Vigencia:</strong> 
+                                                <?= formatDate($activity['fecha_cierre'], 'd/m/Y') ?>
+                                                <?php if (!empty($activity['hora_cierre'])): ?>
+                                                    <?= date('H:i', strtotime($activity['hora_cierre'])) ?>
+                                                <?php endif; ?>
+                                                <?php 
+                                                // Mostrar indicador de urgencia en detalle
+                                                if (!empty($activity['fecha_cierre'])) {
+                                                    $today = new DateTime();
+                                                    $closeDate = new DateTime($activity['fecha_cierre']);
+                                                    if (!empty($activity['hora_cierre'])) {
+                                                        $closeDate->setTime(...explode(':', $activity['hora_cierre']));
+                                                    }
+                                                    $diff = $today->diff($closeDate);
+                                                    $urgencyDays = $closeDate > $today ? $diff->days : -$diff->days;
+                                                    
+                                                    if ($urgencyDays <= 1 && $closeDate > $today) {
+                                                        echo '<span class="badge bg-danger ms-2">' . ($urgencyDays == 0 ? 'Vence hoy' : 'Vence mañana') . '</span>';
+                                                    } elseif ($closeDate <= $today) {
+                                                        echo '<span class="badge bg-danger ms-2">Vencida</span>';
+                                                    } elseif ($urgencyDays <= 3) {
+                                                        echo '<span class="badge bg-warning text-dark ms-2">Vence en ' . $urgencyDays . ' días</span>';
+                                                    }
+                                                }
+                                                ?>
+                                            </p>
+                                        <?php endif; ?>
                                     </div>
                                     <div class="col-md-6">
                                         <p><strong>Estado:</strong> 
@@ -87,6 +115,58 @@ require_once __DIR__ . '/../../includes/functions.php';
                                     <hr>
                                     <h6>Descripción:</h6>
                                     <p><?= nl2br(htmlspecialchars($activity['descripcion'])) ?></p>
+                                <?php endif; ?>
+                                
+                                <!-- Mostrar imágenes de referencia si es una tarea pendiente -->
+                                <?php if (!empty($activity['tarea_pendiente']) && !empty($activity['solicitante_nombre'])): ?>
+                                    <hr>
+                                    <h6>Información de la Tarea:</h6>
+                                    <p><strong>Asignada por:</strong> <?= htmlspecialchars($activity['solicitante_nombre']) ?></p>
+                                    
+                                    <!-- Mostrar evidencias iniciales (imágenes de referencia) -->
+                                    <?php 
+                                    // Obtener evidencias iniciales (bloqueada = 0) para mostrar imágenes de referencia
+                                    if (!empty($evidence)) {
+                                        $initialEvidence = array_filter($evidence, function($e) {
+                                            return empty($e['bloqueada']) || $e['bloqueada'] == 0;
+                                        });
+                                        
+                                        if (!empty($initialEvidence)): ?>
+                                            <div class="mt-3">
+                                                <h6>Archivos de Referencia:</h6>
+                                                <div class="row">
+                                                    <?php foreach ($initialEvidence as $item): ?>
+                                                        <div class="col-md-6 col-lg-4 mb-3">
+                                                            <div class="card">
+                                                                <div class="card-body">
+                                                                    <h6 class="card-title">
+                                                                        <i class="fas fa-<?= $item['tipo_evidencia'] === 'foto' ? 'image' : ($item['tipo_evidencia'] === 'video' ? 'video' : 'file') ?> me-2"></i>
+                                                                        <?= ucfirst($item['tipo_evidencia']) ?>
+                                                                    </h6>
+                                                                    <?php if (!empty($item['archivo'])): ?>
+                                                                        <?php if (in_array($item['tipo_evidencia'], ['foto', 'image'])): ?>
+                                                                            <img src="<?= url('assets/uploads/evidencias/' . basename($item['archivo'])) ?>" 
+                                                                                 class="img-fluid rounded mb-2" 
+                                                                                 alt="Imagen de referencia"
+                                                                                 style="max-height: 200px; object-fit: cover;">
+                                                                        <?php endif; ?>
+                                                                        <p><small><strong>Archivo:</strong> <?= htmlspecialchars(basename($item['archivo'])) ?></small></p>
+                                                                        <a href="<?= url('assets/uploads/evidencias/' . basename($item['archivo'])) ?>" 
+                                                                           class="btn btn-sm btn-outline-primary" target="_blank">
+                                                                            <i class="fas fa-download me-1"></i>Descargar
+                                                                        </a>
+                                                                    <?php endif; ?>
+                                                                    <?php if (!empty($item['contenido'])): ?>
+                                                                        <p class="mt-2"><small><?= nl2br(htmlspecialchars($item['contenido'])) ?></small></p>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
+                                    <?php } ?>
                                 <?php endif; ?>
                             </div>
                         </div>

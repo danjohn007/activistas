@@ -692,7 +692,7 @@ class Activity {
         }
     }
     
-    // Get ranking data
+    // Get ranking data with detailed task completion information
     public function getUserRanking($limit = 10) {
         try {
             $stmt = $this->db->prepare("
@@ -701,9 +701,18 @@ class Activity {
                     u.nombre_completo,
                     u.ranking_puntos,
                     COUNT(a.id) as actividades_completadas,
-                    MIN(TIMESTAMPDIFF(MINUTE, a.fecha_creacion, a.hora_evidencia)) as mejor_tiempo_minutos
+                    COUNT(at.id) as tareas_asignadas,
+                    ROUND(
+                        CASE 
+                            WHEN COUNT(at.id) > 0 THEN (COUNT(a.id) * 100.0 / COUNT(at.id))
+                            ELSE 0 
+                        END, 2
+                    ) as porcentaje_cumplimiento,
+                    MIN(TIMESTAMPDIFF(MINUTE, a.fecha_creacion, a.hora_evidencia)) as mejor_tiempo_minutos,
+                    AVG(TIMESTAMPDIFF(MINUTE, a.fecha_creacion, a.hora_evidencia)) as tiempo_promedio_minutos
                 FROM usuarios u
                 LEFT JOIN actividades a ON u.id = a.usuario_id AND a.estado = 'completada' AND a.autorizada = 1
+                LEFT JOIN actividades at ON u.id = at.usuario_id AND at.tarea_pendiente = 1
                 WHERE u.estado = 'activo' AND u.id != 1
                 GROUP BY u.id, u.nombre_completo, u.ranking_puntos
                 ORDER BY u.ranking_puntos DESC
@@ -752,7 +761,12 @@ class Activity {
                 AND (a.fecha_cierre IS NULL OR a.fecha_cierre > CURDATE() 
                      OR (a.fecha_cierre = CURDATE() AND (a.hora_cierre IS NULL OR a.hora_cierre > CURTIME())))
                 GROUP BY a.id
-                ORDER BY a.fecha_creacion DESC
+                ORDER BY 
+                    -- Tareas con fecha de cierre van primero, ordenadas por urgencia (más próximas a vencer)
+                    CASE WHEN a.fecha_cierre IS NOT NULL THEN 0 ELSE 1 END,
+                    a.fecha_cierre ASC,
+                    a.hora_cierre ASC,
+                    a.fecha_creacion DESC
             ");
             $stmt->execute([$userId]);
             $tasks = $stmt->fetchAll();
