@@ -207,7 +207,7 @@ require_once __DIR__ . '/../../includes/functions.php';
                                                 </div>
                                                 <?php if (!empty($item['archivo'])): ?>
                                                     <div>
-                                                        <a href="<?= url('assets/uploads/evidence/' . $item['archivo']) ?>" 
+                                                        <a href="<?= url('assets/uploads/evidencias/' . $item['archivo']) ?>" 
                                                            class="btn btn-sm btn-outline-primary" target="_blank">
                                                             <i class="fas fa-download"></i>
                                                         </a>

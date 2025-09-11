@@ -362,7 +362,7 @@ class ActivityController {
         // Procesar archivo si se subió
         if (isset($_FILES['evidence_file']) && $_FILES['evidence_file']['error'] === UPLOAD_ERR_OK) {
             $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'avi', 'mp3', 'wav', 'pdf', 'doc', 'docx'];
-            $uploadResult = uploadFile($_FILES['evidence_file'], __DIR__ . '/../public/assets/uploads/evidence', $allowedTypes);
+            $uploadResult = uploadFile($_FILES['evidence_file'], __DIR__ . '/../public/assets/uploads/evidencias', $allowedTypes);
             
             if ($uploadResult['success']) {
                 $fileName = $uploadResult['filename'];
@@ -464,7 +464,7 @@ class ActivityController {
                     ];
                     
                     $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'avi', 'mp3', 'wav'];
-                    $uploadResult = uploadFile($file, __DIR__ . '/../public/assets/uploads/evidence', $allowedTypes);
+                    $uploadResult = uploadFile($file, __DIR__ . '/../public/assets/uploads/evidencias', $allowedTypes);
                     
                     if ($uploadResult['success']) {
                         // Determinar tipo de evidencia basado en la extensión
