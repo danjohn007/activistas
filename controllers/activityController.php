@@ -160,6 +160,7 @@ class ActivityController {
                 $activityData = [
                     'usuario_id' => $recipientId,
                     'user_role' => $currentUser['rol'], // Add user role for pending task logic
+                    'created_by_id' => $currentUser['id'], // Track who created the activity for authorization
                     'tipo_actividad_id' => intval($_POST['tipo_actividad_id'] ?? 0),
                     'titulo' => cleanInput($_POST['titulo'] ?? ''),
                     'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
@@ -200,6 +201,7 @@ class ActivityController {
             $activityData = [
                 'usuario_id' => $currentUser['id'],
                 'user_role' => $currentUser['rol'], // Add user role for pending task logic
+                'created_by_id' => $currentUser['id'], // Track who created the activity for authorization
                 'tipo_actividad_id' => intval($_POST['tipo_actividad_id'] ?? 0),
                 'titulo' => cleanInput($_POST['titulo'] ?? ''),
                 'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
@@ -362,7 +364,7 @@ class ActivityController {
         // Procesar archivo si se subió
         if (isset($_FILES['evidence_file']) && $_FILES['evidence_file']['error'] === UPLOAD_ERR_OK) {
             $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'avi', 'mp3', 'wav', 'pdf', 'doc', 'docx'];
-            $uploadResult = uploadFile($_FILES['evidence_file'], __DIR__ . '/../public/assets/uploads/evidence', $allowedTypes);
+            $uploadResult = uploadFile($_FILES['evidence_file'], __DIR__ . '/../public/assets/uploads/evidencias', $allowedTypes);
             
             if ($uploadResult['success']) {
                 $fileName = $uploadResult['filename'];
@@ -464,7 +466,7 @@ class ActivityController {
                     ];
                     
                     $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'avi', 'mp3', 'wav'];
-                    $uploadResult = uploadFile($file, __DIR__ . '/../public/assets/uploads/evidence', $allowedTypes);
+                    $uploadResult = uploadFile($file, __DIR__ . '/../public/assets/uploads/evidencias', $allowedTypes);
                     
                     if ($uploadResult['success']) {
                         // Determinar tipo de evidencia basado en la extensión

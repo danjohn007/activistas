@@ -180,7 +180,7 @@
                                                                     ?>
                                                                     <i class="<?= $iconClass ?> me-2"></i>
                                                                     <small>
-                                                                        <a href="<?= url('assets/uploads/evidence/' . htmlspecialchars($attachment['archivo'])) ?>" 
+                                                                        <a href="<?= url('assets/uploads/evidencias/' . htmlspecialchars($attachment['archivo'])) ?>" 
                                                                            target="_blank" class="text-decoration-none">
                                                                             <?= htmlspecialchars(basename($attachment['archivo'])) ?>
                                                                         </a>

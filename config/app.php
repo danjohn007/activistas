@@ -7,6 +7,10 @@
 // Configuración del entorno
 define('APP_ENV', 'development'); // development, testing, production
 
+// Configuración de zona horaria
+define('DEFAULT_TIMEZONE', 'America/Mexico_City'); // UTC-6 por defecto
+define('TIMEZONE_OFFSET', '-06:00'); // Offset para consultas de base de datos
+
 // Configuración de rutas base
 define('BASE_PATH', '/public'); // Base path para la aplicación (sin trailing slash)
 define('BASE_URL', '/public'); // URL base completa (sin trailing slash)
@@ -80,4 +84,7 @@ if (APP_ENV === 'development') {
     error_reporting(0);
     ini_set('display_errors', 0);
 }
+
+// Establecer zona horaria por defecto
+date_default_timezone_set(DEFAULT_TIMEZONE);
 ?>
