@@ -153,8 +153,8 @@ class TaskController {
         $uploadPath = $uploadDir . $filename;
         
         if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
-            // Return relative path from public root
-            return 'assets/uploads/evidencias/' . $filename;
+            // Return only the filename - path construction will be handled in display
+            return $filename;
         }
         
         return false;

@@ -321,7 +321,7 @@
                                             <th width="110" class="text-center">Tareas Asignadas</th>
                                             <th width="120" class="text-center">% Cumplimiento</th>
                                             <th width="130" class="text-center">Mejor Tiempo</th>
-                                            <th width="130" class="text-center">Tiempo Promedio</th>
+                                            <!-- Average Time column disabled per requirements -->
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -388,24 +388,7 @@
                                                         <small class="text-muted">-</small>
                                                     <?php endif; ?>
                                                 </td>
-                                                <td class="text-center">
-                                                    <?php if (!empty($user['tiempo_promedio_minutos'])): ?>
-                                                        <?php 
-                                                        $tiempoPromedio = (float) $user['tiempo_promedio_minutos'];
-                                                        $avgHoras = floor($tiempoPromedio / 60);
-                                                        $avgMinutos = round($tiempoPromedio % 60);
-                                                        ?>
-                                                        <small class="text-muted">
-                                                            <?php if ($avgHoras > 0): ?>
-                                                                <?= $avgHoras ?>h <?= $avgMinutos ?>m
-                                                            <?php else: ?>
-                                                                <?= $avgMinutos ?>m
-                                                            <?php endif; ?>
-                                                        </small>
-                                                    <?php else: ?>
-                                                        <small class="text-muted">-</small>
-                                                    <?php endif; ?>
-                                                </td>
+                                                <!-- Average Time column disabled per requirements -->
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>

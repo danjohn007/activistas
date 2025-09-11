@@ -1042,9 +1042,9 @@ class Activity {
                 return $b['ranking_puntos'] - $a['ranking_puntos'];
             });
             
-            // Save monthly rankings
+            // Save monthly rankings (only top 20 positions as per requirements)
             $position = 1;
-            foreach ($users as $user) {
+            foreach (array_slice($users, 0, 20) as $user) {
                 $insertStmt = $this->db->prepare("
                     INSERT INTO rankings_mensuales 
                     (usuario_id, anio, mes, puntos, posicion, actividades_completadas, porcentaje_cumplimiento)
@@ -1073,7 +1073,7 @@ class Activity {
             $resetStmt = $this->db->prepare("UPDATE usuarios SET ranking_puntos = 0 WHERE id != 1");
             $resetStmt->execute();
             
-            logActivity("Ranking mensual guardado para $month/$year y puntos reiniciados. Usuarios procesados: " . count($users));
+            logActivity("Ranking mensual guardado para $month/$year (top 20 posiciones) y puntos reiniciados. Usuarios procesados: " . count($users));
             
             return true;
         } catch (Exception $e) {
