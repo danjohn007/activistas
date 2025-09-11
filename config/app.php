@@ -9,7 +9,7 @@ define('APP_ENV', 'development'); // development, testing, production
 
 // Configuración de rutas base
 define('BASE_PATH', '/public'); // Base path para la aplicación (sin trailing slash)
-define('BASE_URL', '/activistas-main/public'); // URL base completa (sin trailing slash)
+define('BASE_URL', '/public'); // URL base completa (sin trailing slash)
 
 // Configuración de directorios
 define('APP_ROOT', dirname(__DIR__));
