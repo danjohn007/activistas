@@ -100,19 +100,23 @@ class TaskController {
         
         $evidenceFile = null;
         
-        // Procesar archivo si se subió
-        if (isset($_FILES['archivo']) && $_FILES['archivo']['error'] === UPLOAD_ERR_OK) {
-            $evidenceFile = $this->processEvidenceFile($_FILES['archivo'], $taskId);
-            if (!$evidenceFile) {
-                redirectWithMessage('tasks/complete.php?id=' . $taskId, 
-                    'Error al procesar el archivo de evidencia', 'error');
-            }
+        // Validar que hay archivo obligatorio (según requisitos)
+        if (!isset($_FILES['archivo']) || $_FILES['archivo']['error'] !== UPLOAD_ERR_OK) {
+            redirectWithMessage('tasks/complete.php?id=' . $taskId, 
+                'Debe subir un archivo como evidencia (obligatorio)', 'error');
         }
         
-        // Validar que hay contenido o archivo
-        if (empty($evidenceContent) && empty($evidenceFile)) {
+        // Procesar archivo obligatorio
+        $evidenceFile = $this->processEvidenceFile($_FILES['archivo'], $taskId);
+        if (!$evidenceFile) {
             redirectWithMessage('tasks/complete.php?id=' . $taskId, 
-                'Debe proporcionar contenido o subir un archivo como evidencia', 'error');
+                'Error al procesar el archivo de evidencia', 'error');
+        }
+        
+        // El contenido sigue siendo requerido además del archivo
+        if (empty($evidenceContent)) {
+            redirectWithMessage('tasks/complete.php?id=' . $taskId, 
+                'Debe proporcionar una descripción de la evidencia', 'error');
         }
         
         // Agregar evidencia (esto automáticamente marca la tarea como completada)
@@ -149,6 +153,7 @@ class TaskController {
         $uploadPath = $uploadDir . $filename;
         
         if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
+            // Return relative path from public root
             return 'assets/uploads/evidencias/' . $filename;
         }
         
