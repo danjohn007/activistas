@@ -391,8 +391,9 @@
                                                 <td class="text-center">
                                                     <?php if (!empty($user['tiempo_promedio_minutos'])): ?>
                                                         <?php 
-                                                        $avgHoras = floor($user['tiempo_promedio_minutos'] / 60);
-                                                        $avgMinutos = round($user['tiempo_promedio_minutos'] % 60);
+                                                        $tiempoPromedio = (float) $user['tiempo_promedio_minutos'];
+                                                        $avgHoras = floor($tiempoPromedio / 60);
+                                                        $avgMinutos = round($tiempoPromedio % 60);
                                                         ?>
                                                         <small class="text-muted">
                                                             <?php if ($avgHoras > 0): ?>

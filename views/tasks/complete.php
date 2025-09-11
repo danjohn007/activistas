@@ -167,10 +167,10 @@
                                 
                                 <div class="col-md-6 mb-3">
                                     <label for="archivo" class="form-label">
-                                        <i class="fas fa-file me-1"></i>Archivo (Opcional)
+                                        <i class="fas fa-file me-1"></i>Archivo (Obligatorio) *
                                     </label>
                                     <input type="file" class="form-control" id="archivo" name="archivo" 
-                                           accept="image/*,video/*,audio/*">
+                                           accept="image/*,video/*,audio/*" required>
                                     <div class="form-text">
                                         Máximo 20MB. Formatos: JPG, PNG, GIF, MP4, MP3, WAV
                                     </div>
