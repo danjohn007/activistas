@@ -160,6 +160,7 @@ class ActivityController {
                 $activityData = [
                     'usuario_id' => $recipientId,
                     'user_role' => $currentUser['rol'], // Add user role for pending task logic
+                    'created_by_id' => $currentUser['id'], // Track who created the activity for authorization
                     'tipo_actividad_id' => intval($_POST['tipo_actividad_id'] ?? 0),
                     'titulo' => cleanInput($_POST['titulo'] ?? ''),
                     'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
@@ -200,6 +201,7 @@ class ActivityController {
             $activityData = [
                 'usuario_id' => $currentUser['id'],
                 'user_role' => $currentUser['rol'], // Add user role for pending task logic
+                'created_by_id' => $currentUser['id'], // Track who created the activity for authorization
                 'tipo_actividad_id' => intval($_POST['tipo_actividad_id'] ?? 0),
                 'titulo' => cleanInput($_POST['titulo'] ?? ''),
                 'descripcion' => cleanInput($_POST['descripcion'] ?? ''),

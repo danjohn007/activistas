@@ -50,9 +50,19 @@ class Activity {
                 $solicitante_id = isset($data['solicitante_id']) ? $data['solicitante_id'] : $data['usuario_id'];
             }
             
+            // Determine authorization status based on user role
+            $autorizada = 0;
+            $autorizado_por = null;
+            
+            // Auto-authorize activities created by privileged roles (SuperAdmin, Gestor, Líder)
+            if (isset($data['user_role']) && in_array($data['user_role'], ['SuperAdmin', 'Gestor', 'Líder'])) {
+                $autorizada = 1;
+                $autorizado_por = $data['created_by_id'] ?? $data['usuario_id']; // Who authorized it (the creator)
+            }
+            
             $stmt = $this->db->prepare("
-                INSERT INTO actividades (usuario_id, tipo_actividad_id, titulo, descripcion, fecha_actividad, fecha_cierre, hora_cierre, tarea_pendiente, solicitante_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO actividades (usuario_id, tipo_actividad_id, titulo, descripcion, fecha_actividad, fecha_cierre, hora_cierre, tarea_pendiente, solicitante_id, autorizada, autorizado_por)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $result = $stmt->execute([
@@ -64,7 +74,9 @@ class Activity {
                 !empty($data['fecha_cierre']) ? $data['fecha_cierre'] : null,
                 !empty($data['hora_cierre']) ? $data['hora_cierre'] : null,
                 $tarea_pendiente,
-                $solicitante_id
+                $solicitante_id,
+                $autorizada,
+                $autorizado_por
             ]);
             
             if ($result) {
