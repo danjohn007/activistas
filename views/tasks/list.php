@@ -28,6 +28,20 @@
         .task-urgent {
             border-left-color: #dc3545;
         }
+        .card-img-container img {
+            transition: transform 0.2s ease-in-out;
+        }
+        .card-img-container img:hover {
+            transform: scale(1.02);
+        }
+        .activity-image-overlay {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border-radius: 0.375rem;
+        }
+        .image-zoom-cursor {
+            cursor: zoom-in;
+        }
     </style>
 </head>
 <body>
@@ -146,15 +160,138 @@
                                             <i class="fas fa-tag me-1"></i><?= htmlspecialchars($task['tipo_nombre']) ?>
                                         </small>
                                     </div>
+                                    <!-- REQUIREMENT IMPLEMENTATION: Enhanced image display for activity -->
+                                    <!-- Display primary activity image prominently if available -->
+                                    <?php
+                                    $primaryImage = null;
+                                    $otherAttachments = [];
+                                    
+                                    // Find the first image attachment to display as primary
+                                    if (!empty($task['initial_attachments'])) {
+                                        foreach ($task['initial_attachments'] as $attachment) {
+                                            if (!empty($attachment['archivo']) && $attachment['tipo_evidencia'] === 'foto') {
+                                                if ($primaryImage === null) {
+                                                    $primaryImage = $attachment;
+                                                } else {
+                                                    $otherAttachments[] = $attachment;
+                                                }
+                                            } else {
+                                                $otherAttachments[] = $attachment;
+                                            }
+                                        }
+                                    }
+                                    ?>
+                                    
+                                    <?php if ($primaryImage): ?>
+                                        <div class="card-img-container position-relative mb-3">
+                                            <img src="<?= url('assets/uploads/evidencias/' . htmlspecialchars($primaryImage['archivo'])) ?>" 
+                                                 class="card-img-top rounded image-zoom-cursor" 
+                                                 alt="Imagen de actividad: <?= htmlspecialchars($task['titulo']) ?>" 
+                                                 style="height: 200px; object-fit: cover;"
+                                                 data-bs-toggle="modal" 
+                                                 data-bs-target="#imageModal<?= $task['id'] ?>"
+                                                 loading="lazy">
+                                            <div class="position-absolute top-0 end-0 p-2">
+                                                <span class="badge activity-image-overlay">
+                                                    <i class="fas fa-search-plus me-1"></i>Click para ampliar
+                                                </span>
+                                            </div>
+                                            <?php if (!empty($primaryImage['contenido'])): ?>
+                                                <div class="position-absolute bottom-0 start-0 end-0 p-2">
+                                                    <div class="activity-image-overlay p-2 rounded">
+                                                        <small class="text-white">
+                                                            <i class="fas fa-quote-left me-1"></i>
+                                                            <?= htmlspecialchars(substr($primaryImage['contenido'], 0, 80)) ?>
+                                                            <?= strlen($primaryImage['contenido']) > 80 ? '...' : '' ?>
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                        
+                                        <!-- Modal for full-size image -->
+                                        <div class="modal fade" id="imageModal<?= $task['id'] ?>" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">
+                                                            <i class="fas fa-image me-2"></i><?= htmlspecialchars($task['titulo']) ?>
+                                                        </h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body text-center">
+                                                        <img src="<?= url('assets/uploads/evidencias/' . htmlspecialchars($primaryImage['archivo'])) ?>" 
+                                                             class="img-fluid rounded" 
+                                                             alt="Imagen de actividad completa">
+                                                        <?php if (!empty($primaryImage['contenido'])): ?>
+                                                            <div class="mt-3">
+                                                                <h6 class="text-muted">Descripción:</h6>
+                                                                <p><?= htmlspecialchars($primaryImage['contenido']) ?></p>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+
                                     <div class="card-body">
                                         <?php if (!empty($task['descripcion'])): ?>
                                             <p class="card-text"><?= nl2br(htmlspecialchars($task['descripcion'])) ?></p>
                                         <?php endif; ?>
                                         
-                                        <!-- Display initial attachments if any -->
-                                        <!-- REQUIREMENT IMPLEMENTATION: Show files attached during task creation -->
-                                        <!-- This displays initial attachments (bloqueada=0) for all user levels -->
-                                        <?php if (!empty($task['initial_attachments'])): ?>
+                                        <!-- Display additional attachments if any -->
+                                        <?php if (!empty($otherAttachments)): ?>
+                                            <div class="mb-3">
+                                                <h6 class="text-muted mb-2">
+                                                    <i class="fas fa-paperclip me-1"></i>Archivos adicionales:
+                                                </h6>
+                                                <div class="row">
+                                                    <?php foreach ($otherAttachments as $attachment): ?>
+                                                        <?php if (!empty($attachment['archivo'])): ?>
+                                                            <div class="col-md-6 mb-2">
+                                                                <div class="d-flex align-items-center p-2 bg-light rounded">
+                                                                    <?php 
+                                                                    $iconClass = 'fas fa-file';
+                                                                    switch ($attachment['tipo_evidencia']) {
+                                                                        case 'foto':
+                                                                            $iconClass = 'fas fa-image text-primary';
+                                                                            break;
+                                                                        case 'video':
+                                                                            $iconClass = 'fas fa-video text-danger';
+                                                                            break;
+                                                                        case 'audio':
+                                                                            $iconClass = 'fas fa-music text-success';
+                                                                            break;
+                                                                    }
+                                                                    ?>
+                                                                    <i class="<?= $iconClass ?> me-2"></i>
+                                                                    <small>
+                                                                        <a href="<?= url('assets/uploads/evidencias/' . htmlspecialchars($attachment['archivo'])) ?>" 
+                                                                           target="_blank" class="text-decoration-none">
+                                                                            <?= htmlspecialchars(basename($attachment['archivo'])) ?>
+                                                                        </a>
+                                                                    </small>
+                                                                </div>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                        <?php if (!empty($attachment['contenido'])): ?>
+                                                            <div class="col-12 mb-2">
+                                                                <div class="p-2 bg-light rounded">
+                                                                    <small class="text-muted">
+                                                                        <i class="fas fa-comment me-1"></i>Comentario: 
+                                                                        <?= htmlspecialchars($attachment['contenido']) ?>
+                                                                    </small>
+                                                                </div>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
+                                        
+                                        <!-- Show message if no image but has other attachments -->
+                                        <?php if (!$primaryImage && !empty($task['initial_attachments'])): ?>
                                             <div class="mb-3">
                                                 <h6 class="text-muted mb-2">
                                                     <i class="fas fa-paperclip me-1"></i>Archivos adjuntos:

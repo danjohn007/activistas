@@ -620,12 +620,21 @@ class Activity {
         }
     }
     
-    // Calculate and update user rankings with new point system
-    // Nuevo sistema de ranking implementado según requerimientos:
-    // - Base: 1000 puntos
-    // - Primer respondedor: 1000 + total de usuarios activos
-    // - Siguientes: (1000 + total usuarios) - posición (0-indexed)
-    // Los puntos se acumulan por cada tarea completada
+    /**
+     * Calculate and update user rankings with new point system
+     * 
+     * RANKING SYSTEM WITH TIE-BREAKING RULES (as per requirements):
+     * - Base points: 1000
+     * - First responder: 1000 + total active users in the system
+     * - Second responder: 1000 + total users - 1
+     * - Third responder: 1000 + total users - 2
+     * - And so on... until the last to respond
+     * 
+     * Points are accumulated for each completed task.
+     * The system ensures proper tie-breaking by considering response order.
+     * 
+     * This method is called after each task completion to update rankings.
+     */
     public function updateUserRankings() {
         try {
             // Get total number of active users for point calculation
@@ -1007,7 +1016,24 @@ class Activity {
     
     /**
      * Save current month rankings and reset for new month
-     * This method implements the monthly ranking reset functionality
+     * 
+     * REQUIREMENT IMPLEMENTATION: Monthly Ranking Reset System
+     * 
+     * This method implements the monthly ranking reset functionality as requested:
+     * 1. Saves a historical record of the TOP 10 places at the moment of reset
+     * 2. Resets all user ranking points to ZERO to start fresh
+     * 3. Maintains the tie-breaking rules for future ranking calculations:
+     *    - First responder: 1000 + total active users in the system
+     *    - Second responder: 1000 + total users - 1
+     *    - Third responder: 1000 + total users - 2
+     *    - And so on... until the last to respond
+     * 
+     * The generated SQL operations:
+     * 1. SELECT to get current rankings with detailed metrics
+     * 2. INSERT/UPDATE to save top 10 positions in rankings_mensuales table
+     * 3. UPDATE to reset all ranking_puntos to 0 for fresh start
+     * 
+     * @return bool Success status of the operation
      */
     public function saveMonthlyRankingsAndReset() {
         try {
@@ -1042,9 +1068,9 @@ class Activity {
                 return $b['ranking_puntos'] - $a['ranking_puntos'];
             });
             
-            // Save monthly rankings (only top 20 positions as per requirements)
+            // Save monthly rankings (only top 10 positions as per new requirements)
             $position = 1;
-            foreach (array_slice($users, 0, 20) as $user) {
+            foreach (array_slice($users, 0, 10) as $user) {
                 $insertStmt = $this->db->prepare("
                     INSERT INTO rankings_mensuales 
                     (usuario_id, anio, mes, puntos, posicion, actividades_completadas, porcentaje_cumplimiento)
@@ -1069,11 +1095,11 @@ class Activity {
                 $position++;
             }
             
-            // Reset current ranking points for all users
+            // Reset current ranking points for all users (starting from zero as required)
             $resetStmt = $this->db->prepare("UPDATE usuarios SET ranking_puntos = 0 WHERE id != 1");
             $resetStmt->execute();
             
-            logActivity("Ranking mensual guardado para $month/$year (top 20 posiciones) y puntos reiniciados. Usuarios procesados: " . count($users));
+            logActivity("Ranking mensual guardado para $month/$year (top 10 posiciones) y puntos reiniciados a cero. Usuarios procesados: " . count($users));
             
             return true;
         } catch (Exception $e) {
