@@ -196,7 +196,13 @@ require_once __DIR__ . '/../../includes/functions.php';
                                                         <?= ucfirst($item['tipo_evidencia']) ?>
                                                     </h6>
                                                     <?php if (!empty($item['archivo'])): ?>
-                                                        <p class="mb-1"><strong>Archivo:</strong> <?= htmlspecialchars($item['archivo']) ?></p>
+                                                        <?php if (in_array($item['tipo_evidencia'], ['foto', 'image'])): ?>
+                                                            <img src="<?= url('assets/uploads/evidencias/' . basename($item['archivo'])) ?>" 
+                                                                 class="img-fluid rounded mb-2" 
+                                                                 alt="Evidencia"
+                                                                 style="max-height: 300px; object-fit: cover;">
+                                                        <?php endif; ?>
+                                                        <p class="mb-1"><strong>Archivo:</strong> <?= htmlspecialchars(basename($item['archivo'])) ?></p>
                                                     <?php endif; ?>
                                                     <?php if (!empty($item['contenido'])): ?>
                                                         <p class="mb-1"><?= nl2br(htmlspecialchars($item['contenido'])) ?></p>
@@ -207,7 +213,7 @@ require_once __DIR__ . '/../../includes/functions.php';
                                                 </div>
                                                 <?php if (!empty($item['archivo'])): ?>
                                                     <div>
-                                                        <a href="<?= url('assets/uploads/evidencias/' . $item['archivo']) ?>" 
+                                                        <a href="<?= url('assets/uploads/evidencias/' . basename($item['archivo'])) ?>" 
                                                            class="btn btn-sm btn-outline-primary" target="_blank">
                                                             <i class="fas fa-download"></i>
                                                         </a>
