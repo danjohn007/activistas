@@ -61,8 +61,8 @@ class Activity {
             }
             
             $stmt = $this->db->prepare("
-                INSERT INTO actividades (usuario_id, tipo_actividad_id, titulo, descripcion, fecha_actividad, fecha_cierre, hora_cierre, tarea_pendiente, solicitante_id, autorizada, autorizado_por)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO actividades (usuario_id, tipo_actividad_id, titulo, descripcion, enlace_1, enlace_2, fecha_actividad, fecha_cierre, hora_cierre, tarea_pendiente, solicitante_id, autorizada, autorizado_por)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $result = $stmt->execute([
@@ -70,6 +70,8 @@ class Activity {
                 $data['tipo_actividad_id'],
                 $data['titulo'],
                 $data['descripcion'] ?? null,
+                !empty($data['enlace_1']) ? $data['enlace_1'] : null,
+                !empty($data['enlace_2']) ? $data['enlace_2'] : null,
                 $data['fecha_actividad'],
                 !empty($data['fecha_cierre']) ? $data['fecha_cierre'] : null,
                 !empty($data['hora_cierre']) ? $data['hora_cierre'] : null,

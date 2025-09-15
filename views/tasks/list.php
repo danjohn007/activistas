@@ -240,6 +240,27 @@
                                             <p class="card-text"><?= nl2br(htmlspecialchars($task['descripcion'])) ?></p>
                                         <?php endif; ?>
                                         
+                                        <!-- Enlaces relacionados -->
+                                        <?php if (!empty($task['enlace_1']) || !empty($task['enlace_2'])): ?>
+                                            <div class="mb-3">
+                                                <h6 class="text-muted mb-2">
+                                                    <i class="fas fa-link me-1"></i>Enlaces relacionados:
+                                                </h6>
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    <?php if (!empty($task['enlace_1'])): ?>
+                                                        <a href="<?= htmlspecialchars($task['enlace_1']) ?>" target="_blank" class="btn btn-outline-primary btn-sm">
+                                                            <i class="fas fa-external-link-alt me-1"></i>Enlace 1
+                                                        </a>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($task['enlace_2'])): ?>
+                                                        <a href="<?= htmlspecialchars($task['enlace_2']) ?>" target="_blank" class="btn btn-outline-primary btn-sm">
+                                                            <i class="fas fa-external-link-alt me-1"></i>Enlace 2
+                                                        </a>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
+                                        
                                         <!-- Display additional attachments if any -->
                                         <?php if (!empty($otherAttachments)): ?>
                                             <div class="mb-3">

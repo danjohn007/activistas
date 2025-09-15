@@ -117,6 +117,28 @@ require_once __DIR__ . '/../../includes/functions.php';
                                     <p><?= nl2br(htmlspecialchars($activity['descripcion'])) ?></p>
                                 <?php endif; ?>
                                 
+                                <!-- Enlaces relacionados -->
+                                <?php if (!empty($activity['enlace_1']) || !empty($activity['enlace_2'])): ?>
+                                    <hr>
+                                    <h6><i class="fas fa-link me-2"></i>Enlaces relacionados:</h6>
+                                    <div class="mb-2">
+                                        <?php if (!empty($activity['enlace_1'])): ?>
+                                            <div class="mb-2">
+                                                <a href="<?= htmlspecialchars($activity['enlace_1']) ?>" target="_blank" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-external-link-alt me-1"></i>Enlace 1
+                                                </a>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($activity['enlace_2'])): ?>
+                                            <div class="mb-2">
+                                                <a href="<?= htmlspecialchars($activity['enlace_2']) ?>" target="_blank" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-external-link-alt me-1"></i>Enlace 2
+                                                </a>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endif; ?>
+                                
                                 <!-- Mostrar imágenes de referencia si es una tarea pendiente -->
                                 <?php if (!empty($activity['tarea_pendiente']) && !empty($activity['solicitante_nombre'])): ?>
                                     <hr>

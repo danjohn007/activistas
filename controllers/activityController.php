@@ -164,6 +164,8 @@ class ActivityController {
                     'tipo_actividad_id' => intval($_POST['tipo_actividad_id'] ?? 0),
                     'titulo' => cleanInput($_POST['titulo'] ?? ''),
                     'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
+                    'enlace_1' => cleanInput($_POST['enlace_1'] ?? ''),
+                    'enlace_2' => cleanInput($_POST['enlace_2'] ?? ''),
                     'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? ''),
                     'fecha_cierre' => cleanInput($_POST['fecha_cierre'] ?? ''),
                     'hora_cierre' => cleanInput($_POST['hora_cierre'] ?? ''),
@@ -205,6 +207,8 @@ class ActivityController {
                 'tipo_actividad_id' => intval($_POST['tipo_actividad_id'] ?? 0),
                 'titulo' => cleanInput($_POST['titulo'] ?? ''),
                 'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
+                'enlace_1' => cleanInput($_POST['enlace_1'] ?? ''),
+                'enlace_2' => cleanInput($_POST['enlace_2'] ?? ''),
                 'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? ''),
                 'fecha_cierre' => cleanInput($_POST['fecha_cierre'] ?? ''),
                 'hora_cierre' => cleanInput($_POST['hora_cierre'] ?? '')
