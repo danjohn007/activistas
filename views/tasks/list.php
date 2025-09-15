@@ -184,16 +184,18 @@
                                     
                                     <?php if ($primaryImage): ?>
                                         <div class="card-img-container position-relative mb-3">
-                                            <img src="<?= url('assets/uploads/evidencias/' . htmlspecialchars($primaryImage['archivo'])) ?>" 
-                                                 class="card-img-top rounded image-zoom-cursor" 
-                                                 alt="Imagen de actividad: <?= htmlspecialchars($task['titulo']) ?>" 
-                                                 style="height: 200px; object-fit: cover;"
-                                                 data-bs-toggle="modal" 
-                                                 data-bs-target="#imageModal<?= $task['id'] ?>"
-                                                 loading="lazy">
+                                            <a href="<?= url('assets/uploads/evidencias/' . htmlspecialchars($primaryImage['archivo'])) ?>" 
+                                               target="_blank" 
+                                               rel="noopener noreferrer">
+                                                <img src="<?= url('assets/uploads/evidencias/' . htmlspecialchars($primaryImage['archivo'])) ?>" 
+                                                     class="card-img-top rounded" 
+                                                     alt="Imagen de actividad: <?= htmlspecialchars($task['titulo']) ?>" 
+                                                     style="height: 200px; object-fit: cover;"
+                                                     loading="lazy">
+                                            </a>
                                             <div class="position-absolute top-0 end-0 p-2">
                                                 <span class="badge activity-image-overlay">
-                                                    <i class="fas fa-search-plus me-1"></i>Click para ampliar
+                                                    <i class="fas fa-external-link-alt me-1"></i>Click para abrir
                                                 </span>
                                             </div>
                                             <?php if (!empty($primaryImage['contenido'])): ?>
@@ -207,31 +209,6 @@
                                                     </div>
                                                 </div>
                                             <?php endif; ?>
-                                        </div>
-                                        
-                                        <!-- Modal for full-size image -->
-                                        <div class="modal fade" id="imageModal<?= $task['id'] ?>" tabindex="-1" aria-hidden="true">
-                                            <div class="modal-dialog modal-lg modal-dialog-centered">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">
-                                                            <i class="fas fa-image me-2"></i><?= htmlspecialchars($task['titulo']) ?>
-                                                        </h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                    </div>
-                                                    <div class="modal-body text-center">
-                                                        <img src="<?= url('assets/uploads/evidencias/' . htmlspecialchars($primaryImage['archivo'])) ?>" 
-                                                             class="img-fluid rounded" 
-                                                             alt="Imagen de actividad completa">
-                                                        <?php if (!empty($primaryImage['contenido'])): ?>
-                                                            <div class="mt-3">
-                                                                <h6 class="text-muted">Descripción:</h6>
-                                                                <p><?= htmlspecialchars($primaryImage['contenido']) ?></p>
-                                                            </div>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                </div>
-                                            </div>
                                         </div>
                                     <?php endif; ?>
 

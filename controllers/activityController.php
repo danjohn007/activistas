@@ -76,6 +76,13 @@ class ActivityController {
         $totalPages = ceil($totalActivities / $perPage);
         $activityTypes = $this->activityModel->getActivityTypes();
         
+        // Add evidence for completed activities
+        foreach ($activities as &$activity) {
+            if ($activity['estado'] === 'completada') {
+                $activity['evidences'] = $this->activityModel->getActivityEvidence($activity['id']);
+            }
+        }
+        
         include __DIR__ . '/../views/activities/list.php';
     }
     

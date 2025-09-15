@@ -155,6 +155,7 @@
                                             <th>Tipo</th>
                                             <th>Fecha</th>
                                             <th>Estado</th>
+                                            <th>Evidencias</th>
                                             <th>Acciones</th>
                                         </tr>
                                     </thead>
@@ -184,6 +185,45 @@
                                                 <span class="badge bg-<?= $badgeClass ?>">
                                                     <?= ucfirst(str_replace('_', ' ', $activity['estado'])) ?>
                                                 </span>
+                                            </td>
+                                            <td>
+                                                <?php if ($activity['estado'] === 'completada' && !empty($activity['evidences'])): ?>
+                                                    <div class="evidence-summary">
+                                                        <?php foreach ($activity['evidences'] as $evidence): ?>
+                                                            <div class="evidence-item mb-2">
+                                                                <?php if ($evidence['tipo_evidencia'] === 'foto' && !empty($evidence['archivo'])): ?>
+                                                                    <div class="d-flex align-items-center">
+                                                                        <img src="<?= url('assets/uploads/evidencias/' . htmlspecialchars($evidence['archivo'])) ?>" 
+                                                                             class="evidence-thumbnail me-2" 
+                                                                             alt="Evidencia"
+                                                                             style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
+                                                                        <small class="text-muted">
+                                                                            <i class="fas fa-image me-1"></i>Foto
+                                                                        </small>
+                                                                    </div>
+                                                                <?php elseif ($evidence['tipo_evidencia'] === 'video' && !empty($evidence['archivo'])): ?>
+                                                                    <small class="text-muted">
+                                                                        <i class="fas fa-video me-1"></i>Video: <?= htmlspecialchars(basename($evidence['archivo'])) ?>
+                                                                    </small>
+                                                                <?php elseif ($evidence['tipo_evidencia'] === 'comentario' && !empty($evidence['contenido'])): ?>
+                                                                    <small class="text-muted">
+                                                                        <i class="fas fa-comment me-1"></i>
+                                                                        <?= htmlspecialchars(substr($evidence['contenido'], 0, 50)) ?>
+                                                                        <?= strlen($evidence['contenido']) > 50 ? '...' : '' ?>
+                                                                    </small>
+                                                                <?php else: ?>
+                                                                    <small class="text-muted">
+                                                                        <i class="fas fa-file me-1"></i><?= ucfirst($evidence['tipo_evidencia']) ?>
+                                                                    </small>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                        <?php endforeach; ?>
+                                                    </div>
+                                                <?php elseif ($activity['estado'] === 'completada'): ?>
+                                                    <small class="text-muted">Sin evidencias</small>
+                                                <?php else: ?>
+                                                    <small class="text-muted">-</small>
+                                                <?php endif; ?>
                                             </td>
                                             <td>
                                                 <div class="btn-group btn-group-sm" role="group">
