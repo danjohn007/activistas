@@ -431,10 +431,10 @@ class UserController {
                 redirectWithMessage('dashboards/gestor.php', '', 'info');
                 break;
             case 'Líder':
-                redirectWithMessage('dashboards/lider.php', '', 'info');
+                redirectWithMessage('tasks/', '', 'info');
                 break;
             case 'Activista':
-                redirectWithMessage('dashboards/activista.php', '', 'info');
+                redirectWithMessage('tasks/', '', 'info');
                 break;
             default:
                 redirectWithMessage('login.php', 'Rol no válido', 'error');

@@ -167,14 +167,21 @@
                                 
                                 <div class="col-md-6 mb-3">
                                     <label for="archivo" class="form-label">
-                                        <i class="fas fa-file me-1"></i>Archivo (Obligatorio) *
+                                        <i class="fas fa-file me-1"></i>Archivos de Evidencia (Obligatorio) *
                                     </label>
-                                    <input type="file" class="form-control" id="archivo" name="archivo" 
-                                           accept="image/*,video/*,audio/*" required>
+                                    <input type="file" class="form-control" id="archivo" name="archivo[]" 
+                                           accept="image/*,video/*,audio/*" required multiple>
                                     <div class="form-text">
-                                        Máximo 20MB. Formatos: JPG, PNG, GIF, MP4, MP3, WAV
+                                        Máximo 20MB por archivo. Formatos: JPG, PNG, GIF, MP4, MP3, WAV<br>
+                                        <strong>Nuevo:</strong> Puedes seleccionar múltiples archivos manteniendo Ctrl (Windows) o Cmd (Mac) mientras haces clic.
                                     </div>
                                 </div>
+                            </div>
+                            
+                            <!-- Lista de archivos seleccionados -->
+                            <div id="selectedFilesContainer" class="mb-3" style="display: none;">
+                                <h6><i class="fas fa-paperclip me-2"></i>Archivos seleccionados:</h6>
+                                <div id="selectedFilesList" class="list-group"></div>
                             </div>
                             
                             <div class="mb-4">
@@ -217,6 +224,44 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Mostrar archivos seleccionados
+        document.getElementById('archivo').addEventListener('change', function() {
+            const files = this.files;
+            const container = document.getElementById('selectedFilesContainer');
+            const filesList = document.getElementById('selectedFilesList');
+            
+            if (files.length > 0) {
+                container.style.display = 'block';
+                filesList.innerHTML = '';
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
+                    
+                    const listItem = document.createElement('div');
+                    listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    
+                    let fileIcon = 'fas fa-file';
+                    if (file.type.startsWith('image/')) fileIcon = 'fas fa-image text-primary';
+                    else if (file.type.startsWith('video/')) fileIcon = 'fas fa-video text-danger';
+                    else if (file.type.startsWith('audio/')) fileIcon = 'fas fa-music text-success';
+                    
+                    listItem.innerHTML = `
+                        <div>
+                            <i class="${fileIcon} me-2"></i>
+                            <strong>${file.name}</strong>
+                            <small class="text-muted ms-2">(${fileSize} MB)</small>
+                        </div>
+                        ${fileSize > 20 ? '<span class="badge bg-danger">Demasiado grande</span>' : '<span class="badge bg-success">OK</span>'}
+                    `;
+                    
+                    filesList.appendChild(listItem);
+                }
+            } else {
+                container.style.display = 'none';
+            }
+        });
+        
         // Actualizar placeholder del textarea según el tipo de evidencia
         document.getElementById('tipo_evidencia').addEventListener('change', function() {
             const textarea = document.getElementById('contenido');
@@ -224,13 +269,13 @@
             
             switch(tipo) {
                 case 'foto':
-                    textarea.placeholder = 'Describe qué se muestra en la foto, dónde fue tomada, resultados obtenidos...';
+                    textarea.placeholder = 'Describe qué se muestra en las fotos, dónde fueron tomadas, resultados obtenidos...';
                     break;
                 case 'video':
-                    textarea.placeholder = 'Describe el contenido del video, duración, personas que participaron, resultados...';
+                    textarea.placeholder = 'Describe el contenido de los videos, duración, personas que participaron, resultados...';
                     break;
                 case 'audio':
-                    textarea.placeholder = 'Describe el contenido del audio, contexto, participantes, resultados...';
+                    textarea.placeholder = 'Describe el contenido de los audios, contexto, participantes, resultados...';
                     break;
                 case 'comentario':
                     textarea.placeholder = 'Describe detalladamente la actividad realizada, acciones tomadas, resultados obtenidos...';
@@ -245,7 +290,22 @@
         
         // Confirmación antes de enviar
         document.querySelector('form').addEventListener('submit', function(e) {
-            if (!confirm('¿Estás seguro de que deseas completar esta tarea? Una vez enviada la evidencia no podrás modificarla.')) {
+            const files = document.getElementById('archivo').files;
+            let oversizedFiles = 0;
+            
+            for (let i = 0; i < files.length; i++) {
+                if (files[i].size > 20 * 1024 * 1024) { // 20MB
+                    oversizedFiles++;
+                }
+            }
+            
+            if (oversizedFiles > 0) {
+                alert(`${oversizedFiles} archivo(s) exceden el límite de 20MB. Por favor, selecciona archivos más pequeños.`);
+                e.preventDefault();
+                return;
+            }
+            
+            if (!confirm(`¿Estás seguro de que deseas completar esta tarea con ${files.length} archivo(s)? Una vez enviada la evidencia no podrás modificarla.`)) {
                 e.preventDefault();
             }
         });

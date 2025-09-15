@@ -100,17 +100,37 @@ class TaskController {
         
         $evidenceFile = null;
         
-        // Validar que hay archivo obligatorio (según requisitos)
-        if (!isset($_FILES['archivo']) || $_FILES['archivo']['error'] !== UPLOAD_ERR_OK) {
+        // Validar que hay archivos obligatorios (según requisitos)
+        if (!isset($_FILES['archivo']) || empty($_FILES['archivo']['name'][0])) {
             redirectWithMessage('tasks/complete.php?id=' . $taskId, 
-                'Debe subir un archivo como evidencia (obligatorio)', 'error');
+                'Debe subir al menos un archivo como evidencia (obligatorio)', 'error');
         }
         
-        // Procesar archivo obligatorio
-        $evidenceFile = $this->processEvidenceFile($_FILES['archivo'], $taskId);
-        if (!$evidenceFile) {
+        // Procesar archivos múltiples
+        $uploadedFiles = [];
+        for ($i = 0; $i < count($_FILES['archivo']['name']); $i++) {
+            if ($_FILES['archivo']['error'][$i] === UPLOAD_ERR_OK) {
+                $fileData = [
+                    'name' => $_FILES['archivo']['name'][$i],
+                    'type' => $_FILES['archivo']['type'][$i],
+                    'tmp_name' => $_FILES['archivo']['tmp_name'][$i],
+                    'error' => $_FILES['archivo']['error'][$i],
+                    'size' => $_FILES['archivo']['size'][$i]
+                ];
+                
+                $evidenceFile = $this->processEvidenceFile($fileData, $taskId);
+                if ($evidenceFile) {
+                    $uploadedFiles[] = $evidenceFile;
+                } else {
+                    redirectWithMessage('tasks/complete.php?id=' . $taskId, 
+                        'Error al procesar uno de los archivos de evidencia', 'error');
+                }
+            }
+        }
+        
+        if (empty($uploadedFiles)) {
             redirectWithMessage('tasks/complete.php?id=' . $taskId, 
-                'Error al procesar el archivo de evidencia', 'error');
+                'Error al procesar los archivos de evidencia', 'error');
         }
         
         // El contenido sigue siendo requerido además del archivo
@@ -119,14 +139,26 @@ class TaskController {
                 'Debe proporcionar una descripción de la evidencia', 'error');
         }
         
-        // Agregar evidencia (esto automáticamente marca la tarea como completada)
-        $result = $this->activityModel->addEvidence($taskId, $evidenceType, $evidenceFile, $evidenceContent);
+        // Agregar evidencias (una por cada archivo)
+        $successCount = 0;
+        foreach ($uploadedFiles as $index => $evidenceFile) {
+            // Para el primer archivo, usar la descripción completa
+            // Para archivos adicionales, agregar un indicador
+            $content = $index === 0 ? $evidenceContent : $evidenceContent . " (Archivo " . ($index + 1) . ")";
+            
+            $result = $this->activityModel->addEvidence($taskId, $evidenceType, $evidenceFile, $content);
+            
+            if ($result['success']) {
+                $successCount++;
+            }
+        }
         
-        if ($result['success']) {
-            redirectWithMessage('tasks/', 'Tarea completada exitosamente. Se han actualizado los rankings.', 'success');
+        if ($successCount > 0) {
+            $fileCount = count($uploadedFiles);
+            redirectWithMessage('tasks/', "Tarea completada exitosamente con $fileCount archivo(s) de evidencia. Se han actualizado los rankings.", 'success');
         } else {
             redirectWithMessage('tasks/complete.php?id=' . $taskId, 
-                $result['error'] ?? 'Error al completar la tarea', 'error');
+                'Error al completar la tarea', 'error');
         }
     }
     
