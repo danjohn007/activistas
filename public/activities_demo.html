@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo: Lista de Actividades con Evidencias</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <main class="col-12 px-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Mis Actividades - DEMOSTRACIÓN</h1>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Esta es una demostración de las mejoras implementadas
+                    </div>
+                </div>
+
+                <!-- Lista de actividades -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Lista de Actividades - CON EVIDENCIAS MOSTRADAS</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Título</th>
+                                        <th>Tipo</th>
+                                        <th>Fecha</th>
+                                        <th>Estado</th>
+                                        <th>Evidencias</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Actividad completada con evidencias -->
+                                    <tr>
+                                        <td>
+                                            <strong>Campaña de redes sociales</strong>
+                                            <br><small class="text-muted">
+                                                Publicación de contenido informativo en Facebook e Instagram sobre proceso electoral...
+                                            </small>
+                                        </td>
+                                        <td>Redes Sociales</td>
+                                        <td>15/12/2024</td>
+                                        <td>
+                                            <span class="badge bg-success">Completada</span>
+                                        </td>
+                                        <td>
+                                            <div class="evidence-summary">
+                                                <div class="evidence-item mb-2">
+                                                    <div class="d-flex align-items-center">
+                                                        <div style="width: 40px; height: 40px; background: linear-gradient(45deg, #007bff, #0056b3); border-radius: 4px; display: flex; align-items: center; justify-content: center;" class="me-2">
+                                                            <i class="fas fa-image text-white"></i>
+                                                        </div>
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-image me-1"></i>Foto
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                                <div class="evidence-item mb-2">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-comment me-1"></i>
+                                                        Post alcanzó 2,847 personas, generó 156 interacciones...
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <button class="btn btn-outline-primary" title="Ver detalle">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-outline-warning" title="Editar">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    
+                                    <!-- Actividad completada con múltiples evidencias -->
+                                    <tr>
+                                        <td>
+                                            <strong>Reunión comunitaria</strong>
+                                            <br><small class="text-muted">
+                                                Presentación sobre reforma electoral en centro comunitario local...
+                                            </small>
+                                        </td>
+                                        <td>Evento Presencial</td>
+                                        <td>10/12/2024</td>
+                                        <td>
+                                            <span class="badge bg-success">Completada</span>
+                                        </td>
+                                        <td>
+                                            <div class="evidence-summary">
+                                                <div class="evidence-item mb-2">
+                                                    <div class="d-flex align-items-center">
+                                                        <div style="width: 40px; height: 40px; background: linear-gradient(45deg, #28a745, #1e7e34); border-radius: 4px; display: flex; align-items: center; justify-content: center;" class="me-2">
+                                                            <i class="fas fa-image text-white"></i>
+                                                        </div>
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-image me-1"></i>Foto
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                                <div class="evidence-item mb-2">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-video me-1"></i>Video: presentacion_reunion.mp4
+                                                    </small>
+                                                </div>
+                                                <div class="evidence-item mb-2">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-comment me-1"></i>
+                                                        118 asistentes registrados, 45 preguntas respondidas...
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <button class="btn btn-outline-primary" title="Ver detalle">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-outline-warning" title="Editar">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    
+                                    <!-- Actividad no completada -->
+                                    <tr>
+                                        <td>
+                                            <strong>Volanteo informativo</strong>
+                                            <br><small class="text-muted">
+                                                Distribución de material informativo en zona comercial...
+                                            </small>
+                                        </td>
+                                        <td>Activismo Directo</td>
+                                        <td>20/12/2024</td>
+                                        <td>
+                                            <span class="badge bg-primary">Programada</span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">-</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <button class="btn btn-outline-primary" title="Ver detalle">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-outline-warning" title="Editar">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    
+                                    <!-- Actividad completada sin evidencias -->
+                                    <tr>
+                                        <td>
+                                            <strong>Llamadas de seguimiento</strong>
+                                            <br><small class="text-muted">
+                                                Contacto telefónico con votantes para verificación de datos...
+                                            </small>
+                                        </td>
+                                        <td>Contacto Directo</td>
+                                        <td>05/12/2024</td>
+                                        <td>
+                                            <span class="badge bg-success">Completada</span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">Sin evidencias</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <button class="btn btn-outline-primary" title="Ver detalle">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-outline-warning" title="Editar">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-success mt-4">
+                    <h5><i class="fas fa-check-circle me-2"></i>Mejora Implementada:</h5>
+                    <p class="mb-0"><strong>Nueva columna "Evidencias"</strong> que muestra las evidencias adjuntadas al completar cada tarea:</p>
+                    <ul class="mb-0 mt-2">
+                        <li>Para actividades <strong>completadas</strong>: Muestra thumbnails de fotos, nombres de videos y fragmentos de comentarios</li>
+                        <li>Para actividades <strong>no completadas</strong>: Muestra un guión (-)</li>
+                        <li>Para actividades completadas <strong>sin evidencias</strong>: Muestra "Sin evidencias"</li>
+                    </ul>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

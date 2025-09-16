@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo: Mis Tareas Pendientes - Sin Zoom</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .activity-image-overlay {
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border-radius: 4px;
+        }
+        .card-activity {
+            transition: transform 0.2s;
+            border-radius: 10px;
+        }
+        .card-activity:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <main class="col-12 px-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Mis Tareas Pendientes - DEMOSTRACIÓN</h1>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Esta es una demostración de las mejoras implementadas
+                    </div>
+                </div>
+
+                <div class="alert alert-info mb-4">
+                    <strong>Información:</strong> Estas son las tareas que han sido asignadas a ti por tu líder o el administrador. 
+                    Para completar una tarea debes subir evidencia (foto, video, comentario, etc.). Una vez subida la evidencia, 
+                    la tarea se marcará como completada automáticamente y <strong>no podrás modificar la evidencia</strong>.
+                </div>
+
+                <!-- Lista de tareas pendientes -->
+                <div class="row">
+                    <!-- Tarea con imagen - ANTES (con zoom modal) vs DESPUÉS (nueva ventana) -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card card-activity shadow-sm">
+                            <div class="card-header bg-light">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <h6 class="card-title mb-0 fw-bold">
+                                        Publicación en redes sociales
+                                    </h6>
+                                    <span class="badge bg-warning text-dark">
+                                        Vence mañana
+                                    </span>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="fas fa-tag me-1"></i>Redes Sociales
+                                </small>
+                            </div>
+                            
+                            <!-- MEJORA APLICADA: Sin efecto zoom, ahora abre en nueva ventana -->
+                            <div class="card-img-container position-relative mb-3">
+                                <a href="#" onclick="window.open('https://via.placeholder.com/600x400/007bff/ffffff?text=Imagen+de+Referencia', '_blank', 'noopener,noreferrer'); return false;">
+                                    <div style="height: 200px; background: linear-gradient(45deg, #007bff, #0056b3); display: flex; align-items: center; justify-content: center; color: white; border-radius: 8px;">
+                                        <div class="text-center">
+                                            <i class="fas fa-image fa-3x mb-2"></i>
+                                            <br>Imagen de referencia<br>
+                                            <small>ejemplo_post_facebook.jpg</small>
+                                        </div>
+                                    </div>
+                                </a>
+                                <div class="position-absolute top-0 end-0 p-2">
+                                    <span class="badge activity-image-overlay">
+                                        <i class="fas fa-external-link-alt me-1"></i>Click para abrir
+                                    </span>
+                                </div>
+                                <div class="position-absolute bottom-0 start-0 end-0 p-2">
+                                    <div class="activity-image-overlay p-2 rounded">
+                                        <small class="text-white">
+                                            <i class="fas fa-quote-left me-1"></i>
+                                            Ejemplo del tipo de publicación que se debe realizar en Facebook...
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-body">
+                                <p class="card-text">Crear y publicar contenido informativo sobre el proceso electoral en Facebook e Instagram. Incluir hashtags relevantes y enlaces a fuentes oficiales.</p>
+                                
+                                <div class="mb-3">
+                                    <h6 class="text-muted mb-2">
+                                        <i class="fas fa-link me-1"></i>Enlaces relacionados:
+                                    </h6>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <a href="#" class="btn btn-outline-primary btn-sm" target="_blank">
+                                            <i class="fas fa-external-link-alt me-1"></i>Enlace 1
+                                        </a>
+                                        <a href="#" class="btn btn-outline-primary btn-sm" target="_blank">
+                                            <i class="fas fa-external-link-alt me-1"></i>Enlace 2
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="text-center">
+                                    <a href="#" class="btn btn-success">
+                                        <i class="fas fa-upload me-1"></i>Completar Tarea
+                                    </a>
+                                    <a href="#" class="btn btn-outline-info">
+                                        <i class="fas fa-eye me-1"></i>Ver Detalle
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tarea sin imagen -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card card-activity shadow-sm">
+                            <div class="card-header bg-light">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <h6 class="card-title mb-0 fw-bold">
+                                        Contacto telefónico con electores
+                                    </h6>
+                                    <span class="badge bg-danger">
+                                        Vence hoy
+                                    </span>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="fas fa-tag me-1"></i>Contacto Directo
+                                </small>
+                            </div>
+
+                            <div class="card-body">
+                                <p class="card-text">Realizar llamadas telefónicas a lista de electores para verificar datos de contacto y proporcionar información sobre el proceso electoral.</p>
+                                
+                                <div class="mb-3">
+                                    <h6 class="text-muted mb-2">
+                                        <i class="fas fa-info-circle me-1"></i>Instrucciones:
+                                    </h6>
+                                    <ul class="small">
+                                        <li>Seguir el guión proporcionado</li>
+                                        <li>Registrar todas las llamadas realizadas</li>
+                                        <li>Documentar cualquier cambio en datos de contacto</li>
+                                    </ul>
+                                </div>
+
+                                <div class="text-center">
+                                    <a href="#" class="btn btn-success">
+                                        <i class="fas fa-upload me-1"></i>Completar Tarea
+                                    </a>
+                                    <a href="#" class="btn btn-outline-info">
+                                        <i class="fas fa-eye me-1"></i>Ver Detalle
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-success mt-4">
+                    <h5><i class="fas fa-check-circle me-2"></i>Mejora Implementada:</h5>
+                    <p class="mb-0"><strong>Imágenes sin efecto zoom - Abren en nueva ventana</strong></p>
+                    <ul class="mb-0 mt-2">
+                        <li><strong>ANTES:</strong> Las imágenes mostraban un efecto zoom con modal al hacer clic</li>
+                        <li><strong>DESPUÉS:</strong> Las imágenes ahora abren en una nueva ventana/pestaña del navegador</li>
+                        <li>El ícono cambió de <i class="fas fa-search-plus"></i> "Click para ampliar" a <i class="fas fa-external-link-alt"></i> "Click para abrir"</li>
+                        <li>Se eliminó completamente el modal y el efecto zoom</li>
+                    </ul>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-code me-2"></i>Cambios Técnicos Realizados:</h6>
+                    <ul class="mb-0 small">
+                        <li>Eliminado: <code>data-bs-toggle="modal"</code> y <code>data-bs-target="#imageModal..."</code></li>
+                        <li>Eliminado: Clase <code>image-zoom-cursor</code></li>
+                        <li>Eliminado: Todo el modal <code>#imageModal...</code></li>
+                        <li>Agregado: <code>&lt;a href="..." target="_blank" rel="noopener noreferrer"&gt;</code></li>
+                        <li>Cambiado: Ícono de <code>fa-search-plus</code> a <code>fa-external-link-alt</code></li>
+                    </ul>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
