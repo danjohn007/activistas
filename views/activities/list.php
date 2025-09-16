@@ -126,6 +126,20 @@
                                        placeholder="Buscar por teléfono..." 
                                        value="<?= htmlspecialchars($_GET['search_phone'] ?? '') ?>">
                             </div>
+                            <div class="col-md-3">
+                                <label for="filter_lider_id" class="form-label">Filtrar por Líder</label>
+                                <select class="form-select" id="filter_lider_id" name="filter_lider_id">
+                                    <option value="">Todos los líderes</option>
+                                    <?php if (isset($leaders) && !empty($leaders)): ?>
+                                        <?php foreach ($leaders as $leader): ?>
+                                            <option value="<?= $leader['id'] ?>" <?= ($_GET['filter_lider_id'] ?? '') == $leader['id'] ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($leader['nombre_completo']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                                <small class="text-muted">Incluye actividades del líder y su equipo</small>
+                            </div>
                             <?php endif; ?>
                         </form>
                     </div>
@@ -198,25 +212,72 @@
                                                         <?php foreach ($activity['evidences'] as $evidence): ?>
                                                             <div class="evidence-item mb-2">
                                                                 <?php if ($evidence['tipo_evidencia'] === 'foto' && !empty($evidence['archivo'])): ?>
-                                                                    <div class="d-flex align-items-center">
-                                                                        <img src="<?= url('assets/uploads/evidencias/' . htmlspecialchars($evidence['archivo'])) ?>" 
-                                                                             class="evidence-thumbnail me-2" 
-                                                                             alt="Evidencia"
-                                                                             style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
-                                                                        <small class="text-muted">
-                                                                            <i class="fas fa-image me-1"></i>Foto
-                                                                        </small>
+                                                                    <div class="d-flex align-items-center justify-content-between">
+                                                                        <div class="d-flex align-items-center">
+                                                                            <img src="<?= url('assets/uploads/evidencias/' . htmlspecialchars($evidence['archivo'])) ?>" 
+                                                                                 class="evidence-thumbnail me-2" 
+                                                                                 alt="Evidencia"
+                                                                                 style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
+                                                                            <small class="text-muted">
+                                                                                <i class="fas fa-image me-1"></i>Foto
+                                                                            </small>
+                                                                        </div>
+                                                                        <a href="<?= url('assets/uploads/evidencias/' . htmlspecialchars($evidence['archivo'])) ?>" 
+                                                                           class="btn btn-sm btn-outline-primary" 
+                                                                           target="_blank"
+                                                                           title="Ver imagen">
+                                                                            <i class="fas fa-external-link-alt"></i>
+                                                                        </a>
                                                                     </div>
                                                                 <?php elseif ($evidence['tipo_evidencia'] === 'video' && !empty($evidence['archivo'])): ?>
-                                                                    <small class="text-muted">
-                                                                        <i class="fas fa-video me-1"></i>Video: <?= htmlspecialchars(basename($evidence['archivo'])) ?>
-                                                                    </small>
+                                                                    <div class="d-flex align-items-center justify-content-between">
+                                                                        <small class="text-muted">
+                                                                            <i class="fas fa-video me-1"></i>Video: <?= htmlspecialchars(basename($evidence['archivo'])) ?>
+                                                                        </small>
+                                                                        <a href="<?= url('assets/uploads/evidencias/' . htmlspecialchars($evidence['archivo'])) ?>" 
+                                                                           class="btn btn-sm btn-outline-primary" 
+                                                                           target="_blank"
+                                                                           title="Ver/Descargar video">
+                                                                            <i class="fas fa-external-link-alt"></i>
+                                                                        </a>
+                                                                    </div>
+                                                                <?php elseif ($evidence['tipo_evidencia'] === 'audio' && !empty($evidence['archivo'])): ?>
+                                                                    <div class="d-flex align-items-center justify-content-between">
+                                                                        <small class="text-muted">
+                                                                            <i class="fas fa-music me-1"></i>Audio: <?= htmlspecialchars(basename($evidence['archivo'])) ?>
+                                                                        </small>
+                                                                        <a href="<?= url('assets/uploads/evidencias/' . htmlspecialchars($evidence['archivo'])) ?>" 
+                                                                           class="btn btn-sm btn-outline-primary" 
+                                                                           target="_blank"
+                                                                           title="Escuchar/Descargar audio">
+                                                                            <i class="fas fa-external-link-alt"></i>
+                                                                        </a>
+                                                                    </div>
                                                                 <?php elseif ($evidence['tipo_evidencia'] === 'comentario' && !empty($evidence['contenido'])): ?>
-                                                                    <small class="text-muted">
-                                                                        <i class="fas fa-comment me-1"></i>
-                                                                        <?= htmlspecialchars(substr($evidence['contenido'], 0, 50)) ?>
-                                                                        <?= strlen($evidence['contenido']) > 50 ? '...' : '' ?>
-                                                                    </small>
+                                                                    <div class="d-flex align-items-center justify-content-between">
+                                                                        <small class="text-muted">
+                                                                            <i class="fas fa-comment me-1"></i>
+                                                                            <?= htmlspecialchars(substr($evidence['contenido'], 0, 50)) ?>
+                                                                            <?= strlen($evidence['contenido']) > 50 ? '...' : '' ?>
+                                                                        </small>
+                                                                        <a href="<?= url('activities/detail.php?id=' . $activity['id']) ?>" 
+                                                                           class="btn btn-sm btn-outline-info" 
+                                                                           title="Ver comentario completo">
+                                                                            <i class="fas fa-eye"></i>
+                                                                        </a>
+                                                                    </div>
+                                                                <?php elseif (!empty($evidence['archivo'])): ?>
+                                                                    <div class="d-flex align-items-center justify-content-between">
+                                                                        <small class="text-muted">
+                                                                            <i class="fas fa-file me-1"></i><?= ucfirst($evidence['tipo_evidencia']) ?>: <?= htmlspecialchars(basename($evidence['archivo'])) ?>
+                                                                        </small>
+                                                                        <a href="<?= url('assets/uploads/evidencias/' . htmlspecialchars($evidence['archivo'])) ?>" 
+                                                                           class="btn btn-sm btn-outline-primary" 
+                                                                           target="_blank"
+                                                                           title="Ver/Descargar archivo">
+                                                                            <i class="fas fa-external-link-alt"></i>
+                                                                        </a>
+                                                                    </div>
                                                                 <?php else: ?>
                                                                     <small class="text-muted">
                                                                         <i class="fas fa-file me-1"></i><?= ucfirst($evidence['tipo_evidencia']) ?>
