@@ -189,6 +189,12 @@
                                             <td>
                                                 <?php if ($activity['estado'] === 'completada' && !empty($activity['evidences'])): ?>
                                                     <div class="evidence-summary">
+                                                        <div class="mb-2">
+                                                            <strong class="text-primary">
+                                                                <i class="fas fa-file-alt me-1"></i>
+                                                                <?= count($activity['evidences']) ?> evidencia<?= count($activity['evidences']) != 1 ? 's' : '' ?>
+                                                            </strong>
+                                                        </div>
                                                         <?php foreach ($activity['evidences'] as $evidence): ?>
                                                             <div class="evidence-item mb-2">
                                                                 <?php if ($evidence['tipo_evidencia'] === 'foto' && !empty($evidence['archivo'])): ?>

@@ -97,23 +97,23 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="enlace_1" class="form-label">
-                                            <i class="fas fa-link me-1"></i>Enlace 1 (Opcional)
+                                            <i class="fas fa-link me-1"></i>Enlace de publicaciones (Opcional)
                                         </label>
                                         <input type="url" class="form-control" id="enlace_1" name="enlace_1" 
                                                value="<?= htmlspecialchars($_SESSION['form_data']['enlace_1'] ?? '') ?>"
-                                               placeholder="https://ejemplo.com/enlace-relacionado">
-                                        <div class="form-text">Enlace opcional relacionado con la actividad</div>
+                                               placeholder="https://ejemplo.com/enlace-publicaciones">
+                                        <div class="form-text">Enlace opcional a publicaciones relacionadas con la actividad</div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="enlace_2" class="form-label">
-                                            <i class="fas fa-link me-1"></i>Enlace 2 (Opcional)
+                                            <i class="fas fa-link me-1"></i>Banco de contenido (Opcional)
                                         </label>
                                         <input type="url" class="form-control" id="enlace_2" name="enlace_2" 
                                                value="<?= htmlspecialchars($_SESSION['form_data']['enlace_2'] ?? '') ?>"
-                                               placeholder="https://ejemplo.com/otro-enlace-relacionado">
-                                        <div class="form-text">Segundo enlace opcional relacionado con la actividad</div>
+                                               placeholder="https://ejemplo.com/banco-contenido">
+                                        <div class="form-text">Enlace opcional al banco de contenido relacionado con la actividad</div>
                                     </div>
                                 </div>
                             </div>
