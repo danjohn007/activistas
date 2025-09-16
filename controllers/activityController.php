@@ -161,6 +161,9 @@ class ActivityController {
         }
         
         if ($shouldCreateForRecipients && !empty($recipients)) {
+            // FIXED: First process and save all uploaded files once
+            $processedFiles = $this->processAndSaveEvidenceFiles();
+            
             // Create activity for each recipient
             $successCount = 0;
             foreach ($recipients as $recipientId) {
@@ -190,8 +193,8 @@ class ActivityController {
                 $activityId = $this->activityModel->createActivity($activityData);
                 
                 if ($activityId) {
-                    // Procesar evidencias si se subieron
-                    $this->processEvidenceFiles($activityId);
+                    // FIXED: Copy processed files to each activity instance
+                    $this->copyEvidenceFilesToActivity($activityId, $processedFiles);
                     
                     // Send notification to recipient
                     $this->activityModel->notifyNewActivity($activityId, $recipientId, $activityData['titulo']);
@@ -496,6 +499,71 @@ class ActivityController {
                         $this->activityModel->addEvidence($activityId, $evidenceType, $uploadResult['filename'], null, 0);
                     }
                 }
+            }
+        }
+    }
+    
+    // FIXED: Process and save evidence files once, return file information for copying
+    private function processAndSaveEvidenceFiles() {
+        $processedFiles = [];
+        
+        if (isset($_FILES['evidence_files'])) {
+            $files = $_FILES['evidence_files'];
+            $fileCount = count($files['name']);
+            
+            for ($i = 0; $i < $fileCount; $i++) {
+                if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                    $file = [
+                        'name' => $files['name'][$i],
+                        'type' => $files['type'][$i],
+                        'tmp_name' => $files['tmp_name'][$i],
+                        'error' => $files['error'][$i],
+                        'size' => $files['size'][$i]
+                    ];
+                    
+                    $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'avi', 'mp3', 'wav'];
+                    $uploadResult = uploadFile($file, __DIR__ . '/../public/assets/uploads/evidencias', $allowedTypes);
+                    
+                    if ($uploadResult['success']) {
+                        // Determinar tipo de evidencia basado en la extensión
+                        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                        $evidenceType = 'foto'; // Por defecto
+                        
+                        if (in_array($extension, ['mp4', 'avi'])) {
+                            $evidenceType = 'video';
+                        } elseif (in_array($extension, ['mp3', 'wav'])) {
+                            $evidenceType = 'audio';
+                        }
+                        
+                        $processedFiles[] = [
+                            'filename' => $uploadResult['filename'],
+                            'original_name' => $file['name'],
+                            'type' => $evidenceType,
+                            'source_path' => $uploadResult['path']
+                        ];
+                    }
+                }
+            }
+        }
+        
+        return $processedFiles;
+    }
+    
+    // FIXED: Copy processed files to a specific activity (creates individual copies)
+    private function copyEvidenceFilesToActivity($activityId, $processedFiles) {
+        $uploadDir = __DIR__ . '/../public/assets/uploads/evidencias';
+        
+        foreach ($processedFiles as $fileInfo) {
+            // Create a unique copy for this activity
+            $extension = pathinfo($fileInfo['filename'], PATHINFO_EXTENSION);
+            $newFilename = 'activity_' . $activityId . '_' . uniqid() . '.' . $extension;
+            $sourcePath = $fileInfo['source_path'];
+            $targetPath = $uploadDir . '/' . $newFilename;
+            
+            // Copy the original file to create a new instance
+            if (copy($sourcePath, $targetPath)) {
+                // Add evidence record for this activity
+                $this->activityModel->addEvidence($activityId, $fileInfo['type'], $newFilename, null, 0);
             }
         }
     }
