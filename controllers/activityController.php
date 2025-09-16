@@ -161,6 +161,10 @@ class ActivityController {
         }
         
         if ($shouldCreateForRecipients && !empty($recipients)) {
+            // Process files once before creating activities for recipients
+            // REQUIREMENT FIX: Process evidence files once and attach to all recipients
+            $processedFiles = $this->processEvidenceFilesOnce();
+            
             // Create activity for each recipient
             $successCount = 0;
             foreach ($recipients as $recipientId) {
@@ -190,8 +194,8 @@ class ActivityController {
                 $activityId = $this->activityModel->createActivity($activityData);
                 
                 if ($activityId) {
-                    // Procesar evidencias si se subieron
-                    $this->processEvidenceFiles($activityId);
+                    // Attach processed files to this activity
+                    $this->attachProcessedFilesToActivity($activityId, $processedFiles);
                     
                     // Send notification to recipient
                     $this->activityModel->notifyNewActivity($activityId, $recipientId, $activityData['titulo']);
@@ -497,6 +501,62 @@ class ActivityController {
                     }
                 }
             }
+        }
+    }
+    
+    // Process evidence files once and return processed file information
+    // REQUIREMENT FIX: Process files once to avoid losing them after first recipient
+    private function processEvidenceFilesOnce() {
+        $processedFiles = [];
+        
+        if (isset($_FILES['evidence_files'])) {
+            $files = $_FILES['evidence_files'];
+            $fileCount = count($files['name']);
+            
+            for ($i = 0; $i < $fileCount; $i++) {
+                if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                    $file = [
+                        'name' => $files['name'][$i],
+                        'type' => $files['type'][$i],
+                        'tmp_name' => $files['tmp_name'][$i],
+                        'error' => $files['error'][$i],
+                        'size' => $files['size'][$i]
+                    ];
+                    
+                    $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'avi', 'mp3', 'wav'];
+                    $uploadResult = uploadFile($file, __DIR__ . '/../public/assets/uploads/evidencias', $allowedTypes);
+                    
+                    if ($uploadResult['success']) {
+                        // Determinar tipo de evidencia basado en la extensión
+                        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                        $evidenceType = 'foto'; // Por defecto
+                        
+                        if (in_array($extension, ['mp4', 'avi'])) {
+                            $evidenceType = 'video';
+                        } elseif (in_array($extension, ['mp3', 'wav'])) {
+                            $evidenceType = 'audio';
+                        }
+                        
+                        $processedFiles[] = [
+                            'type' => $evidenceType,
+                            'filename' => $uploadResult['filename']
+                        ];
+                    }
+                }
+            }
+        }
+        
+        return $processedFiles;
+    }
+    
+    // Attach processed files to a specific activity
+    // REQUIREMENT FIX: Attach same files to all recipient activities
+    private function attachProcessedFilesToActivity($activityId, $processedFiles) {
+        foreach ($processedFiles as $fileInfo) {
+            // Add initial attachment evidence (not blocked yet)
+            // REQUIREMENT IMPLEMENTATION: Store initial attachments with bloqueada=0
+            // This allows them to be displayed in pending tasks but doesn't mark activity as completed
+            $this->activityModel->addEvidence($activityId, $fileInfo['type'], $fileInfo['filename'], null, 0);
         }
     }
     
