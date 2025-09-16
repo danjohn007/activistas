@@ -187,5 +187,21 @@ class RankingController {
         ];
         return $months[$month] ?? 'Mes Desconocido';
     }
+    
+    // Show ranking history with all cuts
+    public function showRankingHistory() {
+        $this->auth->requireAuth();
+        
+        $currentUser = $this->auth->getCurrentUser();
+        
+        // Only SuperAdmin and Gestor can access ranking history
+        if (!in_array($currentUser['rol'], ['SuperAdmin', 'Gestor'])) {
+            redirectWithMessage('ranking/', 'No tienes permisos para ver el historial de rankings', 'error');
+        }
+        
+        $rankingCuts = $this->activityModel->getRankingCutsHistory();
+        
+        include __DIR__ . '/../views/ranking/history.php';
+    }
 }
 ?>

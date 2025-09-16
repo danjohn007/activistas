@@ -259,25 +259,41 @@ require_once __DIR__ . '/../../includes/functions.php';
                                 <div class="card-body">
                                     <div class="list-group list-group-flush">
                                         <?php foreach ($evidence as $item): ?>
-                                            <?php if (!empty($item['archivo'])): ?>
-                                                <div class="list-group-item d-flex justify-content-between align-items-center">
-                                                    <div>
-                                                        <i class="fas fa-<?= $item['tipo_evidencia'] === 'foto' ? 'image' : ($item['tipo_evidencia'] === 'video' ? 'video' : 'file') ?> me-2 text-primary"></i>
-                                                        <strong><?= ucfirst($item['tipo_evidencia']) ?>:</strong> 
+                                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="fas fa-<?= $item['tipo_evidencia'] === 'foto' ? 'image' : ($item['tipo_evidencia'] === 'video' ? 'video' : ($item['tipo_evidencia'] === 'comentario' ? 'comment' : 'file')) ?> me-2 text-primary"></i>
+                                                    <strong><?= ucfirst($item['tipo_evidencia']) ?>:</strong> 
+                                                    <?php if (!empty($item['archivo'])): ?>
                                                         <?= htmlspecialchars(basename($item['archivo'])) ?>
-                                                        <br>
-                                                        <small class="text-muted">
-                                                            Subido el <?= formatDate($item['fecha_subida']) ?>
-                                                        </small>
-                                                    </div>
-                                                    <a href="<?= url('assets/uploads/evidencias/' . basename($item['archivo'])) ?>" 
-                                                       class="btn btn-sm btn-outline-primary" 
-                                                       target="_blank"
-                                                       title="Ver/Descargar evidencia">
-                                                        <i class="fas fa-external-link-alt"></i>
-                                                    </a>
+                                                    <?php elseif (!empty($item['contenido'])): ?>
+                                                        <?= htmlspecialchars(substr($item['contenido'], 0, 100)) ?><?= strlen($item['contenido']) > 100 ? '...' : '' ?>
+                                                    <?php else: ?>
+                                                        Sin contenido
+                                                    <?php endif; ?>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        Subido el <?= formatDate($item['fecha_subida']) ?>
+                                                    </small>
                                                 </div>
-                                            <?php endif; ?>
+                                                <div>
+                                                    <?php if (!empty($item['archivo'])): ?>
+                                                        <a href="<?= url('assets/uploads/evidencias/' . basename($item['archivo'])) ?>" 
+                                                           class="btn btn-sm btn-outline-primary me-1" 
+                                                           target="_blank"
+                                                           title="Ver/Descargar evidencia">
+                                                            <i class="fas fa-external-link-alt"></i>
+                                                        </a>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($item['contenido'])): ?>
+                                                        <button type="button" class="btn btn-sm btn-outline-info" 
+                                                                data-bs-toggle="modal" 
+                                                                data-bs-target="#contentModal<?= $item['id'] ?>"
+                                                                title="Ver contenido completo">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
                                         <?php endforeach; ?>
                                     </div>
                                 </div>
@@ -363,6 +379,38 @@ require_once __DIR__ . '/../../includes/functions.php';
             </div>
         </div>
     </div>
+
+    <!-- Modales para ver contenido completo de evidencias -->
+    <?php if (!empty($evidence)): ?>
+        <?php foreach ($evidence as $item): ?>
+            <?php if (!empty($item['contenido'])): ?>
+                <div class="modal fade" id="contentModal<?= $item['id'] ?>" tabindex="-1" aria-labelledby="contentModalLabel<?= $item['id'] ?>" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="contentModalLabel<?= $item['id'] ?>">
+                                    <i class="fas fa-<?= $item['tipo_evidencia'] === 'comentario' ? 'comment' : 'file' ?> me-2"></i>
+                                    <?= ucfirst($item['tipo_evidencia']) ?> - Contenido Completo
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p><?= nl2br(htmlspecialchars($item['contenido'])) ?></p>
+                                <hr>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Subido el <?= isset($item['fecha_subida']) ? formatDate($item['fecha_subida']) : 'Fecha no disponible' ?>
+                                </small>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+        <?php endforeach; ?>
+    <?php endif; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

@@ -1143,14 +1143,65 @@ class Activity {
     public function getAvailableRankingPeriods() {
         try {
             $stmt = $this->db->prepare("
-                SELECT DISTINCT anio, mes, COUNT(*) as usuarios
+                SELECT DISTINCT anio, mes, COUNT(*) as usuarios,
+                       MAX(fecha_creacion) as fecha_corte
                 FROM rankings_mensuales 
+                GROUP BY anio, mes
                 ORDER BY anio DESC, mes DESC
             ");
             $stmt->execute();
             return $stmt->fetchAll();
         } catch (Exception $e) {
             logActivity("Error al obtener períodos de ranking: " . $e->getMessage(), 'ERROR');
+            return [];
+        }
+    }
+    
+    /**
+     * Get ranking cuts history with top 3 for each period
+     */
+    public function getRankingCutsHistory() {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT 
+                    rm.anio, 
+                    rm.mes,
+                    MAX(rm.fecha_creacion) as fecha_corte,
+                    COUNT(rm.id) as total_usuarios,
+                    (SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'posicion', posicion,
+                            'nombre_completo', nombre_completo,
+                            'puntos', puntos,
+                            'actividades_completadas', actividades_completadas
+                        )
+                    ) FROM (
+                        SELECT rm2.posicion, u2.nombre_completo, rm2.puntos, rm2.actividades_completadas
+                        FROM rankings_mensuales rm2
+                        JOIN usuarios u2 ON rm2.usuario_id = u2.id
+                        WHERE rm2.anio = rm.anio AND rm2.mes = rm.mes
+                        ORDER BY rm2.posicion ASC
+                        LIMIT 3
+                    ) as top3) as top_3
+                FROM rankings_mensuales rm
+                GROUP BY rm.anio, rm.mes
+                ORDER BY rm.anio DESC, rm.mes DESC
+            ");
+            $stmt->execute();
+            $results = $stmt->fetchAll();
+            
+            // Parse JSON data
+            foreach ($results as &$result) {
+                if ($result['top_3']) {
+                    $result['top_3'] = json_decode($result['top_3'], true);
+                } else {
+                    $result['top_3'] = [];
+                }
+            }
+            
+            return $results;
+        } catch (Exception $e) {
+            logActivity("Error al obtener historial de cortes de ranking: " . $e->getMessage(), 'ERROR');
             return [];
         }
     }

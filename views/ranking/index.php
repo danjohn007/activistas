@@ -75,6 +75,13 @@
                                 <?= count($rankings) ?> participante(s)
                             </span>
                         </div>
+                        <?php if (in_array($currentUser['rol'], ['SuperAdmin', 'Gestor'])): ?>
+                            <div class="btn-group">
+                                <a href="<?= url('ranking/history.php') ?>" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-history me-1"></i>Historial de Cortes
+                                </a>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
