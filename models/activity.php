@@ -644,8 +644,12 @@ class Activity {
             $userModel = new User();
             $totalUsers = $userModel->getTotalActiveUsers();
             
+            // Get the last ranking reset date to only count activities from that point forward
+            $lastResetDate = $this->getLastRankingResetDate();
+            
             // Get all users with completed activities (excluding admin user id=1, only count authorized activities)
             // Group by task to calculate points per task completion
+            // Only count activities completed AFTER the last ranking reset
             $stmt = $this->db->prepare("
                 SELECT 
                     a.id as actividad_id,
@@ -660,9 +664,10 @@ class Activity {
                   AND a.autorizada = 1 
                   AND a.tarea_pendiente = 1
                   AND u.id != 1
+                  AND a.hora_evidencia > ?
                 ORDER BY a.id, a.hora_evidencia ASC
             ");
-            $stmt->execute();
+            $stmt->execute([$lastResetDate]);
             $completedTasks = $stmt->fetchAll();
             
             if (empty($completedTasks)) {
@@ -709,9 +714,35 @@ class Activity {
                 }
             }
             
-            logActivity("Rankings actualizados con nuevo sistema: Base 1000 + $totalUsers usuarios totales. Actividades procesadas: " . count($tasksByActivity));
+            logActivity("Rankings actualizados con nuevo sistema: Base 1000 + $totalUsers usuarios totales. Actividades desde {$lastResetDate}. Actividades procesadas: " . count($tasksByActivity));
         } catch (Exception $e) {
             logActivity("Error al actualizar rankings: " . $e->getMessage(), 'ERROR');
+        }
+    }
+    
+    /**
+     * Get the last ranking reset date to only count activities from that point forward
+     */
+    private function getLastRankingResetDate() {
+        try {
+            // Try to get the most recent reset date from ranking resets log
+            $stmt = $this->db->prepare("
+                SELECT valor FROM configuraciones 
+                WHERE clave = 'ultimo_reset_ranking' 
+                LIMIT 1
+            ");
+            $stmt->execute();
+            $result = $stmt->fetch();
+            
+            if ($result && !empty($result['valor'])) {
+                return $result['valor'];
+            }
+            
+            // Fallback: If no reset date is found, use a very old date to include all activities
+            return '2020-01-01 00:00:00';
+        } catch (Exception $e) {
+            logActivity("Error al obtener fecha último reset: " . $e->getMessage(), 'ERROR');
+            return '2020-01-01 00:00:00';
         }
     }
     
@@ -1101,7 +1132,17 @@ class Activity {
             $resetStmt = $this->db->prepare("UPDATE usuarios SET ranking_puntos = 0 WHERE id != 1");
             $resetStmt->execute();
             
-            logActivity("Ranking mensual guardado para $month/$year (top 10 posiciones) y puntos reiniciados a cero. Usuarios procesados: " . count($users));
+            // Save the reset timestamp for future ranking calculations
+            $currentTimestamp = date('Y-m-d H:i:s');
+            $configStmt = $this->db->prepare("
+                INSERT INTO configuraciones (clave, valor, descripcion) 
+                VALUES ('ultimo_reset_ranking', ?, 'Fecha y hora del último reset de ranking mensual')
+                ON DUPLICATE KEY UPDATE 
+                valor = VALUES(valor)
+            ");
+            $configStmt->execute([$currentTimestamp]);
+            
+            logActivity("Ranking mensual guardado para $month/$year (top 10 posiciones) y puntos reiniciados a cero. Reset timestamp: $currentTimestamp. Usuarios procesados: " . count($users));
             
             return true;
         } catch (Exception $e) {
@@ -1162,44 +1203,35 @@ class Activity {
      */
     public function getRankingCutsHistory() {
         try {
+            // First get all periods
             $stmt = $this->db->prepare("
                 SELECT 
                     rm.anio, 
                     rm.mes,
                     MAX(rm.fecha_creacion) as fecha_corte,
-                    COUNT(rm.id) as total_usuarios,
-                    (SELECT JSON_ARRAYAGG(
-                        JSON_OBJECT(
-                            'posicion', posicion,
-                            'nombre_completo', nombre_completo,
-                            'puntos', puntos,
-                            'actividades_completadas', actividades_completadas
-                        )
-                    ) FROM (
-                        SELECT rm2.posicion, u2.nombre_completo, rm2.puntos, rm2.actividades_completadas
-                        FROM rankings_mensuales rm2
-                        JOIN usuarios u2 ON rm2.usuario_id = u2.id
-                        WHERE rm2.anio = rm.anio AND rm2.mes = rm.mes
-                        ORDER BY rm2.posicion ASC
-                        LIMIT 3
-                    ) as top3) as top_3
+                    COUNT(rm.id) as total_usuarios
                 FROM rankings_mensuales rm
                 GROUP BY rm.anio, rm.mes
                 ORDER BY rm.anio DESC, rm.mes DESC
             ");
             $stmt->execute();
-            $results = $stmt->fetchAll();
+            $periods = $stmt->fetchAll();
             
-            // Parse JSON data
-            foreach ($results as &$result) {
-                if ($result['top_3']) {
-                    $result['top_3'] = json_decode($result['top_3'], true);
-                } else {
-                    $result['top_3'] = [];
-                }
+            // For each period, get the top 3
+            foreach ($periods as &$period) {
+                $topStmt = $this->db->prepare("
+                    SELECT rm.posicion, u.nombre_completo, rm.puntos, rm.actividades_completadas
+                    FROM rankings_mensuales rm
+                    JOIN usuarios u ON rm.usuario_id = u.id
+                    WHERE rm.anio = ? AND rm.mes = ?
+                    ORDER BY rm.posicion ASC
+                    LIMIT 3
+                ");
+                $topStmt->execute([$period['anio'], $period['mes']]);
+                $period['top_3'] = $topStmt->fetchAll();
             }
             
-            return $results;
+            return $periods;
         } catch (Exception $e) {
             logActivity("Error al obtener historial de cortes de ranking: " . $e->getMessage(), 'ERROR');
             return [];
