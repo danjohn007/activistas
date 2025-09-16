@@ -174,6 +174,13 @@ class Activity {
                 $params[] = '%' . $filters['search_phone'] . '%';
             }
             
+            // Filter activities by leader - includes leader's own activities and their team's activities
+            if (!empty($filters['filter_lider_id'])) {
+                $sql .= " AND (a.usuario_id = ? OR u.lider_id = ?)";
+                $params[] = $filters['filter_lider_id'];
+                $params[] = $filters['filter_lider_id'];
+            }
+            
             $sql .= " ORDER BY a.fecha_actividad DESC, a.fecha_creacion DESC";
             
             // Add pagination support
@@ -262,6 +269,13 @@ class Activity {
             if (!empty($filters['search_phone'])) {
                 $sql .= " AND u.telefono LIKE ?";
                 $params[] = '%' . $filters['search_phone'] . '%';
+            }
+            
+            // Filter activities by leader - includes leader's own activities and their team's activities
+            if (!empty($filters['filter_lider_id'])) {
+                $sql .= " AND (a.usuario_id = ? OR u.lider_id = ?)";
+                $params[] = $filters['filter_lider_id'];
+                $params[] = $filters['filter_lider_id'];
             }
             
             $stmt = $this->db->prepare($sql);

@@ -63,6 +63,10 @@ class ActivityController {
             if (!empty($_GET['search_phone'])) {
                 $filters['search_phone'] = cleanInput($_GET['search_phone']);
             }
+            // Add leader filter for SuperAdmin - includes leader's activities and their team's activities
+            if (!empty($_GET['filter_lider_id'])) {
+                $filters['filter_lider_id'] = intval($_GET['filter_lider_id']);
+            }
         }
         
         // Pagination parameters
@@ -75,6 +79,12 @@ class ActivityController {
         $totalActivities = $this->activityModel->countActivities($filters);
         $totalPages = ceil($totalActivities / $perPage);
         $activityTypes = $this->activityModel->getActivityTypes();
+        
+        // Get list of leaders for SuperAdmin filter
+        $leaders = [];
+        if ($currentUser['rol'] === 'SuperAdmin') {
+            $leaders = $this->userModel->getActiveLiders(); 
+        }
         
         // Add evidence for completed activities
         foreach ($activities as &$activity) {
