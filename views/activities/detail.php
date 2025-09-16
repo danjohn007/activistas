@@ -125,14 +125,14 @@ require_once __DIR__ . '/../../includes/functions.php';
                                         <?php if (!empty($activity['enlace_1'])): ?>
                                             <div class="mb-2">
                                                 <a href="<?= htmlspecialchars($activity['enlace_1']) ?>" target="_blank" class="btn btn-outline-primary btn-sm">
-                                                    <i class="fas fa-external-link-alt me-1"></i>Enlace 1
+                                                    <i class="fas fa-external-link-alt me-1"></i>Enlace de publicaciones
                                                 </a>
                                             </div>
                                         <?php endif; ?>
                                         <?php if (!empty($activity['enlace_2'])): ?>
                                             <div class="mb-2">
                                                 <a href="<?= htmlspecialchars($activity['enlace_2']) ?>" target="_blank" class="btn btn-outline-primary btn-sm">
-                                                    <i class="fas fa-external-link-alt me-1"></i>Enlace 2
+                                                    <i class="fas fa-external-link-alt me-1"></i>Banco de contenido
                                                 </a>
                                             </div>
                                         <?php endif; ?>
@@ -247,6 +247,42 @@ require_once __DIR__ . '/../../includes/functions.php';
                                 <?php endif; ?>
                             </div>
                         </div>
+
+                        <!-- Enlaces a todas las evidencias -->
+                        <?php if (!empty($evidence)): ?>
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-link me-2"></i>Enlaces a Evidencias
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="list-group list-group-flush">
+                                        <?php foreach ($evidence as $item): ?>
+                                            <?php if (!empty($item['archivo'])): ?>
+                                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <i class="fas fa-<?= $item['tipo_evidencia'] === 'foto' ? 'image' : ($item['tipo_evidencia'] === 'video' ? 'video' : 'file') ?> me-2 text-primary"></i>
+                                                        <strong><?= ucfirst($item['tipo_evidencia']) ?>:</strong> 
+                                                        <?= htmlspecialchars(basename($item['archivo'])) ?>
+                                                        <br>
+                                                        <small class="text-muted">
+                                                            Subido el <?= formatDate($item['fecha_subida']) ?>
+                                                        </small>
+                                                    </div>
+                                                    <a href="<?= url('assets/uploads/evidencias/' . basename($item['archivo'])) ?>" 
+                                                       class="btn btn-sm btn-outline-primary" 
+                                                       target="_blank"
+                                                       title="Ver/Descargar evidencia">
+                                                        <i class="fas fa-external-link-alt"></i>
+                                                    </a>
+                                                </div>
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
                     </div>
 
                     <!-- Sidebar con información adicional -->
