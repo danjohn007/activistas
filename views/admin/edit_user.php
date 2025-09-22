@@ -228,19 +228,77 @@
                                         </div>
                                     </div>
                                     
-                                    <?php if ($user['rol'] === 'Activista' && !empty($liders)): ?>
-                                    <div class="mb-3">
-                                        <label for="lider_id" class="form-label">Líder Asignado</label>
-                                        <select class="form-select" id="lider_id" name="lider_id">
-                                            <option value="">Seleccionar líder...</option>
-                                            <?php foreach ($liders as $lider): ?>
-                                                <option value="<?= $lider['id'] ?>" 
-                                                        <?= $user['lider_id'] == $lider['id'] ? 'selected' : '' ?>>
-                                                    <?= htmlspecialchars($lider['nombre_completo']) ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
+                                    <!-- Tipo de Usuario -->
+                                    <?php 
+                                    $currentUserRole = $_SESSION['user_role'] ?? '';
+                                    $canEditRol = in_array($currentUserRole, ['SuperAdmin', 'Gestor']);
+                                    ?>
+                                    <?php if ($canEditRol): ?>
+                                    <div class="card mt-4 mb-3">
+                                        <div class="card-header">
+                                            <h6 class="card-title mb-0">
+                                                <i class="fas fa-user-tag me-2"></i>Tipo de Usuario
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label for="rol" class="form-label">Tipo de Usuario *</label>
+                                                <select class="form-select" id="rol" name="rol" required>
+                                                    <option value="Activista" <?= $user['rol'] === 'Activista' ? 'selected' : '' ?>>Activista</option>
+                                                    <option value="Líder" <?= $user['rol'] === 'Líder' ? 'selected' : '' ?>>Líder</option>
+                                                    <?php if ($currentUserRole === 'SuperAdmin'): ?>
+                                                        <option value="Gestor" <?= $user['rol'] === 'Gestor' ? 'selected' : '' ?>>Gestor</option>
+                                                        <option value="SuperAdmin" <?= $user['rol'] === 'SuperAdmin' ? 'selected' : '' ?>>SuperAdmin</option>
+                                                    <?php endif; ?>
+                                                </select>
+                                            </div>
+                                            
+                                            <!-- Líder Asignado - solo visible cuando es Activista -->
+                                            <div class="mb-3" id="lider-section" style="display: <?= $user['rol'] === 'Activista' ? 'block' : 'none' ?>;">
+                                                <label for="lider_id" class="form-label">Líder Asignado</label>
+                                                <select class="form-select" id="lider_id" name="lider_id">
+                                                    <option value="">Seleccionar líder...</option>
+                                                    <?php if (!empty($liders)): ?>
+                                                        <?php foreach ($liders as $lider): ?>
+                                                            <option value="<?= $lider['id'] ?>" 
+                                                                    <?= $user['lider_id'] == $lider['id'] ? 'selected' : '' ?>>
+                                                                <?= htmlspecialchars($lider['nombre_completo']) ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
+                                                </select>
+                                                <small class="text-muted">Solo requerido para activistas</small>
+                                            </div>
+                                        </div>
                                     </div>
+                                    
+                                    <script>
+                                        document.getElementById('rol').addEventListener('change', function() {
+                                            const liderSection = document.getElementById('lider-section');
+                                            if (this.value === 'Activista') {
+                                                liderSection.style.display = 'block';
+                                            } else {
+                                                liderSection.style.display = 'none';
+                                                document.getElementById('lider_id').value = '';
+                                            }
+                                        });
+                                    </script>
+                                    <?php else: ?>
+                                        <!-- Para usuarios que no pueden editar el rol, mostrar solo si es activista -->
+                                        <?php if ($user['rol'] === 'Activista' && !empty($liders)): ?>
+                                        <div class="mb-3">
+                                            <label for="lider_id" class="form-label">Líder Asignado</label>
+                                            <select class="form-select" id="lider_id" name="lider_id">
+                                                <option value="">Seleccionar líder...</option>
+                                                <?php foreach ($liders as $lider): ?>
+                                                    <option value="<?= $lider['id'] ?>" 
+                                                            <?= $user['lider_id'] == $lider['id'] ? 'selected' : '' ?>>
+                                                        <?= htmlspecialchars($lider['nombre_completo']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                     
                                     <!-- Vigencia -->

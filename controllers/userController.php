@@ -170,6 +170,7 @@ class UserController {
         $this->auth->requireRole(['SuperAdmin', 'Gestor']);
         
         $pendingUsers = $this->userModel->getPendingUsers();
+        $liders = $this->userModel->getActiveLiders();
         
         include __DIR__ . '/../views/admin/pending_users.php';
     }
@@ -194,11 +195,32 @@ class UserController {
         }
         
         if ($action === 'approve') {
-            // Handle approval with vigencia
+            // Handle approval with vigencia, rol and leader assignment
             $vigenciaHasta = cleanInput($_POST['vigencia_hasta'] ?? '');
             $vigenciaHasta = !empty($vigenciaHasta) ? $vigenciaHasta : null;
             
-            $result = $this->userModel->approveUserWithVigencia($userId, $vigenciaHasta);
+            $rol = cleanInput($_POST['rol'] ?? '');
+            $liderId = !empty($_POST['lider_id']) ? intval($_POST['lider_id']) : null;
+            
+            // Validate role
+            $currentUser = $this->auth->getCurrentUser();
+            $validRoles = ['Activista', 'Líder'];
+            if ($currentUser['rol'] === 'SuperAdmin') {
+                $validRoles[] = 'Gestor';
+                $validRoles[] = 'SuperAdmin';
+            }
+            
+            if (!in_array($rol, $validRoles)) {
+                redirectWithMessage('admin/pending_users.php', 'Tipo de usuario inválido', 'error');
+                return;
+            }
+            
+            // If role is not Activista, clear leader assignment
+            if ($rol !== 'Activista') {
+                $liderId = null;
+            }
+            
+            $result = $this->userModel->approveUserWithRoleAndLeader($userId, $vigenciaHasta, $rol, $liderId);
             $message = $result ? 'Usuario aprobado exitosamente' : 'Error al aprobar usuario';
         } else {
             // Handle rejection
@@ -252,6 +274,28 @@ class UserController {
             'x' => cleanInput($_POST['x'] ?? ''),
             'cuenta_pago' => cleanInput($_POST['cuenta_pago'] ?? ''),
         ];
+        
+        // Handle rol (user type) editing - only for SuperAdmin and Gestor
+        $currentUser = $this->auth->getCurrentUser();
+        if (in_array($currentUser['rol'], ['SuperAdmin', 'Gestor']) && !empty($_POST['rol'])) {
+            $validRoles = ['Activista', 'Líder'];
+            
+            // SuperAdmin can assign any role
+            if ($currentUser['rol'] === 'SuperAdmin') {
+                $validRoles[] = 'Gestor';
+                $validRoles[] = 'SuperAdmin';
+            }
+            
+            $newRol = cleanInput($_POST['rol']);
+            if (in_array($newRol, $validRoles)) {
+                $updateData['rol'] = $newRol;
+                
+                // If changing to non-Activista role, clear leader assignment
+                if ($newRol !== 'Activista') {
+                    $updateData['lider_id'] = null;
+                }
+            }
+        }
         
         // Validar URLs de redes sociales
         $socialMediaFields = ['facebook', 'instagram', 'tiktok', 'x'];

@@ -162,6 +162,47 @@ class User {
         }
     }
     
+    // Aprobar usuario con vigencia, rol y líder
+    public function approveUserWithRoleAndLeader($userId, $vigenciaHasta = null, $rol = null, $liderId = null) {
+        try {
+            $sql = "UPDATE usuarios SET estado = 'activo'";
+            $params = [];
+            
+            if ($vigenciaHasta && !empty($vigenciaHasta)) {
+                $sql .= ", vigencia_hasta = ?";
+                $params[] = $vigenciaHasta;
+            }
+            
+            if ($rol && !empty($rol)) {
+                $sql .= ", rol = ?";
+                $params[] = $rol;
+            }
+            
+            if ($liderId !== null) {
+                $sql .= ", lider_id = ?";
+                $params[] = $liderId;
+            }
+            
+            $sql .= " WHERE id = ?";
+            $params[] = $userId;
+            
+            $stmt = $this->db->prepare($sql);
+            $result = $stmt->execute($params);
+            
+            if ($result) {
+                $vigenciaText = $vigenciaHasta ? " con vigencia hasta $vigenciaHasta" : "";
+                $rolText = $rol ? " como $rol" : "";
+                $liderText = $liderId ? " con líder ID $liderId" : "";
+                logActivity("Usuario ID $userId aprobado$vigenciaText$rolText$liderText");
+            }
+            
+            return $result;
+        } catch (Exception $e) {
+            logActivity("Error al aprobar usuario con rol y líder: " . $e->getMessage(), 'ERROR');
+            return false;
+        }
+    }
+    
     // Actualizar solo la vigencia de un usuario
     public function updateUserVigencia($userId, $vigenciaHasta = null) {
         try {
