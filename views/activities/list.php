@@ -146,6 +146,48 @@
                 </div>
 
                 <!-- Lista de actividades -->
+                <!-- Completion Percentage Display -->
+                <?php if (!empty($activities)): ?>
+                    <?php
+                    // Calculate completion percentage
+                    $totalActivities = count($activities);
+                    $completedActivities = 0;
+                    foreach ($activities as $activity) {
+                        if ($activity['estado'] === 'completada') {
+                            $completedActivities++;
+                        }
+                    }
+                    $completionPercentage = $totalActivities > 0 ? round(($completedActivities / $totalActivities) * 100, 1) : 0;
+                    $percentageClass = $completionPercentage >= 80 ? 'success' : ($completionPercentage >= 60 ? 'warning' : 'danger');
+                    ?>
+                    <div class="card mb-3 border-<?= $percentageClass ?>">
+                        <div class="card-body text-center">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-chart-pie me-2 text-<?= $percentageClass ?>"></i>
+                                        Porcentaje de Cumplimiento
+                                    </h5>
+                                    <p class="text-muted mb-0">
+                                        <?= $completedActivities ?> de <?= $totalActivities ?> actividades completadas
+                                    </p>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="display-6 text-<?= $percentageClass ?> fw-bold">
+                                        <?= $completionPercentage ?>%
+                                    </div>
+                                    <div class="progress mt-2" style="height: 8px;">
+                                        <div class="progress-bar bg-<?= $percentageClass ?>" role="progressbar" 
+                                             style="width: <?= $completionPercentage ?>%" 
+                                             aria-valuenow="<?= $completionPercentage ?>" aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
                 <div class="card">
                     <div class="card-header">
                         <h5 class="card-title mb-0">Lista de Actividades</h5>
@@ -155,10 +197,22 @@
                             <div class="text-center py-4">
                                 <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
                                 <h5 class="text-muted">No tienes actividades registradas</h5>
-                                <p class="text-muted">Comienza registrando tu primera actividad.</p>
-                                <a href="<?= url('activities/create.php') ?>" class="btn btn-primary">
-                                    <i class="fas fa-plus me-2"></i>Crear Primera Actividad
-                                </a>
+                                <p class="text-muted">
+                                    <?php if ($_SESSION['user_role'] === 'Activista'): ?>
+                                        Las actividades te serán asignadas por tu líder o los administradores.
+                                    <?php else: ?>
+                                        Comienza registrando tu primera actividad.
+                                    <?php endif; ?>
+                                </p>
+                                <?php if (in_array($_SESSION['user_role'], ['SuperAdmin', 'Gestor'])): ?>
+                                    <a href="<?= url('activities/create.php') ?>" class="btn btn-primary">
+                                        <i class="fas fa-plus me-2"></i>Crear Primera Actividad
+                                    </a>
+                                <?php elseif ($_SESSION['user_role'] === 'Activista'): ?>
+                                    <a href="<?= url('activities/propose.php') ?>" class="btn btn-primary">
+                                        <i class="fas fa-lightbulb me-2"></i>Proponer Actividad
+                                    </a>
+                                <?php endif; ?>
                             </div>
                         <?php else: ?>
                             <div class="table-responsive">

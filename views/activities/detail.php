@@ -36,9 +36,16 @@ require_once __DIR__ . '/../../includes/functions.php';
                             <a href="<?= url('activities/') ?>" class="btn btn-outline-secondary">
                                 <i class="fas fa-arrow-left me-1"></i>Volver a la lista
                             </a>
-                            <a href="<?= url('activities/edit.php?id=' . $activity['id']) ?>" class="btn btn-warning">
-                                <i class="fas fa-edit me-1"></i>Editar
-                            </a>
+                            <?php 
+                            // Only show edit button if NOT a pending task (tarea_pendiente != 1) or user has admin privileges
+                            $isPendingTask = isset($activity['tarea_pendiente']) && $activity['tarea_pendiente'] == 1;
+                            $canEdit = !$isPendingTask || in_array($_SESSION['user_role'], ['SuperAdmin', 'Gestor']);
+                            ?>
+                            <?php if ($canEdit): ?>
+                                <a href="<?= url('activities/edit.php?id=' . $activity['id']) ?>" class="btn btn-warning">
+                                    <i class="fas fa-edit me-1"></i>Editar
+                                </a>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -197,9 +204,21 @@ require_once __DIR__ . '/../../includes/functions.php';
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="card-title mb-0">Evidencias</h5>
-                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addEvidenceModal">
-                                    <i class="fas fa-plus me-1"></i>Agregar Evidencia
-                                </button>
+                                <?php 
+                                $isPendingTask = isset($activity['tarea_pendiente']) && $activity['tarea_pendiente'] == 1;
+                                $isCompleted = $activity['estado'] === 'completada';
+                                ?>
+                                <?php if ($isPendingTask && !$isCompleted): ?>
+                                    <!-- For pending tasks, show only COMPLETAR TAREA button -->
+                                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addEvidenceModal">
+                                        <i class="fas fa-check me-1"></i>COMPLETAR TAREA
+                                    </button>
+                                <?php elseif (!$isPendingTask): ?>
+                                    <!-- For regular activities, show normal Add Evidence button -->
+                                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addEvidenceModal">
+                                        <i class="fas fa-plus me-1"></i>Agregar Evidencia
+                                    </button>
+                                <?php endif; ?>
                             </div>
                             <div class="card-body">
                                 <?php if (empty($evidence)): ?>
@@ -320,13 +339,30 @@ require_once __DIR__ . '/../../includes/functions.php';
                                 <h6 class="card-title mb-0">Acciones Rápidas</h6>
                             </div>
                             <div class="card-body">
+                                <?php 
+                                $isPendingTask = isset($activity['tarea_pendiente']) && $activity['tarea_pendiente'] == 1;
+                                $isCompleted = $activity['estado'] === 'completada';
+                                ?>
                                 <div class="d-grid gap-2">
-                                    <a href="<?= url('activities/edit.php?id=' . $activity['id']) ?>" class="btn btn-warning">
-                                        <i class="fas fa-edit me-2"></i>Editar Actividad
-                                    </a>
-                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEvidenceModal">
-                                        <i class="fas fa-plus me-2"></i>Agregar Evidencia
-                                    </button>
+                                    <?php if ($isPendingTask && !$isCompleted): ?>
+                                        <!-- For pending tasks, only show COMPLETAR TAREA button -->
+                                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addEvidenceModal">
+                                            <i class="fas fa-check me-2"></i>COMPLETAR TAREA
+                                        </button>
+                                    <?php elseif (!$isPendingTask): ?>
+                                        <!-- For regular activities, show all actions -->
+                                        <a href="<?= url('activities/edit.php?id=' . $activity['id']) ?>" class="btn btn-warning">
+                                            <i class="fas fa-edit me-2"></i>Editar Actividad
+                                        </a>
+                                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEvidenceModal">
+                                            <i class="fas fa-plus me-2"></i>Agregar Evidencia
+                                        </button>
+                                    <?php else: ?>
+                                        <!-- Task is completed -->
+                                        <div class="alert alert-success text-center">
+                                            <i class="fas fa-check-circle me-2"></i>Tarea Completada
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>

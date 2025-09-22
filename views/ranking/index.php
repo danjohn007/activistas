@@ -101,7 +101,7 @@
                         </div>
                         <div class="card-body">
                             <form method="GET" class="row g-3">
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <label for="year" class="form-label">Año</label>
                                     <select class="form-select" id="year" name="year">
                                         <?php
@@ -114,7 +114,7 @@
                                         <?php endfor; ?>
                                     </select>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <label for="month" class="form-label">Mes</label>
                                     <select class="form-select" id="month" name="month">
                                         <?php
@@ -130,7 +130,21 @@
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                                <div class="col-md-4 d-flex align-items-end">
+                                <div class="col-md-3">
+                                    <label for="grupo" class="form-label">Grupo</label>
+                                    <select class="form-select" id="grupo" name="grupo">
+                                        <option value="">Todos los grupos</option>
+                                        <?php if (isset($availableGroups) && !empty($availableGroups)): ?>
+                                            <?php foreach ($availableGroups as $group): ?>
+                                                <option value="<?= htmlspecialchars($group) ?>" 
+                                                        <?= (($_GET['grupo'] ?? '') === $group) ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars($group) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
                                     <button type="submit" class="btn btn-primary me-2">
                                         <i class="fas fa-search me-1"></i>Ver Ranking
                                     </button>

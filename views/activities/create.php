@@ -92,6 +92,17 @@
                                 <div class="form-text">Describe brevemente los objetivos y detalles de la actividad.</div>
                             </div>
 
+                            <!-- Grupo (Opcional) -->
+                            <div class="mb-3">
+                                <label for="grupo" class="form-label">
+                                    <i class="fas fa-users me-1"></i>Grupo (Opcional)
+                                </label>
+                                <input type="text" class="form-control" id="grupo" name="grupo" 
+                                       value="<?= htmlspecialchars($_SESSION['form_data']['grupo'] ?? '') ?>"
+                                       placeholder="Ej: GeneracionesVa, Grupo mujeres Lupita, Grupo Herman, Grupo Anita">
+                                <div class="form-text">Asigna esta actividad a un grupo específico (opcional)</div>
+                            </div>
+
                             <!-- Enlaces opcionales de actividad -->
                             <div class="row">
                                 <div class="col-md-6">
