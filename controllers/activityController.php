@@ -96,7 +96,7 @@ class ActivityController {
         // Calculate real completion percentage for current month (not affected by pagination)
         $currentMonthFilters = array_merge($filters, [
             'fecha_desde' => date('Y-m-01'),
-            'fecha_hasta' => date('Y-m-t')
+            'fecha_hasta' => date('Y-m-t') // Last day of current month
         ]);
         unset($currentMonthFilters['page']);
         unset($currentMonthFilters['per_page']);

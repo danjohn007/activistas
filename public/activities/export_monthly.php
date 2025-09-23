@@ -36,7 +36,7 @@ try {
     
     // Aplicar filtro de fecha para el mes seleccionado
     $filters['fecha_desde'] = $month . '-01';
-    $filters['fecha_hasta'] = $month . '-31';
+    $filters['fecha_hasta'] = date('Y-m-t', strtotime($month . '-01')); // Last day of the month
     
     // Aplicar otros filtros de la URL
     if (!empty($_GET['tipo'])) {
