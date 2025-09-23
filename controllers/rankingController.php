@@ -35,23 +35,33 @@ class RankingController {
         if (in_array($currentUser['rol'], ['SuperAdmin', 'Gestor'])) {
             $currentYear = intval($_GET['year'] ?? date('Y'));
             $currentMonth = intval($_GET['month'] ?? date('n'));
+            $selectedGroup = cleanInput($_GET['grupo'] ?? '');
             $showMonthSelector = true;
             $availablePeriods = $this->activityModel->getAvailableRankingPeriods();
+            $availableGroups = $this->activityModel->getAvailableGroups();
             
             // Check if we're viewing a historical month
             $isHistorical = ($currentYear < date('Y')) || 
                            ($currentYear == date('Y') && $currentMonth < date('n'));
             
             if ($isHistorical && !empty($availablePeriods)) {
-                // Show historical monthly ranking
-                $rankings = $this->activityModel->getMonthlyRanking($currentYear, $currentMonth, 50);
+                // Show historical monthly ranking with group filter
+                $rankings = $this->activityModel->getMonthlyRanking($currentYear, $currentMonth, 50, $selectedGroup);
                 $title = 'Ranking Mensual - ' . $this->getMonthName($currentMonth) . ' ' . $currentYear;
                 $description = 'Ranking histórico de activistas para el mes seleccionado.';
+                if (!empty($selectedGroup)) {
+                    $title .= ' (Grupo: ' . $selectedGroup . ')';
+                    $description .= ' Filtrado por grupo: ' . $selectedGroup . '.';
+                }
             } else {
-                // Show current ranking
-                $rankings = $this->activityModel->getUserRanking(50);
+                // Show current ranking with group filter
+                $rankings = $this->activityModel->getUserRanking(50, $selectedGroup);
                 $title = 'Ranking Actual de Activistas';
                 $description = 'Ranking actual de todos los activistas del sistema basado en tareas completadas.';
+                if (!empty($selectedGroup)) {
+                    $title .= ' (Grupo: ' . $selectedGroup . ')';
+                    $description = 'Ranking actual de activistas del grupo "' . $selectedGroup . '" basado en tareas completadas.';
+                }
             }
         } else {
             switch ($currentUser['rol']) {

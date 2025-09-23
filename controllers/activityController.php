@@ -102,9 +102,13 @@ class ActivityController {
         
         $currentUser = $this->auth->getCurrentUser();
         
-        // Prevent leaders from accessing activity creation form
-        if ($currentUser['rol'] === 'Líder') {
-            redirectWithMessage('activities/', 'Los líderes no pueden crear actividades directamente', 'error');
+        // Prevent leaders and activists from accessing activity creation form
+        if (in_array($currentUser['rol'], ['Líder', 'Activista'])) {
+            if ($currentUser['rol'] === 'Líder') {
+                redirectWithMessage('activities/', 'Los líderes no pueden crear actividades directamente', 'error');
+            } else {
+                redirectWithMessage('activities/', 'Los activistas no pueden crear actividades directamente. Usa "Proponer Actividad" en su lugar.', 'error');
+            }
         }
         
         $activityTypes = $this->activityModel->getActivityTypes();
@@ -118,9 +122,13 @@ class ActivityController {
         
         $currentUser = $this->auth->getCurrentUser();
         
-        // Prevent leaders from creating activities
-        if ($currentUser['rol'] === 'Líder') {
-            redirectWithMessage('activities/', 'Los líderes no pueden crear actividades directamente', 'error');
+        // Prevent leaders and activists from creating activities
+        if (in_array($currentUser['rol'], ['Líder', 'Activista'])) {
+            if ($currentUser['rol'] === 'Líder') {
+                redirectWithMessage('activities/', 'Los líderes no pueden crear actividades directamente', 'error');
+            } else {
+                redirectWithMessage('activities/', 'Los activistas no pueden crear actividades directamente. Usa "Proponer Actividad" en su lugar.', 'error');
+            }
         }
         
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -190,6 +198,7 @@ class ActivityController {
                     'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? ''),
                     'fecha_cierre' => cleanInput($_POST['fecha_cierre'] ?? ''),
                     'hora_cierre' => cleanInput($_POST['hora_cierre'] ?? ''),
+                    'grupo' => cleanInput($_POST['grupo'] ?? ''),
                     'solicitante_id' => $currentUser['id'] // Track who created the task
                 ];
                 
@@ -232,7 +241,8 @@ class ActivityController {
                 'enlace_2' => cleanInput($_POST['enlace_2'] ?? ''),
                 'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? ''),
                 'fecha_cierre' => cleanInput($_POST['fecha_cierre'] ?? ''),
-                'hora_cierre' => cleanInput($_POST['hora_cierre'] ?? '')
+                'hora_cierre' => cleanInput($_POST['hora_cierre'] ?? ''),
+                'grupo' => cleanInput($_POST['grupo'] ?? '')
             ];
             
             // Validar datos
@@ -338,7 +348,8 @@ class ActivityController {
             'titulo' => cleanInput($_POST['titulo'] ?? ''),
             'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
             'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? ''),
-            'estado' => cleanInput($_POST['estado'] ?? '')
+            'estado' => cleanInput($_POST['estado'] ?? ''),
+            'grupo' => cleanInput($_POST['grupo'] ?? '')
         ];
         
         $result = $this->activityModel->updateActivity($activityId, $updateData);
@@ -598,7 +609,8 @@ class ActivityController {
             'tipo_actividad_id' => intval($_POST['tipo_actividad_id'] ?? 0),
             'titulo' => cleanInput($_POST['titulo'] ?? ''),
             'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
-            'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? '')
+            'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? ''),
+            'grupo' => cleanInput($_POST['grupo'] ?? '')
         ];
         
         // Validar datos

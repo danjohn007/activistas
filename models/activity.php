@@ -61,8 +61,8 @@ class Activity {
             }
             
             $stmt = $this->db->prepare("
-                INSERT INTO actividades (usuario_id, tipo_actividad_id, titulo, descripcion, enlace_1, enlace_2, fecha_actividad, fecha_cierre, hora_cierre, tarea_pendiente, solicitante_id, autorizada, autorizado_por)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO actividades (usuario_id, tipo_actividad_id, titulo, descripcion, enlace_1, enlace_2, fecha_actividad, fecha_cierre, hora_cierre, grupo, tarea_pendiente, solicitante_id, autorizada, autorizado_por)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $result = $stmt->execute([
@@ -75,6 +75,7 @@ class Activity {
                 $data['fecha_actividad'],
                 !empty($data['fecha_cierre']) ? $data['fecha_cierre'] : null,
                 !empty($data['hora_cierre']) ? $data['hora_cierre'] : null,
+                !empty($data['grupo']) ? $data['grupo'] : null,
                 $tarea_pendiente,
                 $solicitante_id,
                 $autorizada,
@@ -338,6 +339,11 @@ class Activity {
             if (isset($data['estado'])) {
                 $fields[] = "estado = ?";
                 $params[] = $data['estado'];
+            }
+            
+            if (isset($data['grupo'])) {
+                $fields[] = "grupo = ?";
+                $params[] = $data['grupo'];
             }
             
             if (empty($fields)) {
@@ -761,8 +767,16 @@ class Activity {
     }
     
     // Get ranking data with detailed task completion information
-    public function getUserRanking($limit = 10) {
+    public function getUserRanking($limit = 10, $grupo = null) {
         try {
+            $groupFilter = '';
+            $params = [];
+            
+            if (!empty($grupo)) {
+                $groupFilter = 'AND a.grupo = ?';
+                $params[] = $grupo;
+            }
+            
             $stmt = $this->db->prepare("
                 SELECT 
                     u.id,
@@ -779,17 +793,43 @@ class Activity {
                     MIN(TIMESTAMPDIFF(MINUTE, a.fecha_creacion, a.hora_evidencia)) as mejor_tiempo_minutos,
                     AVG(TIMESTAMPDIFF(MINUTE, a.fecha_creacion, a.hora_evidencia)) as tiempo_promedio_minutos
                 FROM usuarios u
-                LEFT JOIN actividades a ON u.id = a.usuario_id AND a.estado = 'completada' AND a.autorizada = 1
-                LEFT JOIN actividades at ON u.id = at.usuario_id AND at.tarea_pendiente = 1
+                LEFT JOIN actividades a ON u.id = a.usuario_id AND a.estado = 'completada' AND a.autorizada = 1 $groupFilter
+                LEFT JOIN actividades at ON u.id = at.usuario_id AND at.tarea_pendiente = 1 " . 
+                    (!empty($grupo) ? "AND at.grupo = ?" : "") . "
                 WHERE u.estado = 'activo' AND u.id != 1
                 GROUP BY u.id, u.nombre_completo, u.ranking_puntos
                 ORDER BY u.ranking_puntos DESC
                 LIMIT ?
             ");
-            $stmt->execute([$limit]);
+            
+            // Add parameters for group filter if needed
+            if (!empty($grupo)) {
+                $params[] = $grupo; // For the second group filter
+            }
+            $params[] = $limit;
+            
+            $stmt->execute($params);
             return $stmt->fetchAll();
         } catch (Exception $e) {
             logActivity("Error al obtener ranking: " . $e->getMessage(), 'ERROR');
+            return [];
+        }
+    }
+    
+    // Get available groups from activities
+    public function getAvailableGroups() {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT DISTINCT grupo 
+                FROM actividades 
+                WHERE grupo IS NOT NULL AND grupo != '' 
+                ORDER BY grupo
+            ");
+            $stmt->execute();
+            $result = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            return $result ?: [];
+        } catch (Exception $e) {
+            logActivity("Error al obtener grupos disponibles: " . $e->getMessage(), 'ERROR');
             return [];
         }
     }
@@ -890,8 +930,8 @@ class Activity {
         try {
             // Las propuestas se crean en estado 'programada' con propuesto_por y autorizada=0
             $stmt = $this->db->prepare("
-                INSERT INTO actividades (usuario_id, tipo_actividad_id, titulo, descripcion, fecha_actividad, estado, tarea_pendiente, solicitante_id, propuesto_por, autorizada)
-                VALUES (?, ?, ?, ?, ?, 'programada', 2, ?, ?, 0)
+                INSERT INTO actividades (usuario_id, tipo_actividad_id, titulo, descripcion, fecha_actividad, grupo, estado, tarea_pendiente, solicitante_id, propuesto_por, autorizada)
+                VALUES (?, ?, ?, ?, ?, ?, 'programada', 2, ?, ?, 0)
             ");
             
             $result = $stmt->execute([
@@ -900,6 +940,7 @@ class Activity {
                 $data['titulo'],
                 $data['descripcion'] ?? null,
                 $data['fecha_actividad'],
+                !empty($data['grupo']) ? $data['grupo'] : null,
                 $data['usuario_id'], // El mismo activista es el solicitante de su propuesta
                 $data['usuario_id']  // Propuesto por el mismo activista
             ]);

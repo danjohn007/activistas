@@ -149,6 +149,8 @@
         <input type="hidden" name="user_id" id="processUserId">
         <input type="hidden" name="action" id="processAction">
         <input type="hidden" name="vigencia_hasta" id="vigenciaHasta">
+        <input type="hidden" name="rol" id="rolHidden">
+        <input type="hidden" name="lider_id" id="liderHidden">
     </form>
 
     <!-- Modal para selección de vigencia -->
@@ -161,6 +163,36 @@
                 </div>
                 <div class="modal-body">
                     <p>¿Estás seguro de que quieres aprobar a <strong id="userName"></strong>?</p>
+                    
+                    <!-- Role Selection -->
+                    <div class="mb-3">
+                        <label for="rolInput" class="form-label">Tipo de Usuario:</label>
+                        <select class="form-select" id="rolInput">
+                            <option value="Activista">Activista</option>
+                            <option value="Líder">Líder</option>
+                            <?php if ($_SESSION['user_role'] === 'SuperAdmin'): ?>
+                                <option value="Gestor">Gestor</option>
+                                <option value="SuperAdmin">SuperAdmin</option>
+                            <?php endif; ?>
+                        </select>
+                        <div class="form-text">Selecciona el tipo de usuario para la aprobación.</div>
+                    </div>
+                    
+                    <!-- Leader Selection - only for Activists -->
+                    <div class="mb-3" id="liderInputSection" style="display: block;">
+                        <label for="liderInput" class="form-label">Líder Asignado:</label>
+                        <select class="form-select" id="liderInput">
+                            <option value="">Seleccionar líder...</option>
+                            <?php if (!empty($liders)): ?>
+                                <?php foreach ($liders as $lider): ?>
+                                    <option value="<?= $lider['id'] ?>"><?= htmlspecialchars($lider['nombre_completo']) ?></option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                        <div class="form-text">Solo requerido para activistas.</div>
+                    </div>
+                    
+                    <!-- Vigencia -->
                     <div class="mb-3">
                         <label for="vigenciaInput" class="form-label">Vigencia hasta (opcional):</label>
                         <input type="date" class="form-control" id="vigenciaInput" min="<?= date('Y-m-d') ?>">
@@ -179,10 +211,24 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Handle role change to show/hide leader selection
+        document.getElementById('rolInput').addEventListener('change', function() {
+            const liderSection = document.getElementById('liderInputSection');
+            if (this.value === 'Activista') {
+                liderSection.style.display = 'block';
+            } else {
+                liderSection.style.display = 'none';
+                document.getElementById('liderInput').value = '';
+            }
+        });
+        
         function showApprovalModal(userId, userName) {
             document.getElementById('processUserId').value = userId;
             document.getElementById('userName').textContent = userName;
             document.getElementById('vigenciaInput').value = '';
+            document.getElementById('rolInput').value = 'Activista'; // default to Activista
+            document.getElementById('liderInput').value = '';
+            document.getElementById('liderInputSection').style.display = 'block';
             
             const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
             modal.show();
@@ -190,8 +236,13 @@
         
         function confirmApproval() {
             const vigencia = document.getElementById('vigenciaInput').value;
+            const rol = document.getElementById('rolInput').value;
+            const lider = document.getElementById('liderInput').value;
+            
             document.getElementById('processAction').value = 'approve';
             document.getElementById('vigenciaHasta').value = vigencia || '';
+            document.getElementById('rolHidden').value = rol;
+            document.getElementById('liderHidden').value = lider || '';
             
             // Close modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('approvalModal'));
@@ -207,6 +258,8 @@
                 document.getElementById('processUserId').value = userId;
                 document.getElementById('processAction').value = action;
                 document.getElementById('vigenciaHasta').value = '';
+                document.getElementById('rolHidden').value = '';
+                document.getElementById('liderHidden').value = '';
                 document.getElementById('processForm').submit();
             }
         }

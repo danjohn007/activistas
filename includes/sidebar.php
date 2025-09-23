@@ -91,8 +91,8 @@ function renderSidebar($currentPage = '') {
         'active' => ($currentPage === 'activities')
     ];
     
-    // Nueva Actividad - solo para SuperAdmin, Gestor y Activista (NO para Líder)
-    if (in_array($userRole, ['SuperAdmin', 'Gestor', 'Activista'])) {
+    // Nueva Actividad - solo para SuperAdmin y Gestor (NO para Líder ni Activista)
+    if (in_array($userRole, ['SuperAdmin', 'Gestor'])) {
         $menuItems[] = [
             'url' => url('activities/create.php'),
             'icon' => 'fas fa-plus',
