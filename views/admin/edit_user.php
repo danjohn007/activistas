@@ -278,6 +278,31 @@
                                     </div>
                                     <?php endif; ?>
                                     
+                                    <!-- Role Selection for SuperAdmin/Gestor -->
+                                    <?php if ($canEditVigencia): ?>
+                                    <div class="card mt-4 mb-3">
+                                        <div class="card-header">
+                                            <h6 class="card-title mb-0">
+                                                <i class="fas fa-user-tag me-2"></i>Rol del Usuario
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label for="rol" class="form-label">Rol del Usuario</label>
+                                                <select class="form-select" id="rol" name="rol">
+                                                    <option value="Activista" <?= $user['rol'] === 'Activista' ? 'selected' : '' ?>>Activista</option>
+                                                    <option value="Líder" <?= $user['rol'] === 'Líder' ? 'selected' : '' ?>>Líder</option>
+                                                    <option value="Gestor" <?= $user['rol'] === 'Gestor' ? 'selected' : '' ?>>Gestor</option>
+                                                    <?php if ($currentUserRole === 'SuperAdmin'): ?>
+                                                    <option value="SuperAdmin" <?= $user['rol'] === 'SuperAdmin' ? 'selected' : '' ?>>SuperAdmin</option>
+                                                    <?php endif; ?>
+                                                </select>
+                                                <small class="text-muted">Cambiar el rol del usuario afectará sus permisos en el sistema</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <?php endif; ?>
+                                    
                                     <div class="mb-3">
                                         <label for="foto_perfil" class="form-label">Nueva Foto de Perfil</label>
                                         <input type="file" class="form-control" id="foto_perfil" name="foto_perfil" 
