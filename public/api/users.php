@@ -82,6 +82,29 @@ try {
             }
             break;
             
+        case 'change_password':
+            // Only SuperAdmin can change passwords for other users
+            if ($currentUser['rol'] !== 'SuperAdmin') {
+                throw new Exception('No tienes permisos para cambiar contraseñas');
+            }
+            
+            $newPassword = $input['new_password'] ?? $_POST['new_password'] ?? null;
+            if (empty($newPassword) || strlen($newPassword) < 6) {
+                throw new Exception('La contraseña debe tener al menos 6 caracteres');
+            }
+            
+            $result = $userModel->changePassword($userId, $newPassword);
+            if ($result) {
+                logActivity("Contraseña cambiada para usuario ID $userId por SuperAdmin " . $currentUser['nombre_completo']);
+                $response = [
+                    'success' => true,
+                    'message' => 'Contraseña cambiada exitosamente'
+                ];
+            } else {
+                throw new Exception('Error al cambiar la contraseña');
+            }
+            break;
+            
         default:
             throw new Exception('Acción no válida');
     }

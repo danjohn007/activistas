@@ -190,6 +190,14 @@
                                                         <i class="fas fa-edit"></i>
                                                     </a>
                                                     
+                                                    <?php if ($currentUser['rol'] === 'SuperAdmin' && in_array($user['rol'], ['Líder', 'Activista'])): ?>
+                                                        <button type="button" class="btn btn-outline-info" 
+                                                                onclick="showChangePasswordModal(<?= $user['id'] ?>, '<?= htmlspecialchars($user['nombre_completo']) ?>')" 
+                                                                title="Cambiar Contraseña">
+                                                            <i class="fas fa-key"></i>
+                                                        </button>
+                                                    <?php endif; ?>
+                                                    
                                                     <?php if ($user['estado'] === 'activo'): ?>
                                                         <button type="button" class="btn btn-outline-warning" 
                                                                 onclick="changeUserStatus(<?= $user['id'] ?>, 'suspendido')" title="Suspender">
@@ -300,6 +308,44 @@
         <input type="hidden" name="status" id="statusValue">
     </form>
 
+    <!-- Modal para cambio de contraseña -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="changePasswordModalLabel">
+                        <i class="fas fa-key me-2"></i>Cambiar Contraseña
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="changePasswordForm">
+                        <div class="mb-3">
+                            <label for="userName" class="form-label">Usuario</label>
+                            <input type="text" class="form-control" id="userName" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">Nueva Contraseña</label>
+                            <input type="password" class="form-control" id="newPassword" minlength="6" required>
+                            <div class="form-text">La contraseña debe tener al menos 6 caracteres.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Confirmar Contraseña</label>
+                            <input type="password" class="form-control" id="confirmPassword" minlength="6" required>
+                        </div>
+                        <input type="hidden" id="targetUserId">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="changePassword()">
+                        <i class="fas fa-save me-2"></i>Cambiar Contraseña
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function changeUserStatus(userId, status) {
@@ -308,6 +354,75 @@
                 document.getElementById('statusValue').value = status;
                 document.getElementById('statusForm').submit();
             }
+        }
+
+        function showChangePasswordModal(userId, userName) {
+            document.getElementById('targetUserId').value = userId;
+            document.getElementById('userName').value = userName;
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
+            modal.show();
+        }
+
+        function changePassword() {
+            const userId = document.getElementById('targetUserId').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Validate password
+            if (newPassword.length < 6) {
+                showAlert('danger', 'La contraseña debe tener al menos 6 caracteres');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                showAlert('danger', 'Las contraseñas no coinciden');
+                return;
+            }
+            
+            if (!confirm('¿Estás seguro de que quieres cambiar la contraseña de este usuario?')) {
+                return;
+            }
+            
+            // Show loading
+            const submitBtn = document.querySelector('#changePasswordModal .btn-primary');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Cambiando...';
+            submitBtn.disabled = true;
+            
+            // Make AJAX call
+            fetch('<?= url('api/users.php') ?>', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'change_password',
+                    user_id: userId,
+                    new_password: newPassword
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', data.message);
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'));
+                    modal.hide();
+                } else {
+                    showAlert('danger', data.error || 'Error al cambiar la contraseña');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('danger', 'Error de conexión al cambiar la contraseña');
+            })
+            .finally(() => {
+                // Restore button
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
         }
 
         function showAlert(type, message) {
