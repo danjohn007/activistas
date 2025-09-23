@@ -286,6 +286,12 @@ class User {
                 $params[] = $data['vigencia_hasta'];
             }
             
+            // Handle role updates
+            if (isset($data['rol'])) {
+                $fields[] = "rol = ?";
+                $params[] = $data['rol'];
+            }
+            
             if (empty($fields)) {
                 return false;
             }
@@ -456,14 +462,18 @@ class User {
     // Calcular porcentaje de cumplimiento de tareas por usuario
     public function getUserCompliancePercentage($userId) {
         try {
+            // Get current month and year
+            $currentMonth = date('Y-m');
+            
             $stmt = $this->db->prepare("
                 SELECT 
                     COUNT(*) as total_tareas,
                     COUNT(CASE WHEN estado = 'completada' THEN 1 END) as tareas_completadas
                 FROM actividades 
                 WHERE usuario_id = ? AND tarea_pendiente = 1 AND autorizada = 1
+                AND DATE_FORMAT(fecha_actividad, '%Y-%m') = ?
             ");
-            $stmt->execute([$userId]);
+            $stmt->execute([$userId, $currentMonth]);
             $result = $stmt->fetch();
             
             if ($result['total_tareas'] == 0) {

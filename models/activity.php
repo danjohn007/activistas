@@ -106,7 +106,7 @@ class Activity {
                 throw new Exception("No hay conexión a la base de datos disponible");
             }
             
-            $sql = "SELECT a.*, u.nombre_completo as usuario_nombre, ta.nombre as tipo_nombre,
+            $sql = "SELECT DISTINCT a.*, u.nombre_completo as usuario_nombre, ta.nombre as tipo_nombre,
                            s.nombre_completo as solicitante_nombre, u.email as usuario_correo, u.telefono as usuario_telefono,
                            p.nombre_completo as propuesto_por_nombre, auth.nombre_completo as autorizado_por_nombre
                     FROM actividades a 
@@ -212,13 +212,20 @@ class Activity {
                 throw new Exception("No hay conexión a la base de datos disponible");
             }
             
-            $sql = "SELECT COUNT(*) as total
+            $sql = "SELECT COUNT(DISTINCT a.id) as total
                     FROM actividades a 
                     JOIN usuarios u ON a.usuario_id = u.id 
                     JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id 
                     LEFT JOIN usuarios s ON a.solicitante_id = s.id
+                    LEFT JOIN usuarios p ON a.propuesto_por = p.id
+                    LEFT JOIN usuarios auth ON a.autorizado_por = auth.id
                     WHERE 1=1";
             $params = [];
+            
+            // Only show authorized activities in general listings (unless viewing proposals)
+            if (!isset($filters['include_unauthorized'])) {
+                $sql .= " AND (a.autorizada = 1 OR a.propuesto_por IS NULL)";
+            }
             
             if (!empty($filters['usuario_id'])) {
                 $sql .= " AND a.usuario_id = ?";
