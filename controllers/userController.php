@@ -269,6 +269,15 @@ class UserController {
         // Handle vigencia (only for SuperAdmin and Gestor)
         $currentUser = $this->auth->getCurrentUser();
         if (in_array($currentUser['rol'], ['SuperAdmin', 'Gestor'])) {
+            // Handle role change (only for SuperAdmin and Gestor)
+            if (!empty($_POST['rol'])) {
+                $rol = cleanInput($_POST['rol']);
+                $validRoles = ['SuperAdmin', 'Gestor', 'Líder', 'Activista'];
+                if (in_array($rol, $validRoles)) {
+                    $updateData['rol'] = $rol;
+                }
+            }
+            
             $vigenciaHasta = cleanInput($_POST['vigencia_hasta'] ?? '');
             
             // Validate vigencia date if provided

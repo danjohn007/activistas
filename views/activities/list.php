@@ -34,6 +34,13 @@
                                 <i class="fas fa-plus me-1"></i>Nueva Actividad
                             </a>
                         </div>
+                        <?php if (isset($currentUser) && in_array($currentUser['rol'], ['SuperAdmin', 'Gestor', 'Líder'])): ?>
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-success" onclick="showMonthlyReportModal()">
+                                <i class="fas fa-file-excel me-1"></i>Reporte Mensual
+                            </button>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -166,6 +173,9 @@
                                     <thead>
                                         <tr>
                                             <th>Título</th>
+                                            <?php if (isset($currentUser) && in_array($currentUser['rol'], ['SuperAdmin', 'Gestor', 'Líder'])): ?>
+                                            <th>Usuario</th>
+                                            <?php endif; ?>
                                             <th>Tipo</th>
                                             <th>Fecha</th>
                                             <th>Estado</th>
@@ -185,6 +195,16 @@
                                                     </small>
                                                 <?php endif; ?>
                                             </td>
+                                            <?php if (isset($currentUser) && in_array($currentUser['rol'], ['SuperAdmin', 'Gestor', 'Líder'])): ?>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div>
+                                                        <strong><?= htmlspecialchars($activity['usuario_nombre']) ?></strong>
+                                                        <br><small class="text-muted"><?= htmlspecialchars($activity['usuario_correo']) ?></small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <?php endif; ?>
                                             <td><?= htmlspecialchars($activity['tipo_nombre']) ?></td>
                                             <td><?= formatDate($activity['fecha_actividad'], 'd/m/Y') ?></td>
                                             <td>
@@ -383,6 +403,75 @@
         </div>
     </div>
 
+    <!-- Monthly Report Modal -->
+    <div class="modal fade" id="monthlyReportModal" tabindex="-1" aria-labelledby="monthlyReportModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="monthlyReportModalLabel">
+                        <i class="fas fa-file-excel me-2"></i>Exportar Reporte Mensual
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="monthlyReportForm">
+                        <div class="mb-3">
+                            <label for="reportMonth" class="form-label">Seleccionar Mes</label>
+                            <input type="month" class="form-control" id="reportMonth" name="reportMonth" 
+                                   value="<?= date('Y-m') ?>" required>
+                            <div class="form-text">Por defecto está seleccionado el mes actual</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" onclick="exportMonthlyReport()">
+                        <i class="fas fa-download me-1"></i>Exportar Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function showMonthlyReportModal() {
+            const modal = new bootstrap.Modal(document.getElementById('monthlyReportModal'));
+            modal.show();
+        }
+        
+        function exportMonthlyReport() {
+            const month = document.getElementById('reportMonth').value;
+            if (!month) {
+                alert('Por favor selecciona un mes');
+                return;
+            }
+            
+            // Create form to download the report
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '<?= url('api/export_monthly_report.php') ?>';
+            
+            const monthInput = document.createElement('input');
+            monthInput.type = 'hidden';
+            monthInput.name = 'month';
+            monthInput.value = month;
+            form.appendChild(monthInput);
+            
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = '<?= generateCSRFToken() ?>';
+            form.appendChild(csrfInput);
+            
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('monthlyReportModal'));
+            modal.hide();
+        }
+    </script>
 </body>
 </html>
