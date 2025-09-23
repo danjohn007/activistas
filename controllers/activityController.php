@@ -93,6 +93,24 @@ class ActivityController {
             }
         }
         
+        // Calculate real completion percentage for current month (not affected by pagination)
+        $currentMonthFilters = array_merge($filters, [
+            'fecha_desde' => date('Y-m-01'),
+            'fecha_hasta' => date('Y-m-t')
+        ]);
+        unset($currentMonthFilters['page']);
+        unset($currentMonthFilters['per_page']);
+        
+        $monthlyActivities = $this->activityModel->getActivities($currentMonthFilters);
+        $totalMonthlyActivities = count($monthlyActivities);
+        $completedMonthlyActivities = 0;
+        foreach ($monthlyActivities as $activity) {
+            if ($activity['estado'] === 'completada') {
+                $completedMonthlyActivities++;
+            }
+        }
+        $realCompletionPercentage = $totalMonthlyActivities > 0 ? round(($completedMonthlyActivities / $totalMonthlyActivities) * 100, 1) : 0;
+        
         include __DIR__ . '/../views/activities/list.php';
     }
     

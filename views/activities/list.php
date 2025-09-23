@@ -34,6 +34,13 @@
                                 <i class="fas fa-plus me-1"></i>Nueva Actividad
                             </a>
                         </div>
+                        <?php if (in_array($_SESSION['user_role'], ['SuperAdmin', 'Gestor', 'Líder'])): ?>
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-outline-success" onclick="exportCurrentMonth()" title="Exportar reporte del mes actual">
+                                <i class="fas fa-file-excel me-1"></i>Exportar Mes Actual
+                            </button>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -145,19 +152,63 @@
                     </div>
                 </div>
 
+                <!-- Monthly Export Section for Admin/Leaders -->
+                <?php if (in_array($_SESSION['user_role'], ['SuperAdmin', 'Gestor', 'Líder'])): ?>
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-file-excel me-2 text-success"></i>Exportar Reporte Mensual
+                                </h6>
+                                <small class="text-muted">Selecciona el mes para exportar el reporte en Excel</small>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="row align-items-end">
+                                    <div class="col-md-8">
+                                        <label for="export_month" class="form-label">Mes</label>
+                                        <input type="month" class="form-control" id="export_month" 
+                                               value="<?= date('Y-m') ?>">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="button" class="btn btn-success w-100" onclick="exportMonth()">
+                                            <i class="fas fa-download me-1"></i>Exportar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                function exportMonth() {
+                    const month = document.getElementById('export_month').value;
+                    const currentUrl = new URL(window.location);
+                    const params = new URLSearchParams(currentUrl.search);
+                    params.set('month', month);
+                    
+                    const exportUrl = '<?= url('activities/export_monthly.php') ?>?' + params.toString();
+                    window.location.href = exportUrl;
+                }
+                
+                function exportCurrentMonth() {
+                    const currentUrl = new URL(window.location);
+                    const params = new URLSearchParams(currentUrl.search);
+                    params.set('month', '<?= date('Y-m') ?>');
+                    
+                    const exportUrl = '<?= url('activities/export_monthly.php') ?>?' + params.toString();
+                    window.location.href = exportUrl;
+                }
+                </script>
+                <?php endif; ?>
+
                 <!-- Lista de actividades -->
                 <!-- Completion Percentage Display -->
                 <?php if (!empty($activities)): ?>
                     <?php
-                    // Calculate completion percentage
-                    $totalActivities = count($activities);
-                    $completedActivities = 0;
-                    foreach ($activities as $activity) {
-                        if ($activity['estado'] === 'completada') {
-                            $completedActivities++;
-                        }
-                    }
-                    $completionPercentage = $totalActivities > 0 ? round(($completedActivities / $totalActivities) * 100, 1) : 0;
+                    // Use real completion percentage for current month (calculated in controller)
+                    $completionPercentage = $realCompletionPercentage;
                     $percentageClass = $completionPercentage >= 80 ? 'success' : ($completionPercentage >= 60 ? 'warning' : 'danger');
                     ?>
                     <div class="card mb-3 border-<?= $percentageClass ?>">
@@ -166,10 +217,10 @@
                                 <div class="col-md-8">
                                     <h5 class="mb-0">
                                         <i class="fas fa-chart-pie me-2 text-<?= $percentageClass ?>"></i>
-                                        Porcentaje de Cumplimiento
+                                        Porcentaje de Cumplimiento (Mes Actual)
                                     </h5>
                                     <p class="text-muted mb-0">
-                                        <?= $completedActivities ?> de <?= $totalActivities ?> actividades completadas
+                                        <?= $completedMonthlyActivities ?> de <?= $totalMonthlyActivities ?> actividades completadas este mes
                                     </p>
                                 </div>
                                 <div class="col-md-4">
@@ -221,6 +272,9 @@
                                         <tr>
                                             <th>Título</th>
                                             <th>Tipo</th>
+                                            <?php if (in_array($_SESSION['user_role'], ['SuperAdmin', 'Gestor', 'Líder'])): ?>
+                                            <th>Usuario</th>
+                                            <?php endif; ?>
                                             <th>Fecha</th>
                                             <th>Estado</th>
                                             <th>Evidencias</th>
@@ -240,6 +294,13 @@
                                                 <?php endif; ?>
                                             </td>
                                             <td><?= htmlspecialchars($activity['tipo_nombre']) ?></td>
+                                            <?php if (in_array($_SESSION['user_role'], ['SuperAdmin', 'Gestor', 'Líder'])): ?>
+                                            <td>
+                                                <span class="text-primary">
+                                                    <i class="fas fa-user me-1"></i><?= htmlspecialchars($activity['usuario_nombre']) ?>
+                                                </span>
+                                            </td>
+                                            <?php endif; ?>
                                             <td><?= formatDate($activity['fecha_actividad'], 'd/m/Y') ?></td>
                                             <td>
                                                 <?php
