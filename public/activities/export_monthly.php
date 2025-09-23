@@ -3,8 +3,8 @@
  * Export monthly activities report to Excel
  */
 
-require_once __DIR__ . '/../includes/auth.php';
-require_once __DIR__ . '/../models/activity.php';
+require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../models/activity.php';
 
 // Verificar autenticación y permisos
 $auth = getAuth();
