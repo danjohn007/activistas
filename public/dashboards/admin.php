@@ -683,11 +683,16 @@ try {
         // Función para inicializar las gráficas con manejo de errores mejorado
         function initializeCharts() {
             try {
-                console.log('Inicializando gráficas del dashboard...');
+                console.log('🚀 Inicializando gráficas del dashboard...');
+                console.log('📊 Datos disponibles:');
+                console.log('- Actividades por tipo:', <?= json_encode($activityLabels) ?>);
+                console.log('- Usuarios por rol:', <?= json_encode($userLabels) ?>);
+                console.log('- Actividades mensuales:', <?= json_encode($monthlyLabels) ?>);
+                console.log('- Equipos:', <?= json_encode($teamLabels) ?>);
                 
                 // Verificar que Chart.js esté disponible
                 if (typeof Chart === 'undefined') {
-                    console.error('Chart.js no está cargado');
+                    console.error('❌ Chart.js no está cargado');
                     return;
                 }
                 
@@ -699,7 +704,7 @@ try {
                 for (const elementId of elementsToCheck) {
                     const element = document.getElementById(elementId);
                     if (!element) {
-                        console.error(`Elemento DOM no encontrado: ${elementId}`);
+                        console.error(`❌ Elemento DOM no encontrado: ${elementId}`);
                         return;
                     }
                 }
@@ -719,7 +724,7 @@ try {
                 console.log('✅ Todas las gráficas inicializadas correctamente');
                 
             } catch (error) {
-                console.error('Error al inicializar gráficas:', error);
+                console.error('❌ Error al inicializar gráficas:', error);
             }
         }
         
