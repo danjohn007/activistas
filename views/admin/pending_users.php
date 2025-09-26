@@ -151,6 +151,7 @@
         <input type="hidden" name="vigencia_hasta" id="vigenciaHasta">
         <input type="hidden" name="rol" id="rolHidden">
         <input type="hidden" name="lider_id" id="liderHidden">
+        <input type="hidden" name="grupo" id="grupoHidden">
     </form>
 
     <!-- Modal para selección de vigencia -->
@@ -192,6 +193,28 @@
                         <div class="form-text">Solo requerido para activistas.</div>
                     </div>
                     
+                    <!-- Group Selection -->
+                    <div class="mb-3">
+                        <label for="grupoInput" class="form-label">Grupo (opcional):</label>
+                        <select class="form-select" id="grupoInput">
+                            <option value="">Sin grupo asignado</option>
+                            <option value="GeneracionesVa">GeneracionesVa</option>
+                            <option value="Grupo mujeres Lupita">Grupo mujeres Lupita</option>
+                            <option value="Grupo Herman">Grupo Herman</option>
+                            <option value="Grupo Anita">Grupo Anita</option>
+                            <?php 
+                            require_once __DIR__ . '/../../models/user.php';
+                            $userModel = new User();
+                            $existingGroups = $userModel->getAllGroups();
+                            foreach ($existingGroups as $grupo): 
+                                if (!in_array($grupo, ['GeneracionesVa', 'Grupo mujeres Lupita', 'Grupo Herman', 'Grupo Anita'])): ?>
+                                    <option value="<?= htmlspecialchars($grupo) ?>"><?= htmlspecialchars($grupo) ?></option>
+                                <?php endif;
+                            endforeach; ?>
+                        </select>
+                        <div class="form-text">Los grupos permiten organizar usuarios para actividades y reportes específicos.</div>
+                    </div>
+                    
                     <!-- Vigencia -->
                     <div class="mb-3">
                         <label for="vigenciaInput" class="form-label">Vigencia hasta (opcional):</label>
@@ -228,6 +251,7 @@
             document.getElementById('vigenciaInput').value = '';
             document.getElementById('rolInput').value = 'Activista'; // default to Activista
             document.getElementById('liderInput').value = '';
+            document.getElementById('grupoInput').value = '';
             document.getElementById('liderInputSection').style.display = 'block';
             
             const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
@@ -238,11 +262,13 @@
             const vigencia = document.getElementById('vigenciaInput').value;
             const rol = document.getElementById('rolInput').value;
             const lider = document.getElementById('liderInput').value;
+            const grupo = document.getElementById('grupoInput').value;
             
             document.getElementById('processAction').value = 'approve';
             document.getElementById('vigenciaHasta').value = vigencia || '';
             document.getElementById('rolHidden').value = rol;
             document.getElementById('liderHidden').value = lider || '';
+            document.getElementById('grupoHidden').value = grupo || '';
             
             // Close modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('approvalModal'));
@@ -260,6 +286,7 @@
                 document.getElementById('vigenciaHasta').value = '';
                 document.getElementById('rolHidden').value = '';
                 document.getElementById('liderHidden').value = '';
+                document.getElementById('grupoHidden').value = '';
                 document.getElementById('processForm').submit();
             }
         }

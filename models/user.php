@@ -47,6 +47,11 @@ class User {
                 $params[] = $filters['lider_id'];
             }
             
+            if (!empty($filters['grupo'])) {
+                $sql .= " AND u.grupo = ?";
+                $params[] = $filters['grupo'];
+            }
+            
             $sql .= " ORDER BY u.fecha_registro DESC";
             
             $stmt = $this->db->prepare($sql);
@@ -199,6 +204,53 @@ class User {
             return $result;
         } catch (Exception $e) {
             logActivity("Error al aprobar usuario con rol y líder: " . $e->getMessage(), 'ERROR');
+            return false;
+        }
+    }
+    
+    // Aprobar usuario con rol, líder y grupo
+    public function approveUserWithRoleLeaderAndGroup($userId, $vigenciaHasta = null, $rol = null, $liderId = null, $grupo = null) {
+        try {
+            $sql = "UPDATE usuarios SET estado = 'activo'";
+            $params = [];
+            
+            if ($vigenciaHasta && !empty($vigenciaHasta)) {
+                $sql .= ", vigencia_hasta = ?";
+                $params[] = $vigenciaHasta;
+            }
+            
+            if ($rol && !empty($rol)) {
+                $sql .= ", rol = ?";
+                $params[] = $rol;
+            }
+            
+            if ($liderId !== null) {
+                $sql .= ", lider_id = ?";
+                $params[] = $liderId;
+            }
+            
+            if ($grupo !== null) {
+                $sql .= ", grupo = ?";
+                $params[] = $grupo;
+            }
+            
+            $sql .= " WHERE id = ?";
+            $params[] = $userId;
+            
+            $stmt = $this->db->prepare($sql);
+            $result = $stmt->execute($params);
+            
+            if ($result) {
+                $vigenciaText = $vigenciaHasta ? " con vigencia hasta $vigenciaHasta" : "";
+                $rolText = $rol ? " como $rol" : "";
+                $liderText = $liderId ? " con líder ID $liderId" : "";
+                $grupoText = $grupo ? " en grupo '$grupo'" : "";
+                logActivity("Usuario ID $userId aprobado$vigenciaText$rolText$liderText$grupoText");
+            }
+            
+            return $result;
+        } catch (Exception $e) {
+            logActivity("Error al aprobar usuario con rol, líder y grupo: " . $e->getMessage(), 'ERROR');
             return false;
         }
     }
@@ -611,6 +663,61 @@ class User {
         } catch (Exception $e) {
             logActivity("Error al obtener total de usuarios: " . $e->getMessage(), 'ERROR');
             return 0;
+        }
+    }
+    
+    // Obtener todos los grupos existentes
+    public function getAllGroups() {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT DISTINCT grupo 
+                FROM usuarios 
+                WHERE grupo IS NOT NULL AND grupo != '' 
+                ORDER BY grupo ASC
+            ");
+            $stmt->execute();
+            $result = $stmt->fetchAll();
+            
+            return array_column($result, 'grupo');
+        } catch (Exception $e) {
+            logActivity("Error al obtener grupos: " . $e->getMessage(), 'ERROR');
+            return [];
+        }
+    }
+    
+    // Obtener usuarios por grupo
+    public function getUsersByGroup($grupo) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT u.*, l.nombre_completo as lider_nombre 
+                FROM usuarios u 
+                LEFT JOIN usuarios l ON u.lider_id = l.id 
+                WHERE u.grupo = ? AND u.estado = 'activo'
+                ORDER BY u.nombre_completo ASC
+            ");
+            $stmt->execute([$grupo]);
+            
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            logActivity("Error al obtener usuarios del grupo: " . $e->getMessage(), 'ERROR');
+            return [];
+        }
+    }
+    
+    // Actualizar grupo de usuario
+    public function updateUserGroup($userId, $grupo) {
+        try {
+            $stmt = $this->db->prepare("UPDATE usuarios SET grupo = ? WHERE id = ?");
+            $result = $stmt->execute([$grupo, $userId]);
+            
+            if ($result) {
+                logActivity("Grupo actualizado para usuario ID: $userId");
+            }
+            
+            return $result;
+        } catch (Exception $e) {
+            logActivity("Error al actualizar grupo: " . $e->getMessage(), 'ERROR');
+            return false;
         }
     }
 }

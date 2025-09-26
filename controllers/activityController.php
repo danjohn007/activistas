@@ -417,7 +417,7 @@ class ActivityController {
         
         // Procesar archivo si se subió
         if (isset($_FILES['evidence_file']) && $_FILES['evidence_file']['error'] === UPLOAD_ERR_OK) {
-            $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'avi', 'mp3', 'wav', 'pdf', 'doc', 'docx'];
+            $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mp3', 'wav', 'pdf', 'doc', 'docx'];
             $uploadResult = uploadFile($_FILES['evidence_file'], __DIR__ . '/../public/assets/uploads/evidencias', $allowedTypes);
             
             if ($uploadResult['success']) {
@@ -519,7 +519,7 @@ class ActivityController {
                         'size' => $files['size'][$i]
                     ];
                     
-                    $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'avi', 'mp3', 'wav'];
+                    $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mp3', 'wav'];
                     $uploadResult = uploadFile($file, __DIR__ . '/../public/assets/uploads/evidencias', $allowedTypes);
                     
                     if ($uploadResult['success']) {
@@ -527,7 +527,7 @@ class ActivityController {
                         $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
                         $evidenceType = 'foto'; // Por defecto
                         
-                        if (in_array($extension, ['mp4', 'avi'])) {
+                        if (in_array($extension, ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'])) {
                             $evidenceType = 'video';
                         } elseif (in_array($extension, ['mp3', 'wav'])) {
                             $evidenceType = 'audio';
@@ -562,7 +562,7 @@ class ActivityController {
                         'size' => $files['size'][$i]
                     ];
                     
-                    $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'avi', 'mp3', 'wav'];
+                    $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mp3', 'wav'];
                     $uploadResult = uploadFile($file, __DIR__ . '/../public/assets/uploads/evidencias', $allowedTypes);
                     
                     if ($uploadResult['success']) {
@@ -570,7 +570,7 @@ class ActivityController {
                         $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
                         $evidenceType = 'foto'; // Por defecto
                         
-                        if (in_array($extension, ['mp4', 'avi'])) {
+                        if (in_array($extension, ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'])) {
                             $evidenceType = 'video';
                         } elseif (in_array($extension, ['mp3', 'wav'])) {
                             $evidenceType = 'audio';

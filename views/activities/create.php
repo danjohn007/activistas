@@ -158,6 +158,30 @@
                                 <?php endif; ?>
                             </div>
 
+                            <!-- Group Selection (SuperAdmin/Gestor only) -->
+                            <?php if (in_array($_SESSION['user_role'], ['SuperAdmin', 'Gestor'])): ?>
+                            <div class="mb-3">
+                                <label for="grupo" class="form-label">
+                                    <i class="fas fa-users me-1"></i>Grupo (opcional)
+                                </label>
+                                <select class="form-select" id="grupo" name="grupo">
+                                    <option value="">Sin grupo específico</option>
+                                    <option value="GeneracionesVa" <?= ($_SESSION['form_data']['grupo'] ?? '') === 'GeneracionesVa' ? 'selected' : '' ?>>GeneracionesVa</option>
+                                    <option value="Grupo mujeres Lupita" <?= ($_SESSION['form_data']['grupo'] ?? '') === 'Grupo mujeres Lupita' ? 'selected' : '' ?>>Grupo mujeres Lupita</option>
+                                    <option value="Grupo Herman" <?= ($_SESSION['form_data']['grupo'] ?? '') === 'Grupo Herman' ? 'selected' : '' ?>>Grupo Herman</option>
+                                    <option value="Grupo Anita" <?= ($_SESSION['form_data']['grupo'] ?? '') === 'Grupo Anita' ? 'selected' : '' ?>>Grupo Anita</option>
+                                    <?php 
+                                    $existingGroups = $userModel->getAllGroups();
+                                    foreach ($existingGroups as $grupo): 
+                                        if (!in_array($grupo, ['GeneracionesVa', 'Grupo mujeres Lupita', 'Grupo Herman', 'Grupo Anita'])): ?>
+                                            <option value="<?= htmlspecialchars($grupo) ?>" <?= ($_SESSION['form_data']['grupo'] ?? '') === $grupo ? 'selected' : '' ?>><?= htmlspecialchars($grupo) ?></option>
+                                        <?php endif;
+                                    endforeach; ?>
+                                </select>
+                                <div class="form-text">Selecciona un grupo específico para esta actividad. Útil para reportes y organización.</div>
+                            </div>
+                            <?php endif; ?>
+
                             <!-- Selección de destinatarios -->
                             <?php if ($_SESSION['user_role'] === 'SuperAdmin'): ?>
                             <div class="mb-3">
@@ -276,7 +300,7 @@
                                 <label for="evidence_files" class="form-label">Evidencias (opcional)</label>
                                 <input type="file" class="form-control" id="evidence_files" name="evidence_files[]" 
                                        accept="image/*,video/*,audio/*" multiple>
-                                <div class="form-text">Puedes subir fotos, videos o audios relacionados con la actividad.</div>
+                                <div class="form-text">Puedes subir fotos, videos (máximo 50MB) o audios relacionados con la actividad. Formatos soportados: JPG, PNG, MP4, AVI, MOV, WMV, MP3, WAV.</div>
                             </div>
 
                             <div class="d-flex justify-content-between">
@@ -369,6 +393,93 @@
                     selectAllLeadersCheckbox.indeterminate = anyChecked && !allChecked;
                 });
             });
+        }
+        
+        // FUNCIONALIDAD PRINCIPAL: Auto-seleccionar equipo cuando se selecciona líder
+        // REQUIREMENT: "al elegir a un líder se activen todas las casillas de su equipo por default"
+        const leaderCheckboxes = document.querySelectorAll('.leader-checkbox');
+        if (leaderCheckboxes.length > 0) {
+            leaderCheckboxes.forEach(leaderCheckbox => {
+                leaderCheckbox.addEventListener('change', function() {
+                    const liderId = this.value;
+                    const isChecked = this.checked;
+                    
+                    if (isChecked) {
+                        // Cuando se selecciona un líder, obtener y seleccionar sus activistas
+                        fetchAndSelectTeamMembers(liderId);
+                    } else {
+                        // Cuando se deselecciona un líder, deseleccionar sus activistas
+                        deselectTeamMembers(liderId);
+                    }
+                });
+            });
+        }
+        
+        // Función para obtener y seleccionar miembros del equipo
+        async function fetchAndSelectTeamMembers(liderId) {
+            try {
+                const response = await fetch(`<?= url('api/get_team_members.php') ?>?lider_id=${liderId}`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.members) {
+                    // Seleccionar activistas en la pestaña "Todos los usuarios"
+                    data.members.forEach(member => {
+                        const checkbox = document.getElementById(`user_${member.id}`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                            // Almacenar la relación líder-activista para poder deseleccionar después
+                            checkbox.dataset.liderId = liderId;
+                        }
+                    });
+                    
+                    // Actualizar el estado del "seleccionar todos"
+                    updateSelectAllUsersState();
+                    
+                    console.log(`✅ Auto-seleccionados ${data.count} miembros del equipo del líder ${liderId}`);
+                } else {
+                    console.warn(`⚠️ No se encontraron miembros para el líder ${liderId}:`, data.error || 'Sin datos');
+                }
+            } catch (error) {
+                console.error('❌ Error al obtener miembros del equipo:', error);
+            }
+        }
+        
+        // Función para deseleccionar miembros del equipo cuando se deselecciona líder
+        function deselectTeamMembers(liderId) {
+            const userCheckboxes = document.querySelectorAll('.all-user-checkbox');
+            userCheckboxes.forEach(checkbox => {
+                // Solo deseleccionar si este checkbox fue seleccionado por este líder
+                if (checkbox.dataset.liderId === liderId) {
+                    checkbox.checked = false;
+                    // Limpiar la referencia del líder
+                    delete checkbox.dataset.liderId;
+                }
+            });
+            
+            // Actualizar el estado del "seleccionar todos"
+            updateSelectAllUsersState();
+            
+            console.log(`✅ Deseleccionados miembros del equipo del líder ${liderId}`);
+        }
+        
+        // Función para actualizar el estado del checkbox "seleccionar todos los usuarios"
+        function updateSelectAllUsersState() {
+            const selectAllUsersCheckbox = document.getElementById('select_all_users');
+            const userCheckboxes = document.querySelectorAll('.all-user-checkbox');
+            
+            if (selectAllUsersCheckbox && userCheckboxes.length > 0) {
+                const allChecked = Array.from(userCheckboxes).every(cb => cb.checked);
+                const anyChecked = Array.from(userCheckboxes).some(cb => cb.checked);
+                
+                selectAllUsersCheckbox.checked = allChecked;
+                selectAllUsersCheckbox.indeterminate = anyChecked && !allChecked;
+            }
         }
         
         // Funcionalidad para seleccionar/deseleccionar todos los usuarios (SuperAdmin)
