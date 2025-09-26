@@ -114,6 +114,17 @@ class DashboardController {
                 $teamRanking = [];
             }
             
+            // Obtener métricas específicas del mes actual
+            try {
+                $currentMonthMetrics = $this->getCurrentMonthMetrics();
+                if (function_exists('logActivity')) {
+                    logActivity("Métricas del mes actual obtenidas", 'DEBUG');
+                }
+            } catch (Exception $e) {
+                logActivity("Error al obtener métricas del mes actual: " . $e->getMessage(), 'ERROR');
+                $currentMonthMetrics = [];
+            }
+            
             // Establecer variables globales para la vista
             $GLOBALS['userStats'] = $userStats;
             $GLOBALS['activityStats'] = $activityStats;
@@ -122,6 +133,7 @@ class DashboardController {
             $GLOBALS['pendingUsers'] = $pendingUsers;
             $GLOBALS['monthlyActivities'] = $monthlyActivities;
             $GLOBALS['teamRanking'] = $teamRanking;
+            $GLOBALS['currentMonthMetrics'] = $currentMonthMetrics;
             
             // Log de finalización
             if (function_exists('logActivity')) {
@@ -445,6 +457,51 @@ class DashboardController {
         header('Content-Type: application/json');
         echo json_encode($stats);
         exit();
+    }
+    
+    // Obtener métricas específicas del mes actual
+    private function getCurrentMonthMetrics() {
+        try {
+            // Check if database connection is available
+            $db = $this->activityModel->getDb();
+            if (!$db) {
+                throw new Exception("No hay conexión a la base de datos disponible");
+            }
+            
+            $stmt = $db->prepare("
+                SELECT 
+                    COUNT(*) as total_actividades_mes,
+                    COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) as completadas_mes,
+                    COUNT(CASE WHEN a.estado = 'programada' THEN 1 END) as programadas_mes,
+                    COUNT(CASE WHEN a.estado = 'en_progreso' THEN 1 END) as en_progreso_mes,
+                    COUNT(CASE WHEN a.estado = 'cancelada' THEN 1 END) as canceladas_mes,
+                    COALESCE(SUM(a.alcance_estimado), 0) as alcance_total_mes
+                FROM actividades a
+                JOIN usuarios u ON a.usuario_id = u.id
+                WHERE DATE_FORMAT(a.fecha_actividad, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')
+            ");
+            $stmt->execute();
+            $result = $stmt->fetch();
+            
+            // Log successful data retrieval
+            if (function_exists('logActivity')) {
+                logActivity("Métricas del mes actual obtenidas correctamente", 'DEBUG');
+            }
+            return $result;
+        } catch (Exception $e) {
+            if (function_exists('logActivity')) {
+                logActivity("Error al obtener métricas del mes actual: " . $e->getMessage(), 'ERROR');
+            }
+            // Return fallback data
+            return [
+                'total_actividades_mes' => 0,
+                'completadas_mes' => 0,
+                'programadas_mes' => 0,
+                'en_progreso_mes' => 0,
+                'canceladas_mes' => 0,
+                'alcance_total_mes' => 0
+            ];
+        }
     }
 }
 ?>

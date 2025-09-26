@@ -191,5 +191,27 @@ class ActivityType {
             return [];
         }
     }
+    
+    // Eliminar tipo de actividad (solo si no está siendo usado)
+    public function deleteActivityType($id) {
+        try {
+            // Verificar si está siendo usado
+            if ($this->isActivityTypeInUse($id)) {
+                throw new Exception("No se puede eliminar el tipo de actividad porque está siendo usado en actividades existentes");
+            }
+            
+            $stmt = $this->db->prepare("DELETE FROM tipos_actividades WHERE id = ?");
+            $result = $stmt->execute([$id]);
+            
+            if ($result) {
+                logActivity("Tipo de actividad eliminado: ID $id");
+            }
+            
+            return $result;
+        } catch (Exception $e) {
+            logActivity("Error al eliminar tipo de actividad: " . $e->getMessage(), 'ERROR');
+            throw $e; // Re-throw to let the caller handle the specific error message
+        }
+    }
 }
 ?>

@@ -346,8 +346,10 @@ class User {
             
             // Handle group assignment
             if (isset($data['grupo_id'])) {
+                // Convert empty string to NULL for database
+                $grupoId = empty($data['grupo_id']) ? null : $data['grupo_id'];
                 $fields[] = "grupo_id = ?";
-                $params[] = $data['grupo_id'];
+                $params[] = $grupoId;
             }
             
             if (empty($fields)) {
@@ -363,11 +365,17 @@ class User {
             if ($result) {
                 logActivity("Usuario ID $userId actualizado");
                 
-                // If this is a leader being assigned to a group, also assign their activists
-                if (isset($data['grupo_id']) && !empty($data['grupo_id'])) {
-                    $userInfo = $this->getUserById($userId);
-                    if ($userInfo && $userInfo['rol'] === 'Líder') {
+                // Get user info to check if this is a leader
+                $userInfo = $this->getUserById($userId);
+                
+                if ($userInfo && $userInfo['rol'] === 'Líder' && isset($data['grupo_id'])) {
+                    if (!empty($data['grupo_id'])) {
+                        // If leader is being assigned to a group, also assign their activists
                         $this->assignActivistsToLeaderGroup($userId, $data['grupo_id']);
+                    } else {
+                        // If leader is being removed from group (set to "Sin grupo específico"), 
+                        // also remove their activists from the group
+                        $this->removeActivistsFromLeaderGroup($userId);
                     }
                 }
             }
@@ -708,6 +716,29 @@ class User {
             return $result;
         } catch (Exception $e) {
             logActivity("Error al asignar activistas al grupo del líder: " . $e->getMessage(), 'ERROR');
+            return false;
+        }
+    }
+    
+    // Remove activists from leader's group when leader is set to "Sin grupo específico"
+    public function removeActivistsFromLeaderGroup($liderId) {
+        try {
+            $stmt = $this->db->prepare("
+                UPDATE usuarios 
+                SET grupo_id = NULL 
+                WHERE lider_id = ? AND rol = 'Activista' AND estado = 'activo'
+            ");
+            
+            $result = $stmt->execute([$liderId]);
+            
+            if ($result) {
+                $rowCount = $stmt->rowCount();
+                logActivity("Removidos $rowCount activistas del grupo del líder ID $liderId (ahora sin grupo específico)");
+            }
+            
+            return $result;
+        } catch (Exception $e) {
+            logActivity("Error al remover activistas del grupo del líder: " . $e->getMessage(), 'ERROR');
             return false;
         }
     }
