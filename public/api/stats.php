@@ -76,11 +76,13 @@ try {
         
         // Añadir datos para las nuevas gráficas
         try {
-            // Datos mensuales de actividades
+            // Datos mensuales de actividades (últimos 12 meses incluyendo mes actual)
             $monthlySql = "
                 SELECT 
                     DATE_FORMAT(a.fecha_actividad, '%Y-%m') as mes,
-                    COUNT(*) as cantidad
+                    COUNT(*) as cantidad,
+                    CASE WHEN DATE_FORMAT(a.fecha_actividad, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m') 
+                         THEN 1 ELSE 0 END as es_mes_actual
                 FROM actividades a
                 JOIN usuarios u ON a.usuario_id = u.id
                 WHERE a.fecha_actividad >= DATE_SUB(NOW(), INTERVAL 12 MONTH)";
@@ -100,7 +102,35 @@ try {
             
             $stmt = $activityModel->getDb()->prepare($monthlySql);
             $stmt->execute($monthlyParams);
-            $response['data']['monthly_activities'] = $stmt->fetchAll();
+            $monthlyResults = $stmt->fetchAll();
+            $response['data']['monthly_activities'] = $monthlyResults;
+            
+            // Añadir métricas específicas del mes actual
+            $currentMonthSql = "
+                SELECT 
+                    COUNT(*) as total_actividades_mes,
+                    COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) as completadas_mes,
+                    COUNT(CASE WHEN a.estado = 'programada' THEN 1 END) as programadas_mes,
+                    COUNT(CASE WHEN a.estado = 'en_progreso' THEN 1 END) as en_progreso_mes
+                FROM actividades a
+                JOIN usuarios u ON a.usuario_id = u.id
+                WHERE DATE_FORMAT(a.fecha_actividad, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')";
+            $currentMonthParams = [];
+            
+            // Aplicar los mismos filtros para el mes actual
+            if (!empty($filters['usuario_id'])) {
+                $currentMonthSql .= " AND a.usuario_id = ?";
+                $currentMonthParams[] = $filters['usuario_id'];
+            } elseif (!empty($filters['lider_id'])) {
+                $currentMonthSql .= " AND (a.usuario_id = ? OR u.lider_id = ?)";
+                $currentMonthParams[] = $filters['lider_id'];
+                $currentMonthParams[] = $filters['lider_id'];
+            }
+            
+            $stmt = $activityModel->getDb()->prepare($currentMonthSql);
+            $stmt->execute($currentMonthParams);
+            $currentMonthData = $stmt->fetch();
+            $response['data']['current_month_metrics'] = $currentMonthData;
             
             // Ranking de equipos (solo para SuperAdmin/Gestor)
             if (empty($filters)) {
