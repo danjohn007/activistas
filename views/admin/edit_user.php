@@ -269,6 +269,23 @@
                                                 </select>
                                                 <small class="text-muted">Solo requerido para activistas</small>
                                             </div>
+                                            
+                                            <!-- Grupo - visible para SuperAdmin -->
+                                            <?php if ($_SESSION['user_role'] === 'SuperAdmin' && !empty($groups)): ?>
+                                            <div class="mb-3">
+                                                <label for="grupo_id" class="form-label">Grupo Asignado</label>
+                                                <select class="form-select" id="grupo_id" name="grupo_id">
+                                                    <option value="">Sin grupo específico</option>
+                                                    <?php foreach ($groups as $group): ?>
+                                                        <option value="<?= $group['id'] ?>" 
+                                                                <?= ($user['grupo_id'] ?? '') == $group['id'] ? 'selected' : '' ?>>
+                                                            <?= htmlspecialchars($group['nombre']) ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                                <small class="text-muted">Asignar usuario a un grupo específico (opcional)</small>
+                                            </div>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                     

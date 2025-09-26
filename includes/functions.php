@@ -110,7 +110,7 @@ function getFlashMessage() {
 }
 
 // Subir archivo
-function uploadFile($file, $uploadDir, $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'], $isProfile = false) {
+function uploadFile($file, $uploadDir, $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'], $isProfile = false, $isVideo = false) {
     if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
         return ['success' => false, 'error' => 'Error al subir el archivo'];
     }
@@ -122,11 +122,20 @@ function uploadFile($file, $uploadDir, $allowedTypes = ['jpg', 'jpeg', 'png', 'g
         return ['success' => false, 'error' => 'Tipo de archivo no permitido'];
     }
     
-    // Verificar tamaño - 20MB para perfiles, 5MB para otros archivos
-    $maxSize = $isProfile ? 20971520 : 5242880; // 20MB : 5MB
+    // Verificar tamaño - 50MB para videos, 20MB para perfiles, 5MB para otros archivos
+    $maxSize = 5242880; // 5MB por defecto
+    if ($isVideo || in_array($extension, ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'])) {
+        $maxSize = 52428800; // 50MB para videos
+        $maxSizeText = '50MB';
+    } elseif ($isProfile) {
+        $maxSize = 20971520; // 20MB para perfiles
+        $maxSizeText = '20MB';
+    } else {
+        $maxSizeText = '5MB';
+    }
+    
     if ($file['size'] > $maxSize) {
-        $maxSizeMB = $isProfile ? '20MB' : '5MB';
-        return ['success' => false, 'error' => "El archivo es demasiado grande. Máximo permitido: $maxSizeMB"];
+        return ['success' => false, 'error' => "El archivo es demasiado grande. Máximo permitido: $maxSizeText"];
     }
     
     $fileName = uniqid() . '.' . $extension;

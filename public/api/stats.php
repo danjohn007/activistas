@@ -19,7 +19,7 @@ try {
     $auth = getAuth();
     
     // Verificar si el usuario está autenticado, si no devolver error específico
-    if (!$auth->isAuthenticated()) {
+    if (!$auth->isLoggedIn()) {
         http_response_code(401);
         echo json_encode([
             'success' => false,
