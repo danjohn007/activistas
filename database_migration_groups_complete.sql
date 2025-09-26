@@ -40,9 +40,41 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 -- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_grupos_activo ON grupos(activo);
-CREATE INDEX IF NOT EXISTS idx_grupos_lider ON grupos(lider_id);
-CREATE INDEX IF NOT EXISTS idx_usuarios_grupo ON usuarios(grupo_id);
+SET @sql = (SELECT IF(
+    NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS 
+        WHERE table_schema = DATABASE() AND table_name = 'grupos' AND index_name = 'idx_grupos_activo'
+    ),
+    'CREATE INDEX idx_grupos_activo ON grupos(activo);',
+    'SELECT "Index idx_grupos_activo already exists" as msg'
+));
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (SELECT IF(
+    NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS 
+        WHERE table_schema = DATABASE() AND table_name = 'grupos' AND index_name = 'idx_grupos_lider'
+    ),
+    'CREATE INDEX idx_grupos_lider ON grupos(lider_id);',
+    'SELECT "Index idx_grupos_lider already exists" as msg'
+));
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (SELECT IF(
+    NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS 
+        WHERE table_schema = DATABASE() AND table_name = 'usuarios' AND index_name = 'idx_usuarios_grupo'
+    ),
+    'CREATE INDEX idx_usuarios_grupo ON usuarios(grupo_id);',
+    'SELECT "Index idx_usuarios_grupo already exists" as msg'
+));
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- Insert default groups (optional - can be customized)
 INSERT IGNORE INTO grupos (nombre, descripcion, activo) VALUES 
