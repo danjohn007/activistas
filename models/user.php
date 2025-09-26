@@ -241,6 +241,11 @@ class User {
                 $liderText = $liderId ? " con líder ID $liderId" : "";
                 $grupoText = $grupoId ? " en grupo ID $grupoId" : "";
                 logActivity("Usuario ID $userId aprobado$vigenciaText$rolText$liderText$grupoText");
+                
+                // If this is a leader being assigned to a group, also assign their activists
+                if ($rol === 'Líder' && $grupoId) {
+                    $this->assignActivistsToLeaderGroup($userId, $grupoId);
+                }
             }
             
             return $result;

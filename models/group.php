@@ -161,10 +161,15 @@ class Group {
     public function getActiveGroups() {
         try {
             $stmt = $this->db->prepare("
-                SELECT id, nombre 
-                FROM grupos 
-                WHERE activo = 1 
-                ORDER BY nombre
+                SELECT g.id, g.nombre, g.descripcion,
+                       l.nombre_completo as lider_nombre,
+                       COUNT(u.id) as miembros_count
+                FROM grupos g
+                LEFT JOIN usuarios l ON g.lider_id = l.id
+                LEFT JOIN usuarios u ON u.grupo_id = g.id AND u.estado = 'activo'
+                WHERE g.activo = 1 
+                GROUP BY g.id, g.nombre, g.descripcion, l.nombre_completo
+                ORDER BY g.nombre
             ");
             $stmt->execute();
             return $stmt->fetchAll();
