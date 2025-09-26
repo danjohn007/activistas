@@ -255,6 +255,15 @@ class UserController {
         }
         
         $liders = $this->userModel->getActiveLiders();
+        
+        // Load groups for SuperAdmin
+        $groups = [];
+        if ($_SESSION['user_role'] === 'SuperAdmin') {
+            require_once __DIR__ . '/../models/group.php';
+            $groupModel = new Group();
+            $groups = $groupModel->getActiveGroups();
+        }
+        
         include __DIR__ . '/../views/admin/edit_user.php';
     }
     
@@ -308,6 +317,12 @@ class UserController {
         
         if (!empty($_POST['lider_id'])) {
             $updateData['lider_id'] = intval($_POST['lider_id']);
+        }
+        
+        // Handle group assignment (only for SuperAdmin)
+        if ($currentUser['rol'] === 'SuperAdmin' && isset($_POST['grupo_id'])) {
+            $groupId = !empty($_POST['grupo_id']) ? intval($_POST['grupo_id']) : null;
+            $updateData['grupo_id'] = $groupId;
         }
         
         // Handle vigencia (only for SuperAdmin and Gestor)

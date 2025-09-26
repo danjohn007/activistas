@@ -98,10 +98,23 @@
                                 <label for="grupo" class="form-label">
                                     <i class="fas fa-users me-1"></i>Grupo (Opcional)
                                 </label>
-                                <input type="text" class="form-control" id="grupo" name="grupo" 
-                                       value="<?= htmlspecialchars($activity['grupo'] ?? '') ?>"
-                                       placeholder="Ej: GeneracionesVa, Grupo mujeres Lupita, Grupo Herman, Grupo Anita">
-                                <div class="form-text">Asigna esta actividad a un grupo específico (opcional)</div>
+                                <?php if (!empty($groups)): ?>
+                                    <select class="form-select" id="grupo" name="grupo">
+                                        <option value="">Todos los usuarios (sin grupo específico)</option>
+                                        <?php foreach ($groups as $group): ?>
+                                            <option value="<?= htmlspecialchars($group['nombre']) ?>" 
+                                                    <?= ($activity['grupo'] ?? '') == $group['nombre'] ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($group['nombre']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <div class="form-text">Selecciona un grupo específico o deja vacío para dirigir a todos los usuarios</div>
+                                <?php else: ?>
+                                    <input type="text" class="form-control" id="grupo" name="grupo" 
+                                           value="<?= htmlspecialchars($activity['grupo'] ?? '') ?>"
+                                           placeholder="Ej: GeneracionesVa, Grupo mujeres Lupita, Grupo Herman, Grupo Anita">
+                                    <div class="form-text">Asigna esta actividad a un grupo específico (opcional)</div>
+                                <?php endif; ?>
                             </div>
 
                             <div class="mb-3">

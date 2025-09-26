@@ -101,7 +101,40 @@
                                 <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" 
                                        value="<?= htmlspecialchars($_GET['fecha_hasta'] ?? '') ?>">
                             </div>
-                            <div class="col-md-9 mb-3 d-flex align-items-end">
+                            
+                            <!-- Group filtering - SuperAdmin only -->
+                            <?php if ($_SESSION['user_role'] === 'SuperAdmin' && !empty($groups)): ?>
+                            <div class="col-md-3 mb-3">
+                                <label for="grupo_id" class="form-label">Filtrar por Grupo</label>
+                                <select class="form-select" id="grupo_id" name="grupo_id">
+                                    <option value="">Todos los grupos</option>
+                                    <?php foreach ($groups as $group): ?>
+                                        <option value="<?= $group['id'] ?>" 
+                                                <?= ($_GET['grupo_id'] ?? '') == $group['id'] ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($group['nombre']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <?php endif; ?>
+                            
+                            <!-- Leader filtering - SuperAdmin and Gestor -->
+                            <?php if (in_array($_SESSION['user_role'], ['SuperAdmin', 'Gestor']) && !empty($leaders)): ?>
+                            <div class="col-md-3 mb-3">
+                                <label for="filter_lider_id" class="form-label">Filtrar por Líder</label>
+                                <select class="form-select" id="filter_lider_id" name="filter_lider_id">
+                                    <option value="">Todos los líderes</option>
+                                    <?php foreach ($leaders as $leader): ?>
+                                        <option value="<?= $leader['id'] ?>" 
+                                                <?= ($_GET['filter_lider_id'] ?? '') == $leader['id'] ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($leader['nombre_completo']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <?php endif; ?>
+                            
+                            <div class="col-md-3 mb-3 d-flex align-items-end">
                                 <button type="submit" class="btn btn-primary me-2">
                                     <i class="fas fa-search me-1"></i>Buscar
                                 </button>

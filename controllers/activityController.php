@@ -131,6 +131,22 @@ class ActivityController {
         
         $activityTypes = $this->activityModel->getActivityTypes();
         
+        // Load groups for SuperAdmin
+        $groups = [];
+        $teamMembersData = [];
+        if ($currentUser['rol'] === 'SuperAdmin') {
+            require_once __DIR__ . '/../models/group.php';
+            $groupModel = new Group();
+            $groups = $groupModel->getActiveGroups();
+            
+            // Get team members for each leader to support auto-selection
+            $leaders = $this->userModel->getActiveLiders();
+            foreach ($leaders as $leader) {
+                $teamMembers = $this->userModel->getActivistsOfLeader($leader['id']);
+                $teamMembersData[$leader['id']] = array_column($teamMembers, 'id');
+            }
+        }
+        
         include __DIR__ . '/../views/activities/create.php';
     }
     
@@ -331,6 +347,14 @@ class ActivityController {
         
         $activityTypes = $this->activityModel->getActivityTypes();
         
+        // Load groups for SuperAdmin
+        $groups = [];
+        if ($currentUser['rol'] === 'SuperAdmin') {
+            require_once __DIR__ . '/../models/group.php';
+            $groupModel = new Group();
+            $groups = $groupModel->getActiveGroups();
+        }
+        
         include __DIR__ . '/../views/activities/edit.php';
     }
     
@@ -520,11 +544,15 @@ class ActivityController {
                     ];
                     
                     $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'avi', 'mp3', 'wav'];
-                    $uploadResult = uploadFile($file, __DIR__ . '/../public/assets/uploads/evidencias', $allowedTypes);
+                    
+                    // Check if it's a video file for size limits
+                    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                    $isVideo = in_array($extension, ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm']);
+                    
+                    $uploadResult = uploadFile($file, __DIR__ . '/../public/assets/uploads/evidencias', $allowedTypes, false, $isVideo);
                     
                     if ($uploadResult['success']) {
                         // Determinar tipo de evidencia basado en la extensión
-                        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
                         $evidenceType = 'foto'; // Por defecto
                         
                         if (in_array($extension, ['mp4', 'avi'])) {
@@ -563,11 +591,15 @@ class ActivityController {
                     ];
                     
                     $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'avi', 'mp3', 'wav'];
-                    $uploadResult = uploadFile($file, __DIR__ . '/../public/assets/uploads/evidencias', $allowedTypes);
+                    
+                    // Check if it's a video file for size limits
+                    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                    $isVideo = in_array($extension, ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm']);
+                    
+                    $uploadResult = uploadFile($file, __DIR__ . '/../public/assets/uploads/evidencias', $allowedTypes, false, $isVideo);
                     
                     if ($uploadResult['success']) {
                         // Determinar tipo de evidencia basado en la extensión
-                        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
                         $evidenceType = 'foto'; // Por defecto
                         
                         if (in_array($extension, ['mp4', 'avi'])) {

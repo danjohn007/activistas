@@ -97,10 +97,23 @@
                                 <label for="grupo" class="form-label">
                                     <i class="fas fa-users me-1"></i>Grupo (Opcional)
                                 </label>
-                                <input type="text" class="form-control" id="grupo" name="grupo" 
-                                       value="<?= htmlspecialchars($_SESSION['form_data']['grupo'] ?? '') ?>"
-                                       placeholder="Ej: GeneracionesVa, Grupo mujeres Lupita, Grupo Herman, Grupo Anita">
-                                <div class="form-text">Asigna esta actividad a un grupo específico (opcional)</div>
+                                <?php if (!empty($groups)): ?>
+                                    <select class="form-select" id="grupo" name="grupo">
+                                        <option value="">Todos los usuarios (sin grupo específico)</option>
+                                        <?php foreach ($groups as $group): ?>
+                                            <option value="<?= htmlspecialchars($group['nombre']) ?>" 
+                                                    <?= ($_SESSION['form_data']['grupo'] ?? '') == $group['nombre'] ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($group['nombre']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <div class="form-text">Selecciona un grupo específico o deja vacío para dirigir a todos los usuarios</div>
+                                <?php else: ?>
+                                    <input type="text" class="form-control" id="grupo" name="grupo" 
+                                           value="<?= htmlspecialchars($_SESSION['form_data']['grupo'] ?? '') ?>"
+                                           placeholder="Ej: GeneracionesVa, Grupo mujeres Lupita, Grupo Herman, Grupo Anita">
+                                    <div class="form-text">Asigna esta actividad a un grupo específico (opcional)</div>
+                                <?php endif; ?>
                             </div>
 
                             <!-- Enlaces opcionales de actividad -->
@@ -276,7 +289,10 @@
                                 <label for="evidence_files" class="form-label">Evidencias (opcional)</label>
                                 <input type="file" class="form-control" id="evidence_files" name="evidence_files[]" 
                                        accept="image/*,video/*,audio/*" multiple>
-                                <div class="form-text">Puedes subir fotos, videos o audios relacionados con la actividad.</div>
+                                <div class="form-text">
+                                    Puedes subir fotos, videos o audios relacionados con la actividad.<br>
+                                    <strong>Límites:</strong> Videos hasta 50MB, otros archivos hasta 5MB.
+                                </div>
                             </div>
 
                             <div class="d-flex justify-content-between">
@@ -367,8 +383,44 @@
                     
                     selectAllLeadersCheckbox.checked = allChecked;
                     selectAllLeadersCheckbox.indeterminate = anyChecked && !allChecked;
+                    
+                    // NUEVO: Auto-seleccionar equipo cuando se selecciona un líder
+                    autoSelectTeamMembers(this);
                 });
             });
+        }
+        
+        // Función para auto-seleccionar miembros del equipo cuando se selecciona un líder
+        function autoSelectTeamMembers(leaderCheckbox) {
+            <?php if (!empty($teamMembersData)): ?>
+            const teamMembersData = <?= json_encode($teamMembersData) ?>;
+            const leaderId = leaderCheckbox.value;
+            const isChecked = leaderCheckbox.checked;
+            
+            // Obtener los IDs de los miembros del equipo de este líder
+            if (teamMembersData[leaderId]) {
+                const teamMemberIds = teamMembersData[leaderId];
+                
+                // Seleccionar/deseleccionar los miembros del equipo en la pestaña "Todos los Usuarios"
+                teamMemberIds.forEach(memberId => {
+                    const memberCheckbox = document.getElementById('user_' + memberId);
+                    if (memberCheckbox) {
+                        memberCheckbox.checked = isChecked;
+                    }
+                });
+                
+                // Actualizar el estado del checkbox "seleccionar todos los usuarios"
+                const selectAllUsersCheckbox = document.getElementById('select_all_users');
+                if (selectAllUsersCheckbox) {
+                    const userCheckboxes = document.querySelectorAll('.all-user-checkbox');
+                    const allChecked = Array.from(userCheckboxes).every(cb => cb.checked);
+                    const anyChecked = Array.from(userCheckboxes).some(cb => cb.checked);
+                    
+                    selectAllUsersCheckbox.checked = allChecked;
+                    selectAllUsersCheckbox.indeterminate = anyChecked && !allChecked;
+                }
+            }
+            <?php endif; ?>
         }
         
         // Funcionalidad para seleccionar/deseleccionar todos los usuarios (SuperAdmin)

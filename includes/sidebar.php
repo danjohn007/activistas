@@ -74,6 +74,16 @@ function renderSidebar($currentPage = '') {
             'text' => 'Actividades por autorizar',
             'active' => ($currentPage === 'authorization')
         ];
+        
+        // Groups management - only for SuperAdmin
+        if ($userRole === 'SuperAdmin') {
+            $menuItems[] = [
+                'url' => url('admin/groups.php'),
+                'icon' => 'fas fa-users-cog',
+                'text' => 'Gestión de Grupos',
+                'active' => ($currentPage === 'groups')
+            ];
+        }
     }
     
     // Activities - texto específico por rol

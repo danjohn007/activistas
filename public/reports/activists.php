@@ -51,6 +51,32 @@ if (!empty($_GET['fecha_hasta'])) {
     $filters['fecha_hasta'] = $_GET['fecha_hasta'];
 }
 
+// Group filtering (SuperAdmin only)
+if (!empty($_GET['grupo_id']) && $userRole === 'SuperAdmin') {
+    $filters['grupo_id'] = intval($_GET['grupo_id']);
+}
+
+// Leader filtering (SuperAdmin and Gestor)
+if (!empty($_GET['filter_lider_id']) && in_array($userRole, ['SuperAdmin', 'Gestor'])) {
+    $filters['filter_lider_id'] = intval($_GET['filter_lider_id']);
+}
+
+// Load groups and leaders for filtering
+$groups = [];
+$leaders = [];
+if ($userRole === 'SuperAdmin') {
+    require_once __DIR__ . '/../../models/group.php';
+    require_once __DIR__ . '/../../models/user.php';
+    $groupModel = new Group();
+    $userModel = new User();
+    $groups = $groupModel->getActiveGroups();
+    $leaders = $userModel->getActiveLiders();
+} elseif ($userRole === 'Gestor') {
+    require_once __DIR__ . '/../../models/user.php';
+    $userModel = new User();
+    $leaders = $userModel->getActiveLiders();
+}
+
 // Get report data
 $reportData = $activityModel->getActivistReport($filters);
 

@@ -1338,6 +1338,19 @@ class Activity {
                 $params[] = $filters['lider_id'];
             }
             
+            // Filter by specific leader (SuperAdmin/Gestor selecting a leader)
+            if (!empty($filters['filter_lider_id'])) {
+                $where[] = "(u.lider_id = ? OR u.id = ?)";
+                $params[] = $filters['filter_lider_id'];
+                $params[] = $filters['filter_lider_id'];
+            }
+            
+            // Filter by group (SuperAdmin only)
+            if (!empty($filters['grupo_id'])) {
+                $where[] = "u.grupo_id = ?";
+                $params[] = $filters['grupo_id'];
+            }
+            
             // Filter by date range
             if (!empty($filters['fecha_desde'])) {
                 $where[] = "a.fecha_actividad >= ?";
