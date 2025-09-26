@@ -241,6 +241,11 @@ class User {
                 $liderText = $liderId ? " con líder ID $liderId" : "";
                 $grupoText = $grupoId ? " en grupo ID $grupoId" : "";
                 logActivity("Usuario ID $userId aprobado$vigenciaText$rolText$liderText$grupoText");
+                
+                // If this is a leader being assigned to a group, also assign their activists
+                if ($rol === 'Líder' && $grupoId) {
+                    $this->assignActivistsToLeaderGroup($userId, $grupoId);
+                }
             }
             
             return $result;
@@ -357,6 +362,14 @@ class User {
             
             if ($result) {
                 logActivity("Usuario ID $userId actualizado");
+                
+                // If this is a leader being assigned to a group, also assign their activists
+                if (isset($data['grupo_id']) && !empty($data['grupo_id'])) {
+                    $userInfo = $this->getUserById($userId);
+                    if ($userInfo && $userInfo['rol'] === 'Líder') {
+                        $this->assignActivistsToLeaderGroup($userId, $data['grupo_id']);
+                    }
+                }
             }
             
             return $result;
@@ -673,6 +686,29 @@ class User {
         } catch (Exception $e) {
             logActivity("Error al obtener total de usuarios: " . $e->getMessage(), 'ERROR');
             return 0;
+        }
+    }
+    
+    // Assign activists to leader's group automatically
+    public function assignActivistsToLeaderGroup($liderId, $grupoId) {
+        try {
+            $stmt = $this->db->prepare("
+                UPDATE usuarios 
+                SET grupo_id = ? 
+                WHERE lider_id = ? AND rol = 'Activista' AND estado = 'activo'
+            ");
+            
+            $result = $stmt->execute([$grupoId, $liderId]);
+            
+            if ($result) {
+                $rowCount = $stmt->rowCount();
+                logActivity("Asignados $rowCount activistas al grupo ID $grupoId del líder ID $liderId");
+            }
+            
+            return $result;
+        } catch (Exception $e) {
+            logActivity("Error al asignar activistas al grupo del líder: " . $e->getMessage(), 'ERROR');
+            return false;
         }
     }
 }
