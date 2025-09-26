@@ -389,7 +389,13 @@ class Activity {
     // Obtener tipos de actividades
     public function getActivityTypes() {
         try {
-            $stmt = $this->db->prepare("SELECT * FROM tipos_actividades WHERE activo = 1 ORDER BY nombre");
+            // Use DISTINCT to avoid duplicates and add proper ordering
+            $stmt = $this->db->prepare("
+                SELECT DISTINCT id, nombre, descripcion, activo
+                FROM tipos_actividades 
+                WHERE activo = 1 
+                ORDER BY nombre
+            ");
             $stmt->execute();
             return $stmt->fetchAll();
         } catch (Exception $e) {

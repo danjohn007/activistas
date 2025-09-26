@@ -34,7 +34,7 @@ class Group {
                 FROM grupos g
                 LEFT JOIN usuarios l ON g.lider_id = l.id
                 LEFT JOIN usuarios u ON u.grupo_id = g.id AND u.estado = 'activo'
-                GROUP BY g.id
+                GROUP BY g.id, g.nombre, g.descripcion, g.lider_id, g.activo, g.fecha_creacion, g.fecha_actualizacion, l.nombre_completo
                 ORDER BY g.nombre
             ");
             $stmt->execute();

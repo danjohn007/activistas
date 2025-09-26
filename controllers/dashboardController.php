@@ -277,7 +277,13 @@ class DashboardController {
     // Obtener datos de actividades mensuales
     private function getMonthlyActivityData() {
         try {
-            $stmt = $this->activityModel->getDb()->prepare("
+            // Check if database connection is available
+            $db = $this->activityModel->getDb();
+            if (!$db) {
+                throw new Exception("No hay conexión a la base de datos disponible");
+            }
+            
+            $stmt = $db->prepare("
                 SELECT 
                     DATE_FORMAT(fecha_actividad, '%Y-%m') as mes,
                     COUNT(*) as cantidad
@@ -287,17 +293,35 @@ class DashboardController {
                 ORDER BY mes
             ");
             $stmt->execute();
-            return $stmt->fetchAll();
+            $result = $stmt->fetchAll();
+            
+            // Log successful data retrieval
+            logActivity("Datos mensuales obtenidos correctamente: " . count($result) . " registros", 'DEBUG');
+            return $result;
         } catch (Exception $e) {
             logActivity("Error al obtener datos mensuales: " . $e->getMessage(), 'ERROR');
-            return [];
+            // Return fallback data for the last 6 months
+            $fallbackData = [];
+            for ($i = 5; $i >= 0; $i--) {
+                $fallbackData[] = [
+                    'mes' => date('Y-m', strtotime("-{$i} months")),
+                    'cantidad' => 0
+                ];
+            }
+            return $fallbackData;
         }
     }
     
     // Obtener ranking de equipos
     private function getTeamRanking() {
         try {
-            $stmt = $this->activityModel->getDb()->prepare("
+            // Check if database connection is available
+            $db = $this->activityModel->getDb();
+            if (!$db) {
+                throw new Exception("No hay conexión a la base de datos disponible");
+            }
+            
+            $stmt = $db->prepare("
                 SELECT 
                     l.nombre_completo as lider_nombre,
                     COUNT(a.id) as total_actividades,
@@ -312,9 +336,14 @@ class DashboardController {
                 LIMIT 10
             ");
             $stmt->execute();
-            return $stmt->fetchAll();
+            $result = $stmt->fetchAll();
+            
+            // Log successful data retrieval
+            logActivity("Ranking de equipos obtenido correctamente: " . count($result) . " registros", 'DEBUG');
+            return $result;
         } catch (Exception $e) {
             logActivity("Error al obtener ranking de equipos: " . $e->getMessage(), 'ERROR');
+            // Return empty array as fallback
             return [];
         }
     }
