@@ -5,14 +5,17 @@
 
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../models/user.php';
+require_once __DIR__ . '/../models/group.php';
 
 class UserController {
     private $auth;
     private $userModel;
+    private $groupModel;
     
     public function __construct() {
         $this->auth = getAuth();
         $this->userModel = new User();
+        $this->groupModel = new Group();
     }
     
     // Mostrar formulario de login
@@ -171,6 +174,7 @@ class UserController {
         
         $pendingUsers = $this->userModel->getPendingUsers();
         $liders = $this->userModel->getActiveLiders();
+        $groups = $this->groupModel->getAllGroups();
         
         include __DIR__ . '/../views/admin/pending_users.php';
     }

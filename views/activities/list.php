@@ -147,6 +147,21 @@
                                 </select>
                                 <small class="text-muted">Incluye actividades del líder y su equipo</small>
                             </div>
+                            <div class="col-md-3">
+                                <label for="grupo_id" class="form-label">Filtrar por Grupos</label>
+                                <select class="form-select" id="grupo_id" name="grupo_id">
+                                    <option value="">Todos los grupos</option>
+                                    <?php if (isset($groups) && !empty($groups)): ?>
+                                        <?php foreach ($groups as $group): ?>
+                                            <option value="<?= $group['id'] ?>" <?= ($_GET['grupo_id'] ?? '') == $group['id'] ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($group['nombre']) ?>
+                                                <small>(<?= $group['miembros_count'] ?? 0 ?> miembros)</small>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                                <small class="text-muted">Muestra actividades de usuarios en el grupo seleccionado</small>
+                            </div>
                             <?php endif; ?>
                         </form>
                     </div>

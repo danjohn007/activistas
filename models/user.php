@@ -374,7 +374,16 @@ class User {
                 throw new Exception("No hay conexión a la base de datos disponible");
             }
             
-            $stmt = $this->db->prepare("SELECT * FROM vista_estadisticas_usuarios");
+            // Use direct query instead of view to avoid dependency issues
+            $stmt = $this->db->prepare("
+                SELECT rol, 
+                       COUNT(*) as total,
+                       COUNT(CASE WHEN estado = 'activo' THEN 1 END) as activos,
+                       COUNT(CASE WHEN estado = 'pendiente' THEN 1 END) as pendientes,
+                       COUNT(CASE WHEN estado = 'suspendido' THEN 1 END) as suspendidos
+                FROM usuarios 
+                GROUP BY rol
+            ");
             $stmt->execute();
             $stats = $stmt->fetchAll();
             
@@ -382,10 +391,10 @@ class User {
             $result = [];
             foreach ($stats as $stat) {
                 $result[$stat['rol']] = [
-                    'total' => $stat['total'],
-                    'activos' => $stat['activos'],
-                    'pendientes' => $stat['pendientes'],
-                    'suspendidos' => $stat['suspendidos']
+                    'total' => (int)$stat['total'],
+                    'activos' => (int)$stat['activos'],
+                    'pendientes' => (int)$stat['pendientes'],
+                    'suspendidos' => (int)$stat['suspendidos']
                 ];
             }
             

@@ -6,16 +6,19 @@
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../models/activity.php';
 require_once __DIR__ . '/../models/user.php';
+require_once __DIR__ . '/../models/group.php';
 
 class ActivityController {
     private $auth;
     private $activityModel;
     private $userModel;
+    private $groupModel;
     
     public function __construct() {
         $this->auth = getAuth();
         $this->activityModel = new Activity();
         $this->userModel = new User();
+        $this->groupModel = new Group();
     }
     
     // Mostrar lista de actividades
@@ -67,6 +70,10 @@ class ActivityController {
             if (!empty($_GET['filter_lider_id'])) {
                 $filters['filter_lider_id'] = intval($_GET['filter_lider_id']);
             }
+            // Add group filter for SuperAdmin - shows activities from users in the specified group
+            if (!empty($_GET['grupo_id'])) {
+                $filters['grupo_id'] = intval($_GET['grupo_id']);
+            }
         }
         
         // Pagination parameters
@@ -80,10 +87,12 @@ class ActivityController {
         $totalPages = ceil($totalActivities / $perPage);
         $activityTypes = $this->activityModel->getActivityTypes();
         
-        // Get list of leaders for SuperAdmin filter
+        // Get list of leaders and groups for SuperAdmin filter
         $leaders = [];
+        $groups = [];
         if ($currentUser['rol'] === 'SuperAdmin') {
-            $leaders = $this->userModel->getActiveLiders(); 
+            $leaders = $this->userModel->getActiveLiders();
+            $groups = $this->groupModel->getAllGroups();
         }
         
         // Add evidence for completed activities
@@ -206,6 +215,22 @@ class ActivityController {
                 }
                 
                 // Remove duplicates in case there are any overlapping assignments
+                $recipients = array_unique($recipients);
+                $shouldCreateForRecipients = true;
+            } elseif (!empty($_POST['destinatarios_grupos'])) {
+                // SuperAdmin selected groups as recipients
+                // Get all members from the selected groups
+                $selectedGroups = array_map('intval', $_POST['destinatarios_grupos']);
+                $recipients = [];
+                
+                foreach ($selectedGroups as $groupId) {
+                    $groupMembers = $this->groupModel->getGroupMembers($groupId);
+                    foreach ($groupMembers as $member) {
+                        $recipients[] = intval($member['id']);
+                    }
+                }
+                
+                // Remove duplicates in case users belong to multiple selected groups
                 $recipients = array_unique($recipients);
                 $shouldCreateForRecipients = true;
             } elseif (!empty($_POST['destinatarios_todos'])) {
