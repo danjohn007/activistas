@@ -134,6 +134,7 @@ class ActivityController {
         // Load groups for SuperAdmin
         $groups = [];
         $teamMembersData = [];
+        $groupMembersData = [];
         if ($currentUser['rol'] === 'SuperAdmin') {
             require_once __DIR__ . '/../models/group.php';
             $groupModel = new Group();
@@ -144,6 +145,12 @@ class ActivityController {
             foreach ($leaders as $leader) {
                 $teamMembers = $this->userModel->getActivistsOfLeader($leader['id']);
                 $teamMembersData[$leader['id']] = array_column($teamMembers, 'id');
+            }
+            
+            // Get group members for each group to support auto-selection
+            foreach ($groups as $group) {
+                $groupMembers = $groupModel->getGroupMembers($group['id']);
+                $groupMembersData[$group['id']] = array_column($groupMembers, 'id');
             }
         }
         

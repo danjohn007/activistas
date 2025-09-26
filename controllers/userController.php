@@ -201,6 +201,7 @@ class UserController {
             
             $rol = cleanInput($_POST['rol'] ?? '');
             $liderId = !empty($_POST['lider_id']) ? intval($_POST['lider_id']) : null;
+            $grupoId = !empty($_POST['grupo_id']) ? intval($_POST['grupo_id']) : null;
             
             // Validate role
             $currentUser = $this->auth->getCurrentUser();
@@ -220,7 +221,7 @@ class UserController {
                 $liderId = null;
             }
             
-            $result = $this->userModel->approveUserWithRoleAndLeader($userId, $vigenciaHasta, $rol, $liderId);
+            $result = $this->userModel->approveUserWithRoleLeaderAndGroup($userId, $vigenciaHasta, $rol, $liderId, $grupoId);
             $message = $result ? 'Usuario aprobado exitosamente' : 'Error al aprobar usuario';
         } else {
             // Handle rejection

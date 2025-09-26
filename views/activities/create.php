@@ -183,6 +183,13 @@
                                             Líderes
                                         </button>
                                     </li>
+                                    <?php if (!empty($groups)): ?>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="groups-tab" data-bs-toggle="tab" data-bs-target="#groups" type="button" role="tab">
+                                            Grupos
+                                        </button>
+                                    </li>
+                                    <?php endif; ?>
                                     <li class="nav-item" role="presentation">
                                         <button class="nav-link" id="all-users-tab" data-bs-toggle="tab" data-bs-target="#all-users" type="button" role="tab">
                                             Todos los Usuarios
@@ -221,6 +228,31 @@
                                         <?php endif; ?>
                                         <div class="form-text mt-2">La actividad aparecerá como tarea pendiente para los líderes seleccionados y sus activistas.</div>
                                     </div>
+                                    
+                                    <!-- Groups tab -->
+                                    <?php if (!empty($groups)): ?>
+                                    <div class="tab-pane fade" id="groups" role="tabpanel">
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="select_all_groups">
+                                            <label class="form-check-label fw-bold" for="select_all_groups">
+                                                Seleccionar/Deseleccionar todos los grupos
+                                            </label>
+                                        </div>
+                                        <hr>
+                                        <?php foreach ($groups as $group): ?>
+                                            <div class="form-check">
+                                                <input class="form-check-input group-checkbox" type="checkbox" 
+                                                       id="grupo_<?= $group['id'] ?>" name="destinatarios_grupos[]" 
+                                                       value="<?= $group['id'] ?>">
+                                                <label class="form-check-label" for="grupo_<?= $group['id'] ?>">
+                                                    <?= htmlspecialchars($group['nombre']) ?>
+                                                    <small class="text-muted">(<?= $group['miembros_count'] ?? 0 ?> miembros)</small>
+                                                </label>
+                                            </div>
+                                        <?php endforeach; ?>
+                                        <div class="form-text mt-2">La actividad aparecerá como tarea pendiente para todos los miembros del grupo seleccionado.</div>
+                                    </div>
+                                    <?php endif; ?>
                                     
                                     <!-- All users tab -->
                                     <div class="tab-pane fade" id="all-users" role="tabpanel">
@@ -397,15 +429,21 @@
             const leaderId = leaderCheckbox.value;
             const isChecked = leaderCheckbox.checked;
             
+            console.log('🎯 Auto-seleccionando equipo para líder:', leaderId, 'Checked:', isChecked);
+            
             // Obtener los IDs de los miembros del equipo de este líder
             if (teamMembersData[leaderId]) {
                 const teamMemberIds = teamMembersData[leaderId];
+                console.log('👥 Miembros del equipo encontrados:', teamMemberIds);
                 
                 // Seleccionar/deseleccionar los miembros del equipo en la pestaña "Todos los Usuarios"
                 teamMemberIds.forEach(memberId => {
                     const memberCheckbox = document.getElementById('user_' + memberId);
                     if (memberCheckbox) {
                         memberCheckbox.checked = isChecked;
+                        console.log('✅ Miembro', memberId, isChecked ? 'seleccionado' : 'deseleccionado');
+                    } else {
+                        console.warn('⚠️ No se encontró checkbox para miembro:', memberId);
                     }
                 });
                 
@@ -419,8 +457,83 @@
                     selectAllUsersCheckbox.checked = allChecked;
                     selectAllUsersCheckbox.indeterminate = anyChecked && !allChecked;
                 }
+            } else {
+                console.log('ℹ️ No se encontraron miembros para el líder:', leaderId);
             }
+            <?php else: ?>
+            console.warn('⚠️ No hay datos de equipos disponibles para auto-selección');
             <?php endif; ?>
+        }
+        
+        // Función para auto-seleccionar miembros del grupo cuando se selecciona un grupo
+        function autoSelectGroupMembers(groupCheckbox) {
+            <?php if (!empty($groupMembersData)): ?>
+            const groupMembersData = <?= json_encode($groupMembersData) ?>;
+            const groupId = groupCheckbox.value;
+            const isChecked = groupCheckbox.checked;
+            
+            console.log('🏢 Auto-seleccionando grupo:', groupId, 'Checked:', isChecked);
+            
+            // Obtener los IDs de los miembros del grupo
+            if (groupMembersData[groupId]) {
+                const groupMemberIds = groupMembersData[groupId];
+                console.log('👥 Miembros del grupo encontrados:', groupMemberIds);
+                
+                // Seleccionar/deseleccionar los miembros del grupo en la pestaña "Todos los Usuarios"
+                groupMemberIds.forEach(memberId => {
+                    const memberCheckbox = document.getElementById('user_' + memberId);
+                    if (memberCheckbox) {
+                        memberCheckbox.checked = isChecked;
+                        console.log('✅ Miembro del grupo', memberId, isChecked ? 'seleccionado' : 'deseleccionado');
+                    } else {
+                        console.warn('⚠️ No se encontró checkbox para miembro del grupo:', memberId);
+                    }
+                });
+                
+                // Actualizar el estado del checkbox "seleccionar todos los usuarios"
+                const selectAllUsersCheckbox = document.getElementById('select_all_users');
+                if (selectAllUsersCheckbox) {
+                    const userCheckboxes = document.querySelectorAll('.all-user-checkbox');
+                    const allChecked = Array.from(userCheckboxes).every(cb => cb.checked);
+                    const anyChecked = Array.from(userCheckboxes).some(cb => cb.checked);
+                    
+                    selectAllUsersCheckbox.checked = allChecked;
+                    selectAllUsersCheckbox.indeterminate = anyChecked && !allChecked;
+                }
+            } else {
+                console.log('ℹ️ No se encontraron miembros para el grupo:', groupId);
+            }
+            <?php else: ?>
+            console.warn('⚠️ No hay datos de grupos disponibles para auto-selección');
+            <?php endif; ?>
+        }
+        
+        // Funcionalidad para seleccionar/deseleccionar todos los grupos (SuperAdmin)
+        const selectAllGroupsCheckbox = document.getElementById('select_all_groups');
+        if (selectAllGroupsCheckbox) {
+            selectAllGroupsCheckbox.addEventListener('change', function() {
+                const groupCheckboxes = document.querySelectorAll('.group-checkbox');
+                groupCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                    // Auto-seleccionar miembros del grupo
+                    autoSelectGroupMembers(checkbox);
+                });
+            });
+
+            // Actualizar el estado del checkbox "seleccionar todos" cuando se cambian los individuales
+            const groupCheckboxes = document.querySelectorAll('.group-checkbox');
+            groupCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const allChecked = Array.from(groupCheckboxes).every(cb => cb.checked);
+                    const anyChecked = Array.from(groupCheckboxes).some(cb => cb.checked);
+                    
+                    selectAllGroupsCheckbox.checked = allChecked;
+                    selectAllGroupsCheckbox.indeterminate = anyChecked && !allChecked;
+                    
+                    // Auto-seleccionar miembros del grupo
+                    autoSelectGroupMembers(this);
+                });
+            });
         }
         
         // Funcionalidad para seleccionar/deseleccionar todos los usuarios (SuperAdmin)

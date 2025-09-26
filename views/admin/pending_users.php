@@ -151,6 +151,7 @@
         <input type="hidden" name="vigencia_hasta" id="vigenciaHasta">
         <input type="hidden" name="rol" id="rolHidden">
         <input type="hidden" name="lider_id" id="liderHidden">
+        <input type="hidden" name="grupo_id" id="grupoHidden">
     </form>
 
     <!-- Modal para selección de vigencia -->
@@ -192,6 +193,27 @@
                         <div class="form-text">Solo requerido para activistas.</div>
                     </div>
                     
+                    <!-- Group Assignment - only for SuperAdmin -->
+                    <?php if ($_SESSION['user_role'] === 'SuperAdmin'): ?>
+                    <?php 
+                    require_once __DIR__ . '/../../models/group.php';
+                    $groupModel = new Group();
+                    $availableGroups = $groupModel->getActiveGroups();
+                    ?>
+                    <?php if (!empty($availableGroups)): ?>
+                    <div class="mb-3">
+                        <label for="grupoInput" class="form-label">Grupo (opcional):</label>
+                        <select class="form-select" id="grupoInput">
+                            <option value="">Sin grupo específico</option>
+                            <?php foreach ($availableGroups as $group): ?>
+                                <option value="<?= $group['id'] ?>"><?= htmlspecialchars($group['nombre']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div class="form-text">Asignar usuario a un grupo específico (opcional).</div>
+                    </div>
+                    <?php endif; ?>
+                    <?php endif; ?>
+                    
                     <!-- Vigencia -->
                     <div class="mb-3">
                         <label for="vigenciaInput" class="form-label">Vigencia hasta (opcional):</label>
@@ -228,6 +250,9 @@
             document.getElementById('vigenciaInput').value = '';
             document.getElementById('rolInput').value = 'Activista'; // default to Activista
             document.getElementById('liderInput').value = '';
+            if (document.getElementById('grupoInput')) {
+                document.getElementById('grupoInput').value = '';
+            }
             document.getElementById('liderInputSection').style.display = 'block';
             
             const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
@@ -238,11 +263,13 @@
             const vigencia = document.getElementById('vigenciaInput').value;
             const rol = document.getElementById('rolInput').value;
             const lider = document.getElementById('liderInput').value;
+            const grupo = document.getElementById('grupoInput') ? document.getElementById('grupoInput').value : '';
             
             document.getElementById('processAction').value = 'approve';
             document.getElementById('vigenciaHasta').value = vigencia || '';
             document.getElementById('rolHidden').value = rol;
             document.getElementById('liderHidden').value = lider || '';
+            document.getElementById('grupoHidden').value = grupo || '';
             
             // Close modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('approvalModal'));
@@ -260,6 +287,7 @@
                 document.getElementById('vigenciaHasta').value = '';
                 document.getElementById('rolHidden').value = '';
                 document.getElementById('liderHidden').value = '';
+                document.getElementById('grupoHidden').value = '';
                 document.getElementById('processForm').submit();
             }
         }

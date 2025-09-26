@@ -203,6 +203,53 @@ class User {
         }
     }
     
+    // Aprobar usuario con vigencia, rol, líder y grupo
+    public function approveUserWithRoleLeaderAndGroup($userId, $vigenciaHasta = null, $rol = null, $liderId = null, $grupoId = null) {
+        try {
+            $sql = "UPDATE usuarios SET estado = 'activo'";
+            $params = [];
+            
+            if ($vigenciaHasta && !empty($vigenciaHasta)) {
+                $sql .= ", vigencia_hasta = ?";
+                $params[] = $vigenciaHasta;
+            }
+            
+            if ($rol && !empty($rol)) {
+                $sql .= ", rol = ?";
+                $params[] = $rol;
+            }
+            
+            if ($liderId !== null) {
+                $sql .= ", lider_id = ?";
+                $params[] = $liderId;
+            }
+            
+            if ($grupoId !== null) {
+                $sql .= ", grupo_id = ?";
+                $params[] = $grupoId;
+            }
+            
+            $sql .= " WHERE id = ?";
+            $params[] = $userId;
+            
+            $stmt = $this->db->prepare($sql);
+            $result = $stmt->execute($params);
+            
+            if ($result) {
+                $vigenciaText = $vigenciaHasta ? " con vigencia hasta $vigenciaHasta" : "";
+                $rolText = $rol ? " como $rol" : "";
+                $liderText = $liderId ? " con líder ID $liderId" : "";
+                $grupoText = $grupoId ? " en grupo ID $grupoId" : "";
+                logActivity("Usuario ID $userId aprobado$vigenciaText$rolText$liderText$grupoText");
+            }
+            
+            return $result;
+        } catch (Exception $e) {
+            logActivity("Error al aprobar usuario con rol, líder y grupo: " . $e->getMessage(), 'ERROR');
+            return false;
+        }
+    }
+    
     // Actualizar solo la vigencia de un usuario
     public function updateUserVigencia($userId, $vigenciaHasta = null) {
         try {
@@ -290,6 +337,12 @@ class User {
             if (isset($data['rol'])) {
                 $fields[] = "rol = ?";
                 $params[] = $data['rol'];
+            }
+            
+            // Handle group assignment
+            if (isset($data['grupo_id'])) {
+                $fields[] = "grupo_id = ?";
+                $params[] = $data['grupo_id'];
             }
             
             if (empty($fields)) {
