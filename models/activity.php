@@ -182,6 +182,12 @@ class Activity {
                 $params[] = $filters['filter_lider_id'];
             }
             
+            // Filter activities by group - shows activities from users in the specified group
+            if (!empty($filters['grupo_id'])) {
+                $sql .= " AND u.grupo_id = ?";
+                $params[] = $filters['grupo_id'];
+            }
+            
             $sql .= " ORDER BY a.fecha_actividad DESC, a.fecha_creacion DESC";
             
             // Add pagination support
@@ -284,6 +290,12 @@ class Activity {
                 $sql .= " AND (a.usuario_id = ? OR u.lider_id = ?)";
                 $params[] = $filters['filter_lider_id'];
                 $params[] = $filters['filter_lider_id'];
+            }
+            
+            // Filter activities by group - shows activities from users in the specified group
+            if (!empty($filters['grupo_id'])) {
+                $sql .= " AND u.grupo_id = ?";
+                $params[] = $filters['grupo_id'];
             }
             
             $stmt = $this->db->prepare($sql);
@@ -526,6 +538,11 @@ class Activity {
                 $params[] = $filters['lider_id'];
             }
             
+            if (!empty($filters['grupo_id'])) {
+                $sql .= " AND u.grupo_id = ?";
+                $params[] = $filters['grupo_id'];
+            }
+            
             if (!empty($filters['fecha_desde'])) {
                 $sql .= " AND a.fecha_actividad >= ?";
                 $params[] = $filters['fecha_desde'];
@@ -558,8 +575,8 @@ class Activity {
                     FROM tipos_actividades ta
                     LEFT JOIN actividades a ON ta.id = a.tipo_actividad_id";
             
-            // Agregar JOIN con usuarios si necesitamos filtrar por líder
-            if (!empty($filters['lider_id'])) {
+            // Agregar JOIN con usuarios si necesitamos filtrar por líder o grupo
+            if (!empty($filters['lider_id']) || !empty($filters['grupo_id'])) {
                 $sql .= " LEFT JOIN usuarios u ON a.usuario_id = u.id";
             }
             
@@ -575,6 +592,11 @@ class Activity {
                 $where[] = "(a.usuario_id = ? OR u.lider_id = ?)";
                 $params[] = $filters['lider_id'];
                 $params[] = $filters['lider_id'];
+            }
+            
+            if (!empty($filters['grupo_id'])) {
+                $where[] = "u.grupo_id = ?";
+                $params[] = $filters['grupo_id'];
             }
             
             if (!empty($filters['fecha_desde'])) {

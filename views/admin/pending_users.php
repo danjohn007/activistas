@@ -195,18 +195,13 @@
                     
                     <!-- Group Assignment - only for SuperAdmin -->
                     <?php if ($_SESSION['user_role'] === 'SuperAdmin'): ?>
-                    <?php 
-                    require_once __DIR__ . '/../../models/group.php';
-                    $groupModel = new Group();
-                    $availableGroups = $groupModel->getActiveGroups();
-                    ?>
-                    <?php if (!empty($availableGroups)): ?>
+                    <?php if (!empty($groups)): ?>
                     <div class="mb-3">
                         <label for="grupoInput" class="form-label">Grupo (opcional):</label>
                         <select class="form-select" id="grupoInput">
                             <option value="">Sin grupo específico</option>
-                            <?php foreach ($availableGroups as $group): ?>
-                                <option value="<?= $group['id'] ?>"><?= htmlspecialchars($group['nombre']) ?></option>
+                            <?php foreach ($groups as $group): ?>
+                                <option value="<?= $group['id'] ?>"><?= htmlspecialchars($group['nombre']) ?> (<?= $group['miembros_count'] ?? 0 ?> miembros)</option>
                             <?php endforeach; ?>
                         </select>
                         <div class="form-text">Asignar usuario a un grupo específico (opcional).</div>

@@ -43,14 +43,14 @@ ORDER BY completadas DESC, total_actividades DESC;
 -- =============================================================
 -- New functionality uses grupos table and grupo_id column in usuarios
 
--- Approve user with group assignment:
+-- Aprobar usuario con asignación de grupo (EJEMPLO):
 UPDATE usuarios 
 SET estado = 'activo', 
-    vigencia_hasta = ?, 
-    rol = ?, 
-    lider_id = ?, 
-    grupo_id = ?
-WHERE id = ?;
+    vigencia_hasta = '2025-12-31',   -- <--- Poner fecha deseada de vigencia
+    rol = 'Miembro',                 -- <--- Poner rol deseado
+    lider_id = 5,                    -- <--- Poner ID de líder
+    grupo_id = 2                     -- <--- Poner ID de grupo
+WHERE id = 42;                       -- <--- Poner ID de usuario a aprobar
 
 -- Get active groups for selection:
 SELECT g.*, 
@@ -68,13 +68,13 @@ ORDER BY g.nombre;
 -- =============================================================
 -- Uses existing updateUser method now enhanced with grupo_id support
 
--- Update user with group assignment:
+-- Actualizar usuario con asignación de grupo (EJEMPLO):
 UPDATE usuarios 
-SET nombre_completo = ?, 
-    telefono = ?, 
-    direccion = ?, 
-    grupo_id = ?
-WHERE id = ?;
+SET nombre_completo = 'Juan Perez', -- <--- Poner nombre completo
+    telefono = '12345678',          -- <--- Poner teléfono
+    direccion = 'Calle Falsa 123',  -- <--- Poner dirección
+    grupo_id = 2                    -- <--- Poner ID de grupo
+WHERE id = 42;                      -- <--- Poner ID de usuario a actualizar
 
 -- =============================================================
 -- Fix 4: Auto-selection of Team/Group Members
@@ -83,14 +83,14 @@ WHERE id = ?;
 SELECT u.*, l.nombre_completo as lider_nombre
 FROM usuarios u
 LEFT JOIN usuarios l ON u.lider_id = l.id
-WHERE u.lider_id = ? AND u.estado = 'activo'
+WHERE u.lider_id = 5 AND u.estado = 'activo' -- <--- Poner ID de líder deseado
 ORDER BY u.rol, u.nombre_completo;
 
 -- Group members query (enhanced):
 SELECT u.*, l.nombre_completo as lider_nombre
 FROM usuarios u
 LEFT JOIN usuarios l ON u.lider_id = l.id
-WHERE u.grupo_id = ? AND u.estado = 'activo'
+WHERE u.grupo_id = 2 AND u.estado = 'activo' -- <--- Poner ID de grupo deseado
 ORDER BY u.rol, u.nombre_completo;
 
 -- =============================================================
