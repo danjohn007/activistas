@@ -394,6 +394,81 @@ try {
                     </div>
                 </div>
 
+                <!-- Métricas del mes actual -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h3 class="h4 mb-3">Métricas del Mes Actual (<?= date('F Y') ?>)</h3>
+                    </div>
+                    <?php 
+                    $currentMonthMetrics = $GLOBALS['currentMonthMetrics'] ?? [];
+                    $totalMes = isset($currentMonthMetrics['total_actividades_mes']) ? $currentMonthMetrics['total_actividades_mes'] : 0;
+                    $completadasMes = isset($currentMonthMetrics['completadas_mes']) ? $currentMonthMetrics['completadas_mes'] : 0;
+                    $programadasMes = isset($currentMonthMetrics['programadas_mes']) ? $currentMonthMetrics['programadas_mes'] : 0;
+                    $enProgresoMes = isset($currentMonthMetrics['en_progreso_mes']) ? $currentMonthMetrics['en_progreso_mes'] : 0;
+                    $alcanceMes = isset($currentMonthMetrics['alcance_total_mes']) ? $currentMonthMetrics['alcance_total_mes'] : 0;
+                    ?>
+                    
+                    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body text-center">
+                                <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                                <h5><?= number_format($totalMes) ?></h5>
+                                <small>Total del Mes</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <i class="fas fa-check-circle fa-2x mb-2"></i>
+                                <h5><?= number_format($completadasMes) ?></h5>
+                                <small>Completadas</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body text-center">
+                                <i class="fas fa-clock fa-2x mb-2"></i>
+                                <h5><?= number_format($programadasMes) ?></h5>
+                                <small>Programadas</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                        <div class="card bg-warning text-white">
+                            <div class="card-body text-center">
+                                <i class="fas fa-spinner fa-2x mb-2"></i>
+                                <h5><?= number_format($enProgresoMes) ?></h5>
+                                <small>En Progreso</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                        <div class="card bg-secondary text-white">
+                            <div class="card-body text-center">
+                                <i class="fas fa-users fa-2x mb-2"></i>
+                                <h5><?= number_format($alcanceMes) ?></h5>
+                                <small>Alcance Total</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                        <div class="card bg-dark text-white">
+                            <div class="card-body text-center">
+                                <i class="fas fa-percentage fa-2x mb-2"></i>
+                                <h5><?= $totalMes > 0 ? number_format(($completadasMes / $totalMes) * 100, 1) : '0.0' ?>%</h5>
+                                <small>% Completado</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Gráficas y estadísticas -->
                 <div class="row mb-4">
                     <div class="col-md-8">

@@ -143,6 +143,12 @@
                                                                 <i class="fas fa-play"></i>
                                                             </button>
                                                         <?php endif; ?>
+                                                        
+                                                        <button type="button" class="btn btn-outline-danger" 
+                                                                onclick="deleteActivityType(<?= $type['id'] ?>, '<?= htmlspecialchars($type['nombre']) ?>')" 
+                                                                title="Eliminar">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -196,6 +202,70 @@
                 document.getElementById('statusForm').action = '<?= url('activity-types/toggle.php') ?>';
                 document.getElementById('statusForm').submit();
             }
+        }
+        
+        function deleteActivityType(id, name) {
+            if (confirm(`¿Está seguro de que desea ELIMINAR permanentemente el tipo de actividad "${name}"? Esta acción no se puede deshacer y fallará si hay actividades usando este tipo.`)) {
+                // Show loading state
+                const deleteBtn = event.target.closest('button');
+                const originalContent = deleteBtn.innerHTML;
+                deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                deleteBtn.disabled = true;
+                
+                // Make AJAX call
+                fetch('<?= url('api/activity-types.php') ?>', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'delete',
+                        type_id: id
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert('success', data.message);
+                        // Reload page after 2 seconds to show the updated list
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        showAlert('danger', data.error || 'Error al eliminar tipo de actividad');
+                        // Restore button
+                        deleteBtn.innerHTML = originalContent;
+                        deleteBtn.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('danger', 'Error de conexión al eliminar tipo de actividad');
+                    // Restore button
+                    deleteBtn.innerHTML = originalContent;
+                    deleteBtn.disabled = false;
+                });
+            }
+        }
+        
+        function showAlert(type, message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const container = document.querySelector('main');
+            const firstChild = container.firstElementChild;
+            container.insertBefore(alertDiv, firstChild.nextElementSibling);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
         }
     </script>
 </body>

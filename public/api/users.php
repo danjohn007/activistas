@@ -82,6 +82,31 @@ try {
             }
             break;
             
+        case 'delete':
+            // Only SuperAdmin can delete users
+            if ($currentUser['rol'] !== 'SuperAdmin') {
+                throw new Exception('No tienes permisos para eliminar usuarios');
+            }
+            
+            // Check if user has activities or is a leader with activists
+            $userInfo = $userModel->getUserById($userId);
+            if (!$userInfo) {
+                throw new Exception('Usuario no encontrado');
+            }
+            
+            // For safety, we'll use soft delete by setting status to 'eliminado'
+            $result = $userModel->updateUserStatus($userId, 'eliminado');
+            if ($result) {
+                logActivity("Usuario ID $userId eliminado (soft delete) por SuperAdmin " . $currentUser['nombre_completo']);
+                $response = [
+                    'success' => true,
+                    'message' => 'Usuario eliminado exitosamente'
+                ];
+            } else {
+                throw new Exception('Error al eliminar usuario');
+            }
+            break;
+            
         case 'change_password':
             // Only SuperAdmin can change passwords for other users
             if ($currentUser['rol'] !== 'SuperAdmin') {
