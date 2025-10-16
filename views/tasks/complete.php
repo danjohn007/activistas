@@ -134,9 +134,9 @@
                 <!-- Advertencia importante -->
                 <div class="alert alert-warning mb-4">
                     <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>¡Importante!</strong> Una vez que subas la evidencia, esta tarea se marcará como completada 
-                    automáticamente y <strong>no podrás modificar la evidencia</strong>. Se registrará la hora exacta 
-                    de finalización para el cálculo del ranking.
+                    <strong>¡Importante!</strong> Para completar esta tarea es <strong>OBLIGATORIO subir al menos una foto o archivo como evidencia</strong>. 
+                    Una vez que subas la evidencia, esta tarea se marcará como completada automáticamente y <strong>no podrás modificar la evidencia</strong>. 
+                    Se registrará la hora exacta de finalización para el cálculo del ranking.
                 </div>
 
                 <!-- Formulario de evidencia -->
@@ -167,13 +167,14 @@
                                 
                                 <div class="col-md-6 mb-3">
                                     <label for="archivo" class="form-label">
-                                        <i class="fas fa-file me-1"></i>Archivos de Evidencia (Obligatorio) *
+                                        <i class="fas fa-file me-1"></i>Archivos de Evidencia (OBLIGATORIO) *
                                     </label>
                                     <input type="file" class="form-control" id="archivo" name="archivo[]" 
                                            accept="image/*,video/*,audio/*" required multiple>
                                     <div class="form-text">
+                                        <strong class="text-danger">OBLIGATORIO:</strong> Debes subir al menos una foto o archivo para completar la tarea.<br>
                                         Máximo 20MB por archivo. Formatos: JPG, PNG, GIF, MP4, MP3, WAV<br>
-                                        <strong>Nuevo:</strong> Puedes seleccionar múltiples archivos manteniendo Ctrl (Windows) o Cmd (Mac) mientras haces clic.
+                                        Puedes seleccionar múltiples archivos manteniendo Ctrl (Windows) o Cmd (Mac) mientras haces clic.
                                     </div>
                                 </div>
                             </div>
@@ -291,6 +292,14 @@
         // Confirmación antes de enviar
         document.querySelector('form').addEventListener('submit', function(e) {
             const files = document.getElementById('archivo').files;
+            
+            // VALIDACIÓN CRÍTICA: Asegurar que se haya seleccionado al menos un archivo
+            if (!files || files.length === 0) {
+                alert('ERROR: No se puede completar la tarea sin subir evidencia.\n\nDebe seleccionar al menos una foto o archivo antes de continuar.');
+                e.preventDefault();
+                return;
+            }
+            
             let oversizedFiles = 0;
             
             for (let i = 0; i < files.length; i++) {
@@ -305,7 +314,7 @@
                 return;
             }
             
-            if (!confirm(`¿Estás seguro de que deseas completar esta tarea con ${files.length} archivo(s)? Una vez enviada la evidencia no podrás modificarla.`)) {
+            if (!confirm(`¿Estás seguro de que deseas completar esta tarea con ${files.length} archivo(s)?\n\nUna vez enviada la evidencia no podrás modificarla.`)) {
                 e.preventDefault();
             }
         });
