@@ -231,5 +231,168 @@ class Group {
             return [];
         }
     }
+    
+    /**
+     * Get best performers by group (Líderes and Activistas with highest compliance percentage)
+     * Returns the top performers for each group
+     * 
+     * @param array $filters Optional filters: fecha_desde, fecha_hasta
+     * @param int $page Page number for pagination
+     * @param int $perPage Items per page (groups per page)
+     * @return array Array with groups and their best performers
+     */
+    public function getBestPerformersByGroup($filters = [], $page = 1, $perPage = 20) {
+        try {
+            $params = [];
+            $dateFilter = '';
+            
+            // Date filters
+            if (!empty($filters['fecha_desde'])) {
+                $dateFilter .= " AND a.fecha_creacion >= ?";
+                $params[] = $filters['fecha_desde'] . ' 00:00:00';
+            }
+            
+            if (!empty($filters['fecha_hasta'])) {
+                $dateFilter .= " AND a.fecha_creacion <= ?";
+                $params[] = $filters['fecha_hasta'] . ' 23:59:59';
+            }
+            
+            // Get all active groups with pagination
+            $offset = ($page - 1) * $perPage;
+            $groupsQuery = "
+                SELECT g.id, g.nombre, g.descripcion
+                FROM grupos g
+                WHERE g.activo = 1
+                ORDER BY g.nombre
+                LIMIT ? OFFSET ?
+            ";
+            
+            $groupStmt = $this->db->prepare($groupsQuery);
+            $groupStmt->execute([$perPage, $offset]);
+            $groups = $groupStmt->fetchAll();
+            
+            // Get total count for pagination
+            $countStmt = $this->db->prepare("SELECT COUNT(*) as total FROM grupos WHERE activo = 1");
+            $countStmt->execute();
+            $totalGroups = $countStmt->fetch()['total'];
+            
+            // For each group, get best performers (leaders and activists)
+            foreach ($groups as &$group) {
+                // Build the query to get best performers in this group
+                $performersQuery = "
+                    SELECT 
+                        u.id,
+                        u.nombre_completo,
+                        u.email,
+                        u.rol,
+                        COALESCE(completed.total, 0) as tareas_completadas,
+                        COALESCE(pending.total, 0) as tareas_asignadas,
+                        ROUND(
+                            CASE 
+                                WHEN COALESCE(pending.total, 0) > 0 THEN (COALESCE(completed.total, 0) * 100.0 / pending.total)
+                                ELSE 0 
+                            END, 2
+                        ) as porcentaje_cumplimiento,
+                        u.ranking_puntos
+                    FROM usuarios u
+                    LEFT JOIN (
+                        SELECT 
+                            usuario_id,
+                            COUNT(*) as total
+                        FROM actividades
+                        WHERE estado = 'completada' AND autorizada = 1 $dateFilter
+                        GROUP BY usuario_id
+                    ) completed ON u.id = completed.usuario_id
+                    LEFT JOIN (
+                        SELECT 
+                            usuario_id,
+                            COUNT(*) as total
+                        FROM actividades
+                        WHERE tarea_pendiente = 1 $dateFilter
+                        GROUP BY usuario_id
+                    ) pending ON u.id = pending.usuario_id
+                    WHERE u.grupo_id = ? AND u.estado = 'activo' 
+                        AND u.id != 1  -- Exclude system admin user
+                    ORDER BY porcentaje_cumplimiento DESC, u.ranking_puntos DESC
+                    LIMIT 5
+                ";
+                
+                $performersStmt = $this->db->prepare($performersQuery);
+                // Params need to be duplicated: first for completed subquery date filter, 
+                // second for pending subquery date filter, then group ID
+                $performersParams = array_merge($params, $params, [$group['id']]);
+                $performersStmt->execute($performersParams);
+                $group['best_performers'] = $performersStmt->fetchAll();
+                
+                // Get leader separately if exists
+                $leaderQuery = "
+                    SELECT 
+                        u.id,
+                        u.nombre_completo,
+                        u.email,
+                        u.rol,
+                        COALESCE(completed.total, 0) as tareas_completadas,
+                        COALESCE(pending.total, 0) as tareas_asignadas,
+                        ROUND(
+                            CASE 
+                                WHEN COALESCE(pending.total, 0) > 0 THEN (COALESCE(completed.total, 0) * 100.0 / pending.total)
+                                ELSE 0 
+                            END, 2
+                        ) as porcentaje_cumplimiento,
+                        u.ranking_puntos
+                    FROM usuarios u
+                    LEFT JOIN (
+                        SELECT 
+                            usuario_id,
+                            COUNT(*) as total
+                        FROM actividades
+                        WHERE estado = 'completada' AND autorizada = 1 $dateFilter
+                        GROUP BY usuario_id
+                    ) completed ON u.id = completed.usuario_id
+                    LEFT JOIN (
+                        SELECT 
+                            usuario_id,
+                            COUNT(*) as total
+                        FROM actividades
+                        WHERE tarea_pendiente = 1 $dateFilter
+                        GROUP BY usuario_id
+                    ) pending ON u.id = pending.usuario_id
+                    WHERE u.grupo_id = ? AND u.rol = 'Líder' AND u.estado = 'activo'
+                    LIMIT 1
+                ";
+                
+                $leaderStmt = $this->db->prepare($leaderQuery);
+                // Same param pattern as above: completed date filter + pending date filter + group ID
+                $leaderParams = array_merge($params, $params, [$group['id']]);
+                $leaderStmt->execute($leaderParams);
+                $group['leader'] = $leaderStmt->fetch();
+                
+                // Calculate group statistics
+                $group['total_members'] = count($group['best_performers']);
+                $group['avg_compliance'] = 0;
+                if (!empty($group['best_performers'])) {
+                    $totalCompliance = array_sum(array_column($group['best_performers'], 'porcentaje_cumplimiento'));
+                    $group['avg_compliance'] = round($totalCompliance / count($group['best_performers']), 2);
+                }
+            }
+            
+            return [
+                'groups' => $groups,
+                'total_groups' => $totalGroups,
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total_pages' => ceil($totalGroups / $perPage)
+            ];
+        } catch (Exception $e) {
+            logActivity("Error al obtener mejores por grupo: " . $e->getMessage(), 'ERROR');
+            return [
+                'groups' => [],
+                'total_groups' => 0,
+                'current_page' => 1,
+                'per_page' => $perPage,
+                'total_pages' => 0
+            ];
+        }
+    }
 }
 ?>

@@ -811,45 +811,59 @@ class Activity {
     // Get ranking data with detailed task completion information
     public function getUserRanking($limit = 10, $grupo = null) {
         try {
-            $groupFilter = '';
             $params = [];
+            $groupFilterCompleted = '';
+            $groupFilterPending = '';
             
             if (!empty($grupo)) {
-                $groupFilter = 'AND a.grupo = ?';
+                $groupFilterCompleted = 'AND grupo = ?';
+                $groupFilterPending = 'AND grupo = ?';
+                $params[] = $grupo;
                 $params[] = $grupo;
             }
             
-            $stmt = $this->db->prepare("
+            $sql = "
                 SELECT 
                     u.id,
                     u.nombre_completo,
                     u.ranking_puntos,
-                    COUNT(a.id) as actividades_completadas,
-                    COUNT(at.id) as tareas_asignadas,
+                    COALESCE(completed.total, 0) as actividades_completadas,
+                    COALESCE(pending.total, 0) as tareas_asignadas,
                     ROUND(
                         CASE 
-                            WHEN COUNT(at.id) > 0 THEN (COUNT(a.id) * 100.0 / COUNT(at.id))
+                            WHEN COALESCE(pending.total, 0) > 0 THEN (COALESCE(completed.total, 0) * 100.0 / pending.total)
                             ELSE 0 
                         END, 2
                     ) as porcentaje_cumplimiento,
-                    MIN(TIMESTAMPDIFF(MINUTE, a.fecha_creacion, a.hora_evidencia)) as mejor_tiempo_minutos,
-                    AVG(TIMESTAMPDIFF(MINUTE, a.fecha_creacion, a.hora_evidencia)) as tiempo_promedio_minutos
+                    completed.mejor_tiempo_minutos,
+                    completed.tiempo_promedio_minutos
                 FROM usuarios u
-                LEFT JOIN actividades a ON u.id = a.usuario_id AND a.estado = 'completada' AND a.autorizada = 1 $groupFilter
-                LEFT JOIN actividades at ON u.id = at.usuario_id AND at.tarea_pendiente = 1 " . 
-                    (!empty($grupo) ? "AND at.grupo = ?" : "") . "
+                LEFT JOIN (
+                    SELECT 
+                        usuario_id,
+                        COUNT(*) as total,
+                        MIN(TIMESTAMPDIFF(MINUTE, fecha_creacion, hora_evidencia)) as mejor_tiempo_minutos,
+                        AVG(TIMESTAMPDIFF(MINUTE, fecha_creacion, hora_evidencia)) as tiempo_promedio_minutos
+                    FROM actividades
+                    WHERE estado = 'completada' AND autorizada = 1 $groupFilterCompleted
+                    GROUP BY usuario_id
+                ) completed ON u.id = completed.usuario_id
+                LEFT JOIN (
+                    SELECT 
+                        usuario_id,
+                        COUNT(*) as total
+                    FROM actividades
+                    WHERE tarea_pendiente = 1 $groupFilterPending
+                    GROUP BY usuario_id
+                ) pending ON u.id = pending.usuario_id
                 WHERE u.estado = 'activo' AND u.id != 1
-                GROUP BY u.id, u.nombre_completo, u.ranking_puntos
                 ORDER BY u.ranking_puntos DESC
                 LIMIT ?
-            ");
+            ";
             
-            // Add parameters for group filter if needed
-            if (!empty($grupo)) {
-                $params[] = $grupo; // For the second group filter
-            }
             $params[] = $limit;
             
+            $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
             return $stmt->fetchAll();
         } catch (Exception $e) {
@@ -1175,22 +1189,37 @@ class Activity {
                 SELECT 
                     u.id,
                     u.ranking_puntos,
-                    COUNT(a.id) as actividades_completadas,
+                    COALESCE(completed.total, 0) as actividades_completadas,
                     ROUND(
                         CASE 
-                            WHEN COUNT(CASE WHEN a.tarea_pendiente = 1 THEN 1 END) > 0 
-                            THEN (COUNT(CASE WHEN a.estado = 'completada' AND a.tarea_pendiente = 1 THEN 1 END) * 100.0) / COUNT(CASE WHEN a.tarea_pendiente = 1 THEN 1 END)
+                            WHEN COALESCE(pending.total, 0) > 0 THEN (COALESCE(completed.total, 0) * 100.0 / pending.total)
                             ELSE 0 
                         END, 2
                     ) as porcentaje_cumplimiento
                 FROM usuarios u
-                LEFT JOIN actividades a ON u.id = a.usuario_id 
-                    AND YEAR(a.fecha_creacion) = ? 
-                    AND MONTH(a.fecha_creacion) = ?
+                LEFT JOIN (
+                    SELECT 
+                        usuario_id,
+                        COUNT(*) as total
+                    FROM actividades
+                    WHERE estado = 'completada' AND autorizada = 1
+                        AND YEAR(fecha_creacion) = ? 
+                        AND MONTH(fecha_creacion) = ?
+                    GROUP BY usuario_id
+                ) completed ON u.id = completed.usuario_id
+                LEFT JOIN (
+                    SELECT 
+                        usuario_id,
+                        COUNT(*) as total
+                    FROM actividades
+                    WHERE tarea_pendiente = 1
+                        AND YEAR(fecha_creacion) = ? 
+                        AND MONTH(fecha_creacion) = ?
+                    GROUP BY usuario_id
+                ) pending ON u.id = pending.usuario_id
                 WHERE u.estado = 'activo' AND u.id != 1
-                GROUP BY u.id, u.ranking_puntos
             ");
-            $stmt->execute([$year, $month]);
+            $stmt->execute([$year, $month, $year, $month]);
             $users = $stmt->fetchAll();
             
             // Sort by ranking points to assign positions
@@ -1422,6 +1451,156 @@ class Activity {
             return $stmt->fetchAll();
         } catch (Exception $e) {
             logActivity("Error al obtener reporte de activistas: " . $e->getMessage(), 'ERROR');
+            return [];
+        }
+    }
+    
+    /**
+     * Get global activity report - statistics grouped by activity type
+     * Shows total tasks assigned, completed, and compliance percentage per activity type
+     * 
+     * @param array $filters Optional filters: fecha_desde, fecha_hasta, search
+     * @param int $page Page number for pagination
+     * @param int $perPage Items per page
+     * @return array Array with activities data
+     */
+    public function getGlobalActivityReport($filters = [], $page = 1, $perPage = 20) {
+        try {
+            $params = [];
+            $dateFilter = '';
+            
+            // Date filters
+            if (!empty($filters['fecha_desde'])) {
+                $dateFilter .= " AND a.fecha_creacion >= ?";
+                $params[] = $filters['fecha_desde'] . ' 00:00:00';
+            }
+            
+            if (!empty($filters['fecha_hasta'])) {
+                $dateFilter .= " AND a.fecha_creacion <= ?";
+                $params[] = $filters['fecha_hasta'] . ' 23:59:59';
+            }
+            
+            // Search filter for activity title or description
+            $searchFilter = '';
+            if (!empty($filters['search'])) {
+                $searchFilter = " AND (a.titulo LIKE ? OR a.descripcion LIKE ? OR ta.nombre LIKE ?)";
+                $searchTerm = '%' . $filters['search'] . '%';
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+            }
+            
+            $sql = "
+                SELECT 
+                    ta.id as tipo_actividad_id,
+                    ta.nombre as tipo_actividad,
+                    COUNT(a.id) as total_tareas,
+                    COUNT(CASE WHEN a.estado = 'completada' AND a.autorizada = 1 THEN 1 END) as tareas_completadas,
+                    COUNT(CASE WHEN a.estado = 'pendiente' THEN 1 END) as tareas_pendientes,
+                    ROUND(
+                        CASE 
+                            WHEN COUNT(a.id) > 0 THEN (COUNT(CASE WHEN a.estado = 'completada' AND a.autorizada = 1 THEN 1 END) * 100.0 / COUNT(a.id))
+                            ELSE 0 
+                        END, 2
+                    ) as porcentaje_cumplimiento,
+                    MAX(a.fecha_creacion) as ultima_actividad
+                FROM tipos_actividades ta
+                LEFT JOIN actividades a ON ta.id = a.tipo_actividad_id $dateFilter $searchFilter
+                WHERE ta.activo = 1
+                GROUP BY ta.id, ta.nombre
+                HAVING total_tareas > 0
+                ORDER BY ultima_actividad DESC
+            ";
+            
+            // Get total count for pagination
+            $countStmt = $this->db->prepare($sql);
+            $countStmt->execute($params);
+            $allResults = $countStmt->fetchAll();
+            $totalItems = count($allResults);
+            
+            // Apply pagination
+            $offset = ($page - 1) * $perPage;
+            $sql .= " LIMIT ? OFFSET ?";
+            $params[] = $perPage;
+            $params[] = $offset;
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $activities = $stmt->fetchAll();
+            
+            return [
+                'activities' => $activities,
+                'total_items' => $totalItems,
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total_pages' => ceil($totalItems / $perPage)
+            ];
+        } catch (Exception $e) {
+            logActivity("Error al obtener reporte global de actividades: " . $e->getMessage(), 'ERROR');
+            return [
+                'activities' => [],
+                'total_items' => 0,
+                'current_page' => 1,
+                'per_page' => $perPage,
+                'total_pages' => 0
+            ];
+        }
+    }
+    
+    /**
+     * Get detailed tasks for a specific activity type
+     * Used in the global activity report detail view
+     * 
+     * @param int $tipoActividadId Activity type ID
+     * @param array $filters Optional filters
+     * @param int $page Page number
+     * @param int $perPage Items per page
+     * @return array Tasks for the activity type
+     */
+    public function getTasksByActivityType($tipoActividadId, $filters = [], $page = 1, $perPage = 20) {
+        try {
+            $params = [$tipoActividadId];
+            $dateFilter = '';
+            
+            if (!empty($filters['fecha_desde'])) {
+                $dateFilter .= " AND a.fecha_creacion >= ?";
+                $params[] = $filters['fecha_desde'] . ' 00:00:00';
+            }
+            
+            if (!empty($filters['fecha_hasta'])) {
+                $dateFilter .= " AND a.fecha_creacion <= ?";
+                $params[] = $filters['fecha_hasta'] . ' 23:59:59';
+            }
+            
+            $offset = ($page - 1) * $perPage;
+            
+            $sql = "
+                SELECT 
+                    a.id,
+                    a.titulo,
+                    a.descripcion,
+                    a.estado,
+                    a.autorizada,
+                    a.fecha_creacion,
+                    u.nombre_completo as usuario_nombre,
+                    ta.nombre as tipo_actividad
+                FROM actividades a
+                JOIN usuarios u ON a.usuario_id = u.id
+                JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id
+                WHERE a.tipo_actividad_id = ? $dateFilter
+                ORDER BY a.fecha_creacion DESC
+                LIMIT ? OFFSET ?
+            ";
+            
+            $params[] = $perPage;
+            $params[] = $offset;
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            logActivity("Error al obtener tareas por tipo de actividad: " . $e->getMessage(), 'ERROR');
             return [];
         }
     }
