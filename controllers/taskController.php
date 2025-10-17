@@ -100,10 +100,25 @@ class TaskController {
         
         $evidenceFile = null;
         
-        // Validar que hay archivos obligatorios (según requisitos)
-        if (!isset($_FILES['archivo']) || empty($_FILES['archivo']['name'][0])) {
+        // REQUISITO CRÍTICO: Validar que hay archivos obligatorios (foto/evidencia)
+        // Una tarea NO puede completarse sin subir al menos un archivo de evidencia
+        if (!isset($_FILES['archivo']) || !is_array($_FILES['archivo']['name']) || empty($_FILES['archivo']['name'][0])) {
             redirectWithMessage('tasks/complete.php?id=' . $taskId, 
-                'Debe subir al menos un archivo como evidencia (obligatorio)', 'error');
+                'No se puede completar la tarea: Debe subir al menos una foto/archivo como evidencia (obligatorio)', 'error');
+        }
+        
+        // Validar que al menos un archivo fue seleccionado correctamente
+        $hasValidFile = false;
+        for ($i = 0; $i < count($_FILES['archivo']['name']); $i++) {
+            if (!empty($_FILES['archivo']['name'][$i]) && $_FILES['archivo']['error'][$i] !== UPLOAD_ERR_NO_FILE) {
+                $hasValidFile = true;
+                break;
+            }
+        }
+        
+        if (!$hasValidFile) {
+            redirectWithMessage('tasks/complete.php?id=' . $taskId, 
+                'No se puede completar la tarea: Debe subir al menos una foto/archivo como evidencia (obligatorio)', 'error');
         }
         
         // Procesar archivos múltiples
@@ -125,12 +140,28 @@ class TaskController {
                     redirectWithMessage('tasks/complete.php?id=' . $taskId, 
                         'Error al procesar uno de los archivos de evidencia', 'error');
                 }
+            } else if ($_FILES['archivo']['error'][$i] !== UPLOAD_ERR_NO_FILE) {
+                // Handle upload errors for files that were attempted but failed
+                $errorMessage = 'Error al subir el archivo';
+                switch ($_FILES['archivo']['error'][$i]) {
+                    case UPLOAD_ERR_INI_SIZE:
+                    case UPLOAD_ERR_FORM_SIZE:
+                        $errorMessage = 'El archivo excede el tamaño máximo permitido';
+                        break;
+                    case UPLOAD_ERR_PARTIAL:
+                        $errorMessage = 'El archivo se subió parcialmente';
+                        break;
+                    default:
+                        $errorMessage = 'Error desconocido al subir el archivo';
+                }
+                redirectWithMessage('tasks/complete.php?id=' . $taskId, $errorMessage, 'error');
             }
         }
         
+        // VALIDACIÓN FINAL: Asegurar que al menos un archivo fue procesado exitosamente
         if (empty($uploadedFiles)) {
             redirectWithMessage('tasks/complete.php?id=' . $taskId, 
-                'Error al procesar los archivos de evidencia', 'error');
+                'No se puede completar la tarea: No se pudo procesar ningún archivo de evidencia. Debe subir al menos una foto/archivo.', 'error');
         }
         
         // El contenido sigue siendo requerido además del archivo

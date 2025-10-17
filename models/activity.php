@@ -421,6 +421,13 @@ class Activity {
      */
     public function addEvidence($activityId, $type, $file = null, $content = null, $blocked = 1) {
         try {
+            // REQUISITO CRÍTICO: Para completar una tarea (blocked=1), DEBE haber un archivo
+            // No se permite marcar como completada una tarea sin evidencia fotográfica/archivo
+            if ($blocked == 1 && empty($file)) {
+                logActivity("Intento de completar tarea $activityId sin archivo de evidencia - RECHAZADO", 'WARNING');
+                return ['success' => false, 'error' => 'No se puede completar la tarea sin subir un archivo de evidencia (foto/video/audio)'];
+            }
+            
             // Check if evidence is already blocked (only for completion evidence, not initial attachments)
             if ($blocked == 1) {
                 $stmt = $this->db->prepare("
