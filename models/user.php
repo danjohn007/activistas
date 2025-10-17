@@ -114,7 +114,7 @@ class User {
     // Actualizar estado de usuario
     public function updateUserStatus($userId, $status) {
         try {
-            $validStatuses = ['pendiente', 'activo', 'suspendido', 'desactivado'];
+            $validStatuses = ['pendiente', 'activo', 'suspendido', 'desactivado', 'eliminado'];
             if (!in_array($status, $validStatuses)) {
                 return false;
             }

@@ -811,45 +811,59 @@ class Activity {
     // Get ranking data with detailed task completion information
     public function getUserRanking($limit = 10, $grupo = null) {
         try {
-            $groupFilter = '';
             $params = [];
+            $groupFilterCompleted = '';
+            $groupFilterPending = '';
             
             if (!empty($grupo)) {
-                $groupFilter = 'AND a.grupo = ?';
+                $groupFilterCompleted = 'AND grupo = ?';
+                $groupFilterPending = 'AND grupo = ?';
+                $params[] = $grupo;
                 $params[] = $grupo;
             }
             
-            $stmt = $this->db->prepare("
+            $sql = "
                 SELECT 
                     u.id,
                     u.nombre_completo,
                     u.ranking_puntos,
-                    COUNT(a.id) as actividades_completadas,
-                    COUNT(at.id) as tareas_asignadas,
+                    COALESCE(completed.total, 0) as actividades_completadas,
+                    COALESCE(pending.total, 0) as tareas_asignadas,
                     ROUND(
                         CASE 
-                            WHEN COUNT(at.id) > 0 THEN (COUNT(a.id) * 100.0 / COUNT(at.id))
+                            WHEN COALESCE(pending.total, 0) > 0 THEN (COALESCE(completed.total, 0) * 100.0 / pending.total)
                             ELSE 0 
                         END, 2
                     ) as porcentaje_cumplimiento,
-                    MIN(TIMESTAMPDIFF(MINUTE, a.fecha_creacion, a.hora_evidencia)) as mejor_tiempo_minutos,
-                    AVG(TIMESTAMPDIFF(MINUTE, a.fecha_creacion, a.hora_evidencia)) as tiempo_promedio_minutos
+                    completed.mejor_tiempo_minutos,
+                    completed.tiempo_promedio_minutos
                 FROM usuarios u
-                LEFT JOIN actividades a ON u.id = a.usuario_id AND a.estado = 'completada' AND a.autorizada = 1 $groupFilter
-                LEFT JOIN actividades at ON u.id = at.usuario_id AND at.tarea_pendiente = 1 " . 
-                    (!empty($grupo) ? "AND at.grupo = ?" : "") . "
+                LEFT JOIN (
+                    SELECT 
+                        usuario_id,
+                        COUNT(*) as total,
+                        MIN(TIMESTAMPDIFF(MINUTE, fecha_creacion, hora_evidencia)) as mejor_tiempo_minutos,
+                        AVG(TIMESTAMPDIFF(MINUTE, fecha_creacion, hora_evidencia)) as tiempo_promedio_minutos
+                    FROM actividades
+                    WHERE estado = 'completada' AND autorizada = 1 $groupFilterCompleted
+                    GROUP BY usuario_id
+                ) completed ON u.id = completed.usuario_id
+                LEFT JOIN (
+                    SELECT 
+                        usuario_id,
+                        COUNT(*) as total
+                    FROM actividades
+                    WHERE tarea_pendiente = 1 $groupFilterPending
+                    GROUP BY usuario_id
+                ) pending ON u.id = pending.usuario_id
                 WHERE u.estado = 'activo' AND u.id != 1
-                GROUP BY u.id, u.nombre_completo, u.ranking_puntos
                 ORDER BY u.ranking_puntos DESC
                 LIMIT ?
-            ");
+            ";
             
-            // Add parameters for group filter if needed
-            if (!empty($grupo)) {
-                $params[] = $grupo; // For the second group filter
-            }
             $params[] = $limit;
             
+            $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
             return $stmt->fetchAll();
         } catch (Exception $e) {
@@ -1175,22 +1189,37 @@ class Activity {
                 SELECT 
                     u.id,
                     u.ranking_puntos,
-                    COUNT(a.id) as actividades_completadas,
+                    COALESCE(completed.total, 0) as actividades_completadas,
                     ROUND(
                         CASE 
-                            WHEN COUNT(CASE WHEN a.tarea_pendiente = 1 THEN 1 END) > 0 
-                            THEN (COUNT(CASE WHEN a.estado = 'completada' AND a.tarea_pendiente = 1 THEN 1 END) * 100.0) / COUNT(CASE WHEN a.tarea_pendiente = 1 THEN 1 END)
+                            WHEN COALESCE(pending.total, 0) > 0 THEN (COALESCE(completed.total, 0) * 100.0 / pending.total)
                             ELSE 0 
                         END, 2
                     ) as porcentaje_cumplimiento
                 FROM usuarios u
-                LEFT JOIN actividades a ON u.id = a.usuario_id 
-                    AND YEAR(a.fecha_creacion) = ? 
-                    AND MONTH(a.fecha_creacion) = ?
+                LEFT JOIN (
+                    SELECT 
+                        usuario_id,
+                        COUNT(*) as total
+                    FROM actividades
+                    WHERE estado = 'completada' AND autorizada = 1
+                        AND YEAR(fecha_creacion) = ? 
+                        AND MONTH(fecha_creacion) = ?
+                    GROUP BY usuario_id
+                ) completed ON u.id = completed.usuario_id
+                LEFT JOIN (
+                    SELECT 
+                        usuario_id,
+                        COUNT(*) as total
+                    FROM actividades
+                    WHERE tarea_pendiente = 1
+                        AND YEAR(fecha_creacion) = ? 
+                        AND MONTH(fecha_creacion) = ?
+                    GROUP BY usuario_id
+                ) pending ON u.id = pending.usuario_id
                 WHERE u.estado = 'activo' AND u.id != 1
-                GROUP BY u.id, u.ranking_puntos
             ");
-            $stmt->execute([$year, $month]);
+            $stmt->execute([$year, $month, $year, $month]);
             $users = $stmt->fetchAll();
             
             // Sort by ranking points to assign positions
