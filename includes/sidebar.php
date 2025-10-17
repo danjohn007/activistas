@@ -156,6 +156,13 @@ function renderSidebar($currentPage = '') {
                 'text' => 'Informe Global por Actividad',
                 'active' => ($currentPage === 'global_activity_report')
             ];
+            
+            $menuItems[] = [
+                'url' => url('reports/best_by_group.php'),
+                'icon' => 'fas fa-trophy',
+                'text' => 'Mejores por Grupo',
+                'active' => ($currentPage === 'best_by_group_report')
+            ];
         }
     } elseif ($userRole === 'Líder') {
         // Menú específico para LÍDER - Ranking del Equipo
