@@ -107,6 +107,36 @@ try {
             }
             break;
             
+        case 'reactivate':
+            // Only SuperAdmin can reactivate users
+            if ($currentUser['rol'] !== 'SuperAdmin') {
+                throw new Exception('No tienes permisos para reactivar usuarios');
+            }
+            
+            // Check if user exists
+            $userInfo = $userModel->getUserById($userId);
+            if (!$userInfo) {
+                throw new Exception('Usuario no encontrado');
+            }
+            
+            // Check if user is in a state that can be reactivated
+            if (!in_array($userInfo['estado'], ['eliminado', 'desactivado', 'suspendido'])) {
+                throw new Exception('Solo se pueden reactivar usuarios eliminados, desactivados o suspendidos');
+            }
+            
+            // Reactivate user by setting status to 'activo'
+            $result = $userModel->updateUserStatus($userId, 'activo');
+            if ($result) {
+                logActivity("Usuario ID $userId reactivado desde estado '{$userInfo['estado']}' por SuperAdmin " . $currentUser['nombre_completo']);
+                $response = [
+                    'success' => true,
+                    'message' => 'Usuario reactivado exitosamente'
+                ];
+            } else {
+                throw new Exception('Error al reactivar usuario');
+            }
+            break;
+            
         case 'change_password':
             // Only SuperAdmin can change passwords for other users
             if ($currentUser['rol'] !== 'SuperAdmin') {
