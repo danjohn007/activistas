@@ -171,7 +171,8 @@
                                                     'activo' => 'success',
                                                     'pendiente' => 'warning',
                                                     'suspendido' => 'danger',
-                                                    'desactivado' => 'secondary'
+                                                    'desactivado' => 'secondary',
+                                                    'eliminado' => 'dark'
                                                 ][$user['estado']] ?? 'secondary';
                                                 ?>
                                                 <span class="badge bg-<?= $badgeClass ?>"><?= ucfirst($user['estado']) ?></span>
@@ -220,12 +221,20 @@
                                                         </button>
                                                     <?php endif; ?>
                                                     
-                                                    <?php if ($currentUser['rol'] === 'SuperAdmin' && $user['estado'] !== 'eliminado'): ?>
-                                                        <button type="button" class="btn btn-outline-danger" 
-                                                                onclick="deleteUser(<?= $user['id'] ?>, '<?= htmlspecialchars($user['nombre_completo']) ?>')" 
-                                                                title="Eliminar Usuario">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
+                                                    <?php if ($currentUser['rol'] === 'SuperAdmin'): ?>
+                                                        <?php if ($user['estado'] === 'eliminado' || $user['estado'] === 'desactivado'): ?>
+                                                            <button type="button" class="btn btn-outline-success" 
+                                                                    onclick="reactivateUser(<?= $user['id'] ?>, '<?= htmlspecialchars($user['nombre_completo']) ?>')" 
+                                                                    title="Reactivar Usuario">
+                                                                <i class="fas fa-redo"></i>
+                                                            </button>
+                                                        <?php elseif ($user['estado'] !== 'eliminado'): ?>
+                                                            <button type="button" class="btn btn-outline-danger" 
+                                                                    onclick="deleteUser(<?= $user['id'] ?>, '<?= htmlspecialchars($user['nombre_completo']) ?>')" 
+                                                                    title="Eliminar Usuario">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        <?php endif; ?>
                                                     <?php endif; ?>
                                                 </div>
                                             </td>
@@ -457,7 +466,7 @@
         }
         
         function deleteUser(userId, userName) {
-            if (confirm(`¿Estás seguro de que quieres ELIMINAR permanentemente el usuario "${userName}"? Esta acción no se puede deshacer.`)) {
+            if (confirm(`¿Estás seguro de que quieres ELIMINAR permanentemente el usuario "${userName}"? Esta acción marcará al usuario como eliminado.`)) {
                 // Show loading state
                 const deleteBtn = event.target.closest('button');
                 const originalContent = deleteBtn.innerHTML;
@@ -496,6 +505,50 @@
                     // Restore button
                     deleteBtn.innerHTML = originalContent;
                     deleteBtn.disabled = false;
+                });
+            }
+        }
+        
+        function reactivateUser(userId, userName) {
+            if (confirm(`¿Estás seguro de que quieres REACTIVAR el usuario "${userName}"?`)) {
+                // Show loading state
+                const reactivateBtn = event.target.closest('button');
+                const originalContent = reactivateBtn.innerHTML;
+                reactivateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                reactivateBtn.disabled = true;
+                
+                // Make AJAX call
+                fetch('<?= url('api/users.php') ?>', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'reactivate',
+                        user_id: userId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert('success', data.message);
+                        // Reload page after 2 seconds to show the updated list
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        showAlert('danger', data.error || 'Error al reactivar usuario');
+                        // Restore button
+                        reactivateBtn.innerHTML = originalContent;
+                        reactivateBtn.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('danger', 'Error de conexión al reactivar usuario');
+                    // Restore button
+                    reactivateBtn.innerHTML = originalContent;
+                    reactivateBtn.disabled = false;
                 });
             }
         }
