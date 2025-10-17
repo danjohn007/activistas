@@ -1454,5 +1454,155 @@ class Activity {
             return [];
         }
     }
+    
+    /**
+     * Get global activity report - statistics grouped by activity type
+     * Shows total tasks assigned, completed, and compliance percentage per activity type
+     * 
+     * @param array $filters Optional filters: fecha_desde, fecha_hasta, search
+     * @param int $page Page number for pagination
+     * @param int $perPage Items per page
+     * @return array Array with activities data
+     */
+    public function getGlobalActivityReport($filters = [], $page = 1, $perPage = 20) {
+        try {
+            $params = [];
+            $dateFilter = '';
+            
+            // Date filters
+            if (!empty($filters['fecha_desde'])) {
+                $dateFilter .= " AND a.fecha_creacion >= ?";
+                $params[] = $filters['fecha_desde'] . ' 00:00:00';
+            }
+            
+            if (!empty($filters['fecha_hasta'])) {
+                $dateFilter .= " AND a.fecha_creacion <= ?";
+                $params[] = $filters['fecha_hasta'] . ' 23:59:59';
+            }
+            
+            // Search filter for activity title or description
+            $searchFilter = '';
+            if (!empty($filters['search'])) {
+                $searchFilter = " AND (a.titulo LIKE ? OR a.descripcion LIKE ? OR ta.nombre LIKE ?)";
+                $searchTerm = '%' . $filters['search'] . '%';
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+            }
+            
+            $sql = "
+                SELECT 
+                    ta.id as tipo_actividad_id,
+                    ta.nombre as tipo_actividad,
+                    COUNT(a.id) as total_tareas,
+                    COUNT(CASE WHEN a.estado = 'completada' AND a.autorizada = 1 THEN 1 END) as tareas_completadas,
+                    COUNT(CASE WHEN a.estado = 'pendiente' THEN 1 END) as tareas_pendientes,
+                    ROUND(
+                        CASE 
+                            WHEN COUNT(a.id) > 0 THEN (COUNT(CASE WHEN a.estado = 'completada' AND a.autorizada = 1 THEN 1 END) * 100.0 / COUNT(a.id))
+                            ELSE 0 
+                        END, 2
+                    ) as porcentaje_cumplimiento,
+                    MAX(a.fecha_creacion) as ultima_actividad
+                FROM tipos_actividades ta
+                LEFT JOIN actividades a ON ta.id = a.tipo_actividad_id $dateFilter $searchFilter
+                WHERE ta.activo = 1
+                GROUP BY ta.id, ta.nombre
+                HAVING total_tareas > 0
+                ORDER BY ultima_actividad DESC
+            ";
+            
+            // Get total count for pagination
+            $countStmt = $this->db->prepare($sql);
+            $countStmt->execute($params);
+            $allResults = $countStmt->fetchAll();
+            $totalItems = count($allResults);
+            
+            // Apply pagination
+            $offset = ($page - 1) * $perPage;
+            $sql .= " LIMIT ? OFFSET ?";
+            $params[] = $perPage;
+            $params[] = $offset;
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $activities = $stmt->fetchAll();
+            
+            return [
+                'activities' => $activities,
+                'total_items' => $totalItems,
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total_pages' => ceil($totalItems / $perPage)
+            ];
+        } catch (Exception $e) {
+            logActivity("Error al obtener reporte global de actividades: " . $e->getMessage(), 'ERROR');
+            return [
+                'activities' => [],
+                'total_items' => 0,
+                'current_page' => 1,
+                'per_page' => $perPage,
+                'total_pages' => 0
+            ];
+        }
+    }
+    
+    /**
+     * Get detailed tasks for a specific activity type
+     * Used in the global activity report detail view
+     * 
+     * @param int $tipoActividadId Activity type ID
+     * @param array $filters Optional filters
+     * @param int $page Page number
+     * @param int $perPage Items per page
+     * @return array Tasks for the activity type
+     */
+    public function getTasksByActivityType($tipoActividadId, $filters = [], $page = 1, $perPage = 20) {
+        try {
+            $params = [$tipoActividadId];
+            $dateFilter = '';
+            
+            if (!empty($filters['fecha_desde'])) {
+                $dateFilter .= " AND a.fecha_creacion >= ?";
+                $params[] = $filters['fecha_desde'] . ' 00:00:00';
+            }
+            
+            if (!empty($filters['fecha_hasta'])) {
+                $dateFilter .= " AND a.fecha_creacion <= ?";
+                $params[] = $filters['fecha_hasta'] . ' 23:59:59';
+            }
+            
+            $offset = ($page - 1) * $perPage;
+            
+            $sql = "
+                SELECT 
+                    a.id,
+                    a.titulo,
+                    a.descripcion,
+                    a.estado,
+                    a.autorizada,
+                    a.fecha_creacion,
+                    u.nombre_completo as usuario_nombre,
+                    ta.nombre as tipo_actividad
+                FROM actividades a
+                JOIN usuarios u ON a.usuario_id = u.id
+                JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id
+                WHERE a.tipo_actividad_id = ? $dateFilter
+                ORDER BY a.fecha_creacion DESC
+                LIMIT ? OFFSET ?
+            ";
+            
+            $params[] = $perPage;
+            $params[] = $offset;
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            logActivity("Error al obtener tareas por tipo de actividad: " . $e->getMessage(), 'ERROR');
+            return [];
+        }
+    }
 }
 ?>
