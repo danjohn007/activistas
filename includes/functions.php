@@ -290,4 +290,20 @@ function displayNotifications($userId) {
     
     return $html;
 }
+
+/**
+ * Get Bootstrap progress bar class based on percentage
+ * 
+ * @param float $percentage Completion percentage (0-100)
+ * @return string Bootstrap class (bg-success, bg-warning, or bg-danger)
+ */
+function getProgressBarClass($percentage) {
+    if ($percentage >= 75) {
+        return 'bg-success';
+    } elseif ($percentage >= 50) {
+        return 'bg-warning';
+    } else {
+        return 'bg-danger';
+    }
+}
 ?>

@@ -146,7 +146,7 @@
                                                         </span>
                                                     </div>
                                                     <div class="progress progress-custom" style="width: 200px;">
-                                                        <div class="progress-bar <?= $group['leader']['porcentaje_cumplimiento'] >= 75 ? 'bg-success' : ($group['leader']['porcentaje_cumplimiento'] >= 50 ? 'bg-warning' : 'bg-danger') ?>" 
+                                                        <div class="progress-bar <?= getProgressBarClass($group['leader']['porcentaje_cumplimiento']) ?>" 
                                                              role="progressbar" 
                                                              style="width: <?= $group['leader']['porcentaje_cumplimiento'] ?>%">
                                                             <?= $group['leader']['porcentaje_cumplimiento'] ?>%
@@ -200,7 +200,7 @@
                                                             </span>
                                                         </div>
                                                         <div class="progress progress-custom" style="width: 200px;">
-                                                            <div class="progress-bar <?= $performer['porcentaje_cumplimiento'] >= 75 ? 'bg-success' : ($performer['porcentaje_cumplimiento'] >= 50 ? 'bg-warning' : 'bg-danger') ?>" 
+                                                            <div class="progress-bar <?= getProgressBarClass($performer['porcentaje_cumplimiento']) ?>" 
                                                                  role="progressbar" 
                                                                  style="width: <?= $performer['porcentaje_cumplimiento'] ?>%">
                                                                 <?= $performer['porcentaje_cumplimiento'] ?>%

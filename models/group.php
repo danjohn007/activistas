@@ -311,12 +311,15 @@ class Group {
                         WHERE tarea_pendiente = 1 $dateFilter
                         GROUP BY usuario_id
                     ) pending ON u.id = pending.usuario_id
-                    WHERE u.grupo_id = ? AND u.estado = 'activo' AND u.id != 1
+                    WHERE u.grupo_id = ? AND u.estado = 'activo' 
+                        AND u.id != 1  -- Exclude system admin user
                     ORDER BY porcentaje_cumplimiento DESC, u.ranking_puntos DESC
                     LIMIT 5
                 ";
                 
                 $performersStmt = $this->db->prepare($performersQuery);
+                // Params need to be duplicated: first for completed subquery date filter, 
+                // second for pending subquery date filter, then group ID
                 $performersParams = array_merge($params, $params, [$group['id']]);
                 $performersStmt->execute($performersParams);
                 $group['best_performers'] = $performersStmt->fetchAll();
@@ -359,6 +362,7 @@ class Group {
                 ";
                 
                 $leaderStmt = $this->db->prepare($leaderQuery);
+                // Same param pattern as above: completed date filter + pending date filter + group ID
                 $leaderParams = array_merge($params, $params, [$group['id']]);
                 $leaderStmt->execute($leaderParams);
                 $group['leader'] = $leaderStmt->fetch();

@@ -167,7 +167,7 @@
                                                 </td>
                                                 <td class="text-center">
                                                     <div class="progress">
-                                                        <div class="progress-bar <?= $activity['porcentaje_cumplimiento'] >= 75 ? 'bg-success' : ($activity['porcentaje_cumplimiento'] >= 50 ? 'bg-warning' : 'bg-danger') ?>" 
+                                                        <div class="progress-bar <?= getProgressBarClass($activity['porcentaje_cumplimiento']) ?>" 
                                                              role="progressbar" 
                                                              style="width: <?= $activity['porcentaje_cumplimiento'] ?>%"
                                                              aria-valuenow="<?= $activity['porcentaje_cumplimiento'] ?>" 
