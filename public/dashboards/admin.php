@@ -624,6 +624,12 @@ try {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // OPTIMIZACIÓN: Guard para prevenir ejecución duplicada de scripts
+        if (window.adminDashboardInitialized) {
+            console.warn('⚠️ Dashboard ya inicializado, evitando duplicación');
+        } else {
+            window.adminDashboardInitialized = true;
+        
         // Variables globales para las instancias de Chart.js
         // IMPORTANTE: Declarar variables antes de su uso para evitar errores de inicialización
         let activitiesChart, usersChart, monthlyChart, teamRankingChart;
@@ -1261,6 +1267,8 @@ try {
                 });
             }
         }
+        
+        } // End of guard: window.adminDashboardInitialized
     </script>
 </body>
 </html>
