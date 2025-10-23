@@ -3,7 +3,7 @@
 Este documento describe las optimizaciones implementadas en el sistema Activistas Digitales para reducir la saturación por exceso de peticiones.
 
 ## Fecha de Implementación
-23 de Octubre, 2025
+October 23, 2025
 
 ## Objetivos
 1. Reducir llamadas innecesarias (AJAX, fetch, etc.)

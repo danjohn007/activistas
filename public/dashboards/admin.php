@@ -627,7 +627,9 @@ try {
         // OPTIMIZACIÓN: Guard para prevenir ejecución duplicada de scripts
         if (window.adminDashboardInitialized) {
             console.warn('⚠️ Dashboard ya inicializado, evitando duplicación');
-        } else {
+        }
+        
+        if (!window.adminDashboardInitialized) {
             window.adminDashboardInitialized = true;
         
         // Variables globales para las instancias de Chart.js

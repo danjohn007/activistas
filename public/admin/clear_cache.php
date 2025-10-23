@@ -4,6 +4,9 @@
  * Puede ser llamado manualmente o mediante cron job
  */
 
+// Constantes
+define('ROLE_SUPERADMIN', 'SuperAdmin');
+
 require_once __DIR__ . '/../includes/cache.php';
 
 // Verificar si se está ejecutando desde CLI o web
@@ -20,7 +23,7 @@ if (!$isCLI) {
     }
     
     $currentUser = $auth->getCurrentUser();
-    if ($currentUser['rol'] !== 'SuperAdmin') {
+    if ($currentUser['rol'] !== ROLE_SUPERADMIN) {
         http_response_code(403);
         die(json_encode(['success' => false, 'error' => 'Permiso denegado']));
     }
@@ -32,7 +35,15 @@ try {
     $cache = cache();
     
     // Opción para limpiar solo cache expirado o todo
-    $clearAll = isset($_GET['all']) || (isset($argv[1]) && $argv[1] === 'all');
+    $clearAll = false;
+    
+    if ($isCLI) {
+        // Parámetro desde CLI
+        $clearAll = isset($argv[1]) && $argv[1] === 'all';
+    } else {
+        // Parámetro desde web
+        $clearAll = isset($_GET['all']);
+    }
     
     if ($clearAll) {
         $cache->clear();
