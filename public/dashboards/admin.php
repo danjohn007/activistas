@@ -152,7 +152,7 @@ try {
             if (typeof Chart === 'undefined') {
                 console.warn('⚠️ Chart.js no se pudo cargar desde CDN');
                 
-                // Mostrar mensaje informativo
+                // OPTIMIZACIÓN: Reducir timeout de 1000ms a 500ms
                 setTimeout(function() {
                     const chartContainers = document.querySelectorAll('canvas');
                     chartContainers.forEach(function(canvas) {
@@ -167,7 +167,7 @@ try {
                             `;
                         }
                     });
-                }, 1000);
+                }, 500);
             }
         });
     </script>
@@ -989,8 +989,23 @@ try {
             }
         }
         
-        // Función para actualizar gráficas en tiempo real
+        // OPTIMIZACIÓN: Variables para control de actualizaciones
+        let autoRefreshInterval = null;
+        let lastUpdateTime = 0;
+        const MIN_UPDATE_INTERVAL = 5000; // Mínimo 5 segundos entre actualizaciones
+        
+        // OPTIMIZACIÓN: Función actualizada con debouncing y control de frecuencia
         function updateCharts() {
+            const now = Date.now();
+            
+            // Prevenir actualizaciones muy frecuentes (debouncing)
+            if (now - lastUpdateTime < MIN_UPDATE_INTERVAL) {
+                console.log('⏱️ Actualización demasiado frecuente, ignorada');
+                return;
+            }
+            
+            lastUpdateTime = now;
+            
             const refreshButton = document.getElementById('refreshData');
             const lastUpdateSpan = document.getElementById('lastUpdate');
             
@@ -1010,6 +1025,11 @@ try {
                 })
                 .then(data => {
                     console.log('📊 API response:', data);
+                    
+                    // OPTIMIZACIÓN: Mostrar si los datos vienen del caché
+                    if (data.cached) {
+                        console.log('💾 Datos obtenidos del caché (sin carga en BD)');
+                    }
                     
                     if (data.success) {
                         let chartsUpdated = 0;
@@ -1078,7 +1098,8 @@ try {
                         
                         // Actualizar timestamp
                         const now = new Date();
-                        lastUpdateSpan.textContent = `Última actualización: ${now.toLocaleTimeString()}`;
+                        const cacheIndicator = data.cached ? ' (caché)' : '';
+                        lastUpdateSpan.textContent = `Última actualización: ${now.toLocaleTimeString()}${cacheIndicator}`;
                         
                         console.log(`✅ ${chartsUpdated} gráficas actualizadas con datos reales`);
                         
@@ -1127,23 +1148,61 @@ try {
             console.log('- Ranking de equipos:', <?= json_encode($teamRanking) ?>);
             
             // Esperar un momento para que todos los recursos estén cargados
+            // OPTIMIZACIÓN: Reducir timeout de 500ms a 300ms
             setTimeout(function() {
                 initializeCharts();
                 
                 // Si no hay datos iniciales, intentar cargar desde la API
                 if (<?= empty($activitiesByType) ? 'true' : 'false' ?>) {
                     console.log('⚠️ No hay datos iniciales, intentando cargar desde API...');
-                    setTimeout(updateCharts, 2000); // Intentar después de 2 segundos
+                    // OPTIMIZACIÓN: Reducir timeout de 2000ms a 1000ms
+                    setTimeout(updateCharts, 1000);
                 } else {
                     console.log('✅ Datos iniciales cargados correctamente');
                 }
-            }, 500);
+            }, 300);
         });
         
         // Actualizar cada 60 segundos automáticamente (solo si hay datos iniciales)
+        // OPTIMIZACIÓN: Mejorado con control de visibilidad de pestaña
         if (<?= !empty($activitiesByType) ? 'true' : 'false' ?>) {
-            setInterval(updateCharts, 60000);
-            console.log('🔄 Auto-refresh habilitado (cada 60 segundos)');
+            // OPTIMIZACIÓN: Aumentar intervalo a 2 minutos para reducir carga
+            const AUTO_REFRESH_INTERVAL = 120000; // 2 minutos (antes era 60 segundos)
+            
+            // Iniciar auto-refresh
+            autoRefreshInterval = setInterval(function() {
+                // OPTIMIZACIÓN: Solo actualizar si la pestaña está visible
+                if (!document.hidden) {
+                    updateCharts();
+                } else {
+                    console.log('⏸️ Pestaña oculta, actualización pausada');
+                }
+            }, AUTO_REFRESH_INTERVAL);
+            
+            // OPTIMIZACIÓN: Pausar/reanudar auto-refresh según visibilidad de pestaña
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    console.log('⏸️ Pestaña oculta, pausando auto-refresh');
+                    if (autoRefreshInterval) {
+                        clearInterval(autoRefreshInterval);
+                        autoRefreshInterval = null;
+                    }
+                } else {
+                    console.log('▶️ Pestaña visible, reanudando auto-refresh');
+                    if (!autoRefreshInterval) {
+                        // Actualizar inmediatamente al volver a la pestaña
+                        updateCharts();
+                        // Reiniciar intervalo
+                        autoRefreshInterval = setInterval(function() {
+                            if (!document.hidden) {
+                                updateCharts();
+                            }
+                        }, AUTO_REFRESH_INTERVAL);
+                    }
+                }
+            });
+            
+            console.log(`🔄 Auto-refresh habilitado (cada ${AUTO_REFRESH_INTERVAL/1000} segundos, pausado cuando pestaña está oculta)`);
         }
         
         // Funciones para gestión de usuarios pendientes

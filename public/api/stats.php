@@ -1,6 +1,7 @@
 <?php
 /**
  * API endpoint para obtener estadísticas en tiempo real
+ * OPTIMIZADO: Implementa caché para reducir carga en base de datos
  */
 
 // Headers para API JSON
@@ -12,6 +13,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 try {
     // Incluir dependencias
     require_once __DIR__ . '/../../includes/auth.php';
+    require_once __DIR__ . '/../../includes/cache.php';
     require_once __DIR__ . '/../../models/user.php';
     require_once __DIR__ . '/../../models/activity.php';
     
@@ -58,17 +60,27 @@ try {
         // SuperAdmin y Gestor ven todas las estadísticas
     }
     
-    // Obtener datos reales de la base de datos
-    $response = [
-        'success' => true,
-        'timestamp' => date('c'),
-        'user_role' => $currentUser['rol'],
-        'data' => [
-            'activity_stats' => $activityModel->getActivityStats($filters),
-            'activities_by_type' => $activityModel->getActivitiesByType($filters),
-            'user_stats' => $userModel->getUserStats()
-        ]
-    ];
+    // OPTIMIZACIÓN: Usar caché para reducir consultas a base de datos
+    // Clave de caché única basada en rol y filtros del usuario
+    $cacheKey = 'stats_' . $currentUser['rol'] . '_' . json_encode($filters);
+    $cacheTTL = 30; // 30 segundos de caché (balanceo entre actualización y rendimiento)
+    
+    // Intentar obtener datos del caché
+    $response = cache()->get($cacheKey, $currentUser['id']);
+    
+    if ($response === null) {
+        // No hay caché, obtener datos de la base de datos
+        $response = [
+            'success' => true,
+            'timestamp' => date('c'),
+            'user_role' => $currentUser['rol'],
+            'cached' => false,
+            'data' => [
+                'activity_stats' => $activityModel->getActivityStats($filters),
+                'activities_by_type' => $activityModel->getActivitiesByType($filters),
+                'user_stats' => $userModel->getUserStats()
+            ]
+        ];
     
     // Solo incluir datos de usuarios para admin/gestor
     if (in_array($currentUser['rol'], ['SuperAdmin', 'Gestor'])) {
@@ -165,6 +177,14 @@ try {
     // Para líderes, incluir métricas del equipo
     if ($currentUser['rol'] === 'Líder') {
         $response['data']['team_members'] = $userModel->getActivistsOfLeader($currentUser['id']);
+    }
+    
+        // Guardar en caché
+        cache()->set($cacheKey, $response, $cacheTTL, $currentUser['id']);
+    } else {
+        // Datos obtenidos del caché, actualizar timestamp y flag
+        $response['timestamp'] = date('c');
+        $response['cached'] = true;
     }
     
     echo json_encode($response, JSON_PRETTY_PRINT);
