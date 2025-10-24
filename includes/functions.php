@@ -111,6 +111,9 @@ function getFlashMessage() {
 
 // Subir archivo
 function uploadFile($file, $uploadDir, $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'], $isProfile = false, $isVideo = false) {
+    // Include image utilities for compression
+    require_once __DIR__ . '/image_utils.php';
+    
     if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
         return ['success' => false, 'error' => 'Error al subir el archivo'];
     }
@@ -122,16 +125,19 @@ function uploadFile($file, $uploadDir, $allowedTypes = ['jpg', 'jpeg', 'png', 'g
         return ['success' => false, 'error' => 'Tipo de archivo no permitido'];
     }
     
-    // Verificar tamaño - 50MB para videos, 20MB para perfiles, 5MB para otros archivos
-    $maxSize = 5242880; // 5MB por defecto
+    // Verificar tamaño - límites reducidos para optimizar servidor
+    // Videos: 30MB (reducido de 50MB)
+    // Fotos de perfil: 5MB (reducido de 20MB) 
+    // Evidencias: 3MB (reducido de 5MB)
+    $maxSize = 3145728; // 3MB por defecto para evidencias
     if ($isVideo || in_array($extension, ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'])) {
-        $maxSize = 52428800; // 50MB para videos
-        $maxSizeText = '50MB';
+        $maxSize = 31457280; // 30MB para videos
+        $maxSizeText = '30MB';
     } elseif ($isProfile) {
-        $maxSize = 20971520; // 20MB para perfiles
-        $maxSizeText = '20MB';
-    } else {
+        $maxSize = 5242880; // 5MB para perfiles
         $maxSizeText = '5MB';
+    } else {
+        $maxSizeText = '3MB';
     }
     
     if ($file['size'] > $maxSize) {
@@ -145,11 +151,50 @@ function uploadFile($file, $uploadDir, $allowedTypes = ['jpg', 'jpeg', 'png', 'g
         mkdir($uploadDir, 0755, true);
     }
     
-    if (move_uploaded_file($file['tmp_name'], $filePath)) {
-        return ['success' => true, 'filename' => $fileName, 'path' => $filePath];
+    // Move uploaded file to temporary location
+    if (!move_uploaded_file($file['tmp_name'], $filePath)) {
+        return ['success' => false, 'error' => 'Error al guardar el archivo'];
     }
     
-    return ['success' => false, 'error' => 'Error al guardar el archivo'];
+    // Check if file is an image and compress it
+    $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+    if ($isImage && isImageFile($filePath)) {
+        // Validate image dimensions (max 4096x4096px)
+        $dimensionCheck = validateImageDimensions($filePath, 4096, 4096);
+        if (!$dimensionCheck['valid']) {
+            unlink($filePath); // Remove uploaded file
+            return ['success' => false, 'error' => $dimensionCheck['error']];
+        }
+        
+        // Determine compression settings based on file type
+        if ($isProfile) {
+            // Profile photos: smaller dimensions, good quality
+            $maxWidth = 800;
+            $maxHeight = 800;
+            $quality = 85;
+        } else {
+            // Evidence photos: larger dimensions allowed, optimize based on size
+            $maxWidth = 1920;
+            $maxHeight = 1920;
+            $quality = getOptimalQuality($file['size']);
+        }
+        
+        // Compress the image
+        $compressionResult = compressImage($filePath, $filePath, $maxWidth, $maxHeight, $quality);
+        
+        if (!$compressionResult['success']) {
+            // If compression fails, keep original file but log the error
+            logActivity("Image compression failed for $fileName: " . $compressionResult['error'], 'WARNING');
+        } else {
+            // Log successful compression
+            $savings = $compressionResult['savings'];
+            $originalSize = formatFileSize($compressionResult['original_size']);
+            $compressedSize = formatFileSize($compressionResult['compressed_size']);
+            logActivity("Image compressed: $fileName - Original: $originalSize, Compressed: $compressedSize, Savings: {$savings}%", 'INFO');
+        }
+    }
+    
+    return ['success' => true, 'filename' => $fileName, 'path' => $filePath];
 }
 
 // Verificar permisos de usuario
