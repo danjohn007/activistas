@@ -211,7 +211,8 @@ require_once __DIR__ . '/../../includes/functions.php';
                                                                 onclick="changeUserStatus(<?= $user['id'] ?>, 'suspendido')" title="Suspender">
                                                             <i class="fas fa-pause"></i>
                                                         </button>
-                                                    <?php elseif ($user['estado'] === 'suspendido'): ?>
+                                                    <?php elseif ($user['estado'] === 'suspendido' || $user['estado'] === 'desactivado'): ?>
+                                                        <!-- Mostrar botón Activar tanto para usuarios suspendidos como desactivados -->
                                                         <button type="button" class="btn btn-outline-success" 
                                                                 onclick="changeUserStatus(<?= $user['id'] ?>, 'activo')" title="Activar">
                                                             <i class="fas fa-play"></i>
@@ -367,10 +368,69 @@ require_once __DIR__ . '/../../includes/functions.php';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function changeUserStatus(userId, status) {
-            if (confirm('¿Estás seguro de que quieres cambiar el estado de este usuario?')) {
-                document.getElementById('statusUserId').value = userId;
-                document.getElementById('statusValue').value = status;
-                document.getElementById('statusForm').submit();
+            console.log('changeUserStatus called', { userId: userId, status: status });
+            
+            const statusMessages = {
+                'activo': 'activar',
+                'suspendido': 'suspender',
+                'desactivado': 'desactivar'
+            };
+            
+            const actionText = statusMessages[status] || 'cambiar el estado de';
+            
+            if (confirm(`¿Estás seguro de que quieres ${actionText} este usuario?`)) {
+                console.log('changeUserStatus: confirmed, submitting form');
+                
+                // Find and update the form
+                const form = document.getElementById('statusForm');
+                const userIdInput = document.getElementById('statusUserId');
+                const statusInput = document.getElementById('statusValue');
+                
+                if (!form || !userIdInput || !statusInput) {
+                    console.error('changeUserStatus: form elements not found', {
+                        form: !!form,
+                        userIdInput: !!userIdInput,
+                        statusInput: !!statusInput
+                    });
+                    showAlert('danger', 'Error: Formulario no encontrado. Recarga la página e intenta nuevamente.');
+                    return;
+                }
+                
+                userIdInput.value = userId;
+                statusInput.value = status;
+                
+                console.log('changeUserStatus: form values set', {
+                    userId: userIdInput.value,
+                    status: statusInput.value
+                });
+                
+                // Add loading indicator to the button that was clicked
+                const actionButtons = document.querySelectorAll(`button[onclick*="changeUserStatus(${userId}"]`);
+                let targetButton = null;
+                
+                actionButtons.forEach(button => {
+                    if (button.onclick && button.onclick.toString().includes(`'${status}'`)) {
+                        targetButton = button;
+                    }
+                });
+                
+                if (targetButton) {
+                    const originalContent = targetButton.innerHTML;
+                    targetButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    targetButton.disabled = true;
+                    
+                    // Re-enable button after a short delay if form submission fails
+                    setTimeout(() => {
+                        if (targetButton.disabled) {
+                            targetButton.innerHTML = originalContent;
+                            targetButton.disabled = false;
+                        }
+                    }, 3000);
+                }
+                
+                form.submit();
+            } else {
+                console.log('changeUserStatus: cancelled by user');
             }
         }
 
