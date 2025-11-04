@@ -22,3 +22,7 @@ server.pid
 # Ignorar archivos de demo y pruebas
 demo_*.html
 test_*.php
+
+# OPTIMIZACIÓN: Ignorar archivos de caché
+*.cache
+/tmp/activistas_cache/
