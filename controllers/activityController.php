@@ -423,7 +423,9 @@ class ActivityController {
             'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
             'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? ''),
             'estado' => cleanInput($_POST['estado'] ?? ''),
-            'grupo' => cleanInput($_POST['grupo'] ?? '')
+            'grupo' => cleanInput($_POST['grupo'] ?? ''),
+            'enlace_1' => cleanInput($_POST['enlace_1'] ?? ''),
+            'enlace_2' => cleanInput($_POST['enlace_2'] ?? '')
         ];
         
         $result = $this->activityModel->updateActivity($activityId, $updateData);
@@ -435,6 +437,158 @@ class ActivityController {
             redirectWithMessage("activities/detail.php?id=$activityId", 'Actividad actualizada exitosamente', 'success');
         } else {
             redirectWithMessage("activities/edit.php?id=$activityId", 'Error al actualizar actividad', 'error');
+        }
+    }
+    
+    // Eliminar actividad (soporta eliminación individual y múltiple)
+    public function deleteActivity() {
+        $this->auth->requireAuth();
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirectWithMessage('activities/', 'Método no permitido', 'error');
+        }
+        
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            redirectWithMessage('activities/', 'Token de seguridad inválido', 'error');
+        }
+        
+        $currentUser = $this->auth->getCurrentUser();
+        
+        // Detectar si es eliminación múltiple o individual
+        if (isset($_POST['activity_ids']) && is_array($_POST['activity_ids'])) {
+            // ELIMINACIÓN MÚLTIPLE (solo SuperAdmin)
+            if ($currentUser['rol'] !== 'SuperAdmin') {
+                redirectWithMessage('activities/', 'No tienes permisos para eliminar múltiples actividades', 'error');
+            }
+            
+            $activityIds = $_POST['activity_ids'];
+            
+            if (empty($activityIds)) {
+                redirectWithMessage('activities/', 'No se seleccionaron actividades para eliminar', 'error');
+            }
+            
+            $deletedCount = 0;
+            $errors = [];
+            
+            foreach ($activityIds as $activityId) {
+                $activityId = (int)$activityId;
+                
+                $activity = $this->activityModel->getActivityById($activityId);
+                if (!$activity) {
+                    $errors[] = "Actividad ID $activityId no encontrada";
+                    continue;
+                }
+                
+                if ($this->activityModel->deleteActivity($activityId)) {
+                    $deletedCount++;
+                    logActivity("SuperAdmin eliminó la actividad ID $activityId: " . $activity['titulo'], 'INFO', $currentUser['id']);
+                } else {
+                    $errors[] = "Error al eliminar actividad ID $activityId";
+                }
+            }
+            
+            if ($deletedCount > 0) {
+                $message = "$deletedCount actividad(es) eliminada(s) exitosamente";
+                if (!empty($errors)) {
+                    $message .= ". Errores: " . implode(', ', $errors);
+                }
+                redirectWithMessage('activities/', $message, 'success');
+            } else {
+                redirectWithMessage('activities/', 'No se pudieron eliminar las actividades: ' . implode(', ', $errors), 'error');
+            }
+            
+        } else {
+            // ELIMINACIÓN INDIVIDUAL
+            $activityId = intval($_POST['activity_id'] ?? 0);
+            if ($activityId <= 0) {
+                redirectWithMessage('activities/', 'Actividad no encontrada', 'error');
+            }
+            
+            $activity = $this->activityModel->getActivityById($activityId);
+            if (!$activity) {
+                redirectWithMessage('activities/', 'Actividad no encontrada', 'error');
+            }
+            
+            // Verificar permisos - solo el dueño o SuperAdmin/Gestor pueden eliminar
+            $canDelete = false;
+            
+            if (in_array($currentUser['rol'], ['SuperAdmin', 'Gestor'])) {
+                $canDelete = true;
+            } elseif ($activity['usuario_id'] == $currentUser['id']) {
+                $canDelete = true;
+            }
+            
+            if (!$canDelete) {
+                redirectWithMessage('activities/', 'No tienes permisos para eliminar esta actividad', 'error');
+            }
+            
+            // Eliminar la actividad
+            $result = $this->activityModel->deleteActivity($activityId);
+            
+            if ($result) {
+                logActivity("Actividad eliminada: ID $activityId - " . $activity['titulo'], 'INFO');
+                redirectWithMessage('activities/', 'Actividad eliminada exitosamente', 'success');
+            } else {
+                redirectWithMessage('activities/', 'Error al eliminar la actividad', 'error');
+            }
+        }
+    }
+    
+    // Eliminar múltiples actividades (solo SuperAdmin)
+    public function deleteMultipleActivities() {
+        $this->auth->requireAuth();
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirectWithMessage('activities/', 'Método no permitido', 'error');
+        }
+        
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            redirectWithMessage('activities/', 'Token de seguridad inválido', 'error');
+        }
+        
+        $currentUser = $this->auth->getCurrentUser();
+        
+        // Solo SuperAdmin puede eliminar múltiples actividades
+        if ($currentUser['rol'] !== 'SuperAdmin') {
+            redirectWithMessage('activities/', 'No tienes permisos para eliminar múltiples actividades', 'error');
+        }
+        
+        $activityIds = $_POST['activity_ids'] ?? [];
+        
+        if (empty($activityIds) || !is_array($activityIds)) {
+            redirectWithMessage('activities/', 'No se seleccionaron actividades para eliminar', 'error');
+        }
+        
+        $deletedCount = 0;
+        $errors = [];
+        
+        foreach ($activityIds as $activityId) {
+            $activityId = (int)$activityId;
+            
+            // Verificar que la actividad existe
+            $activity = $this->activityModel->getActivityById($activityId);
+            if (!$activity) {
+                $errors[] = "Actividad ID $activityId no encontrada";
+                continue;
+            }
+            
+            // Eliminar la actividad
+            if ($this->activityModel->deleteActivity($activityId)) {
+                $deletedCount++;
+                logActivity("SuperAdmin eliminó la actividad ID $activityId: " . $activity['titulo'], 'INFO', $currentUser['id']);
+            } else {
+                $errors[] = "Error al eliminar actividad ID $activityId";
+            }
+        }
+        
+        if ($deletedCount > 0) {
+            $message = "$deletedCount actividad(es) eliminada(s) exitosamente";
+            if (!empty($errors)) {
+                $message .= ". Errores: " . implode(', ', $errors);
+            }
+            redirectWithMessage('activities/', $message, 'success');
+        } else {
+            redirectWithMessage('activities/', 'No se pudieron eliminar las actividades: ' . implode(', ', $errors), 'error');
         }
     }
     

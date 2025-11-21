@@ -222,5 +222,63 @@ class TaskController {
         
         return false;
     }
+    
+    // Eliminar múltiples tareas (solo SuperAdmin)
+    public function deleteMultipleTasks() {
+        $this->auth->requireAuth();
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirectWithMessage('tasks/', 'Método no permitido', 'error');
+        }
+        
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            redirectWithMessage('tasks/', 'Token de seguridad inválido', 'error');
+        }
+        
+        $currentUser = $this->auth->getCurrentUser();
+        
+        // Solo SuperAdmin puede eliminar múltiples tareas
+        if ($currentUser['rol'] !== 'SuperAdmin') {
+            redirectWithMessage('tasks/', 'No tienes permisos para eliminar tareas', 'error');
+        }
+        
+        $taskIds = $_POST['task_ids'] ?? [];
+        
+        if (empty($taskIds) || !is_array($taskIds)) {
+            redirectWithMessage('tasks/', 'No se seleccionaron tareas para eliminar', 'error');
+        }
+        
+        $deletedCount = 0;
+        $errors = [];
+        
+        foreach ($taskIds as $taskId) {
+            $taskId = (int)$taskId;
+            
+            // Verificar que la tarea existe
+            $task = $this->activityModel->getActivityById($taskId);
+            if (!$task) {
+                $errors[] = "Tarea ID $taskId no encontrada";
+                continue;
+            }
+            
+            // Eliminar la tarea
+            if ($this->activityModel->deleteActivity($taskId)) {
+                $deletedCount++;
+                logActivity("SuperAdmin eliminó la tarea ID $taskId: " . $task['titulo'], 'INFO', $currentUser['id']);
+            } else {
+                $errors[] = "Error al eliminar tarea ID $taskId";
+            }
+        }
+        
+        if ($deletedCount > 0) {
+            $message = "$deletedCount tarea(s) eliminada(s) exitosamente";
+            if (!empty($errors)) {
+                $message .= ". Errores: " . implode(', ', $errors);
+            }
+            redirectWithMessage('tasks/', $message, 'success');
+        } else {
+            redirectWithMessage('tasks/', 'No se pudieron eliminar las tareas: ' . implode(', ', $errors), 'error');
+        }
+    }
 }
 ?>

@@ -65,6 +65,13 @@
                                 <?= count($pendingTasks) ?> tarea(s) pendiente(s)
                             </span>
                         </div>
+                        <?php if ($_SESSION['user_role'] === 'SuperAdmin'): ?>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-danger" id="deleteTasks" style="display: none;" onclick="deleteSelectedTasks()">
+                                    <i class="fas fa-trash me-1"></i>Borrar Tareas (<span id="selectedCount">0</span>)
+                                </button>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -83,6 +90,26 @@
                     Para completar una tarea debes subir evidencia (foto, video, comentario, etc.). Una vez subida la evidencia, 
                     la tarea se marcará como completada automáticamente y <strong>no podrás modificar la evidencia</strong>.
                 </div>
+
+                <?php if ($_SESSION['user_role'] === 'SuperAdmin' && !empty($pendingTasks)): ?>
+                    <!-- Controles de selección masiva -->
+                    <div class="alert alert-warning mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Modo Administrador:</strong> Puedes seleccionar múltiples tareas y eliminarlas.
+                            </span>
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary" onclick="selectAllTasks()">
+                                    <i class="fas fa-check-square me-1"></i>Seleccionar Todo
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary ms-2" onclick="deselectAllTasks()">
+                                    <i class="fas fa-square me-1"></i>Deseleccionar Todo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
 
                 <?php if (empty($pendingTasks)): ?>
                     <!-- Sin tareas pendientes -->
@@ -141,6 +168,14 @@
                             ?>
                             <div class="col-lg-6 col-xl-4 mb-4">
                                 <div class="card card-task <?= $urgencyClass ?> h-100">
+                                    <?php if ($_SESSION['user_role'] === 'SuperAdmin'): ?>
+                                        <div class="position-absolute top-0 start-0 p-2" style="z-index: 10;">
+                                            <input type="checkbox" class="form-check-input task-checkbox" 
+                                                   value="<?= $task['id'] ?>" 
+                                                   style="width: 20px; height: 20px; cursor: pointer;"
+                                                   onchange="updateDeleteButton()">
+                                        </div>
+                                    <?php endif; ?>
                                     <div class="card-header bg-light">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <h6 class="card-title mb-0 fw-bold">
@@ -401,5 +436,75 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <?php if ($_SESSION['user_role'] === 'SuperAdmin'): ?>
+    <script>
+        function updateDeleteButton() {
+            const checkboxes = document.querySelectorAll('.task-checkbox:checked');
+            const deleteBtn = document.getElementById('deleteTasks');
+            const countSpan = document.getElementById('selectedCount');
+            
+            if (checkboxes.length > 0) {
+                deleteBtn.style.display = 'block';
+                countSpan.textContent = checkboxes.length;
+            } else {
+                deleteBtn.style.display = 'none';
+            }
+        }
+        
+        function selectAllTasks() {
+            document.querySelectorAll('.task-checkbox').forEach(cb => cb.checked = true);
+            updateDeleteButton();
+        }
+        
+        function deselectAllTasks() {
+            document.querySelectorAll('.task-checkbox').forEach(cb => cb.checked = false);
+            updateDeleteButton();
+        }
+        
+        function deleteSelectedTasks() {
+            const checkboxes = document.querySelectorAll('.task-checkbox:checked');
+            const taskIds = Array.from(checkboxes).map(cb => cb.value);
+            
+            if (taskIds.length === 0) {
+                alert('No hay tareas seleccionadas');
+                return;
+            }
+            
+            const taskCount = taskIds.length;
+            const confirmMsg = taskCount === 1 
+                ? '¿Estás seguro de que deseas eliminar esta tarea?' 
+                : `¿Estás seguro de que deseas eliminar ${taskCount} tareas?`;
+            
+            if (!confirm(confirmMsg + '\n\nEsta acción no se puede deshacer.')) {
+                return;
+            }
+            
+            // Crear formulario y enviar
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '<?= url('tasks/delete-multiple.php') ?>';
+            
+            // Token CSRF
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = '<?= generateCSRFToken() ?>';
+            form.appendChild(csrfInput);
+            
+            // IDs de tareas
+            taskIds.forEach(id => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'task_ids[]';
+                input.value = id;
+                form.appendChild(input);
+            });
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    </script>
+    <?php endif; ?>
 </body>
 </html>

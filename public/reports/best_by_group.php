@@ -39,6 +39,11 @@ $perPage = 20;
 // Get report data
 $reportData = $groupModel->getBestPerformersByGroup($filters, $page, $perPage);
 
+// DEBUG: Ver qué está devolviendo
+error_log("DEBUG best_by_group.php:");
+error_log("Total grupos: " . $reportData['total_groups']);
+error_log("Grupos array: " . print_r($reportData['groups'], true));
+
 // Handle Excel export
 if (isset($_GET['export']) && $_GET['export'] === 'excel') {
     require_once __DIR__ . '/../../includes/excel_export.php';

@@ -148,6 +148,14 @@ function renderSidebar($currentPage = '') {
             'active' => ($currentPage === 'activist_report')
         ];
         
+        // Informe Global de Tareas
+        $menuItems[] = [
+            'url' => url('reports/global-tasks.php'),
+            'icon' => 'fas fa-tasks',
+            'text' => 'Informe Global de Tareas',
+            'active' => ($currentPage === 'reports')
+        ];
+        
         // Informe Global por Actividad - solo para SuperAdmin
         if ($userRole === 'SuperAdmin') {
             $menuItems[] = [

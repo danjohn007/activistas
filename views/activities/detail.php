@@ -139,7 +139,7 @@ require_once __DIR__ . '/../../includes/functions.php';
                                         <?php if (!empty($activity['enlace_2'])): ?>
                                             <div class="mb-2">
                                                 <a href="<?= htmlspecialchars($activity['enlace_2']) ?>" target="_blank" class="btn btn-outline-primary btn-sm">
-                                                    <i class="fas fa-external-link-alt me-1"></i>Banco de contenido
+                                                    <i class="fas fa-external-link-alt me-1"></i>Enlace 2
                                                 </a>
                                             </div>
                                         <?php endif; ?>

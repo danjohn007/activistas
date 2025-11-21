@@ -365,6 +365,16 @@ class Activity {
                 $params[] = $data['grupo'];
             }
             
+            if (isset($data['enlace_1'])) {
+                $fields[] = "enlace_1 = ?";
+                $params[] = $data['enlace_1'];
+            }
+            
+            if (isset($data['enlace_2'])) {
+                $fields[] = "enlace_2 = ?";
+                $params[] = $data['enlace_2'];
+            }
+            
             if (empty($fields)) {
                 return false;
             }
@@ -382,6 +392,27 @@ class Activity {
             return $result;
         } catch (Exception $e) {
             logActivity("Error al actualizar actividad: " . $e->getMessage(), 'ERROR');
+            return false;
+        }
+    }
+    
+    public function deleteActivity($id) {
+        try {
+            // Primero eliminar evidencias relacionadas (foreign key)
+            $stmt = $this->db->prepare("DELETE FROM evidencias WHERE actividad_id = ?");
+            $stmt->execute([$id]);
+            
+            // Eliminar la actividad
+            $stmt = $this->db->prepare("DELETE FROM actividades WHERE id = ?");
+            $result = $stmt->execute([$id]);
+            
+            if ($result) {
+                logActivity("Actividad ID $id eliminada exitosamente");
+            }
+            
+            return $result;
+        } catch (Exception $e) {
+            logActivity("Error al eliminar actividad: " . $e->getMessage(), 'ERROR');
             return false;
         }
     }
@@ -586,7 +617,7 @@ class Activity {
             
             $sql = "SELECT ta.nombre, COUNT(a.id) as cantidad
                     FROM tipos_actividades ta
-                    LEFT JOIN actividades a ON ta.id = a.tipo_actividad_id";
+                    LEFT JOIN actividades a ON ta.id = a.tipo_actividad_id AND a.estado != 'cancelada'";
             
             // Agregar JOIN con usuarios si necesitamos filtrar por líder o grupo
             if (!empty($filters['lider_id']) || !empty($filters['grupo_id'])) {
@@ -594,7 +625,7 @@ class Activity {
             }
             
             $params = [];
-            $where = [];
+            $where = ["ta.activo = 1"]; // Solo tipos activos
             
             if (!empty($filters['usuario_id'])) {
                 $where[] = "a.usuario_id = ?";
@@ -626,12 +657,21 @@ class Activity {
                 $sql .= " WHERE " . implode(' AND ', $where);
             }
             
-            $sql .= " GROUP BY ta.id, ta.nombre ORDER BY cantidad DESC";
+            $sql .= " GROUP BY ta.id, ta.nombre 
+                     HAVING cantidad > 0
+                     ORDER BY cantidad DESC";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
             
-            return $stmt->fetchAll();
+            $results = $stmt->fetchAll();
+            
+            // Si no hay resultados, devolver array vacío con mensaje informativo
+            if (empty($results)) {
+                logActivity("No se encontraron actividades para los filtros proporcionados", 'INFO');
+            }
+            
+            return $results;
         } catch (Exception $e) {
             logActivity("Error al obtener actividades por tipo: " . $e->getMessage(), 'ERROR');
             return [];
@@ -1601,6 +1641,192 @@ class Activity {
             return $stmt->fetchAll();
         } catch (Exception $e) {
             logActivity("Error al obtener tareas por tipo de actividad: " . $e->getMessage(), 'ERROR');
+            return [];
+        }
+    }
+    
+    /**
+     * Obtener informe global de tareas con porcentaje de cumplimiento
+     * Agrupa por título de tarea y muestra estadísticas
+     */
+    public function getGlobalTaskReport($filters = []) {
+        try {
+            $params = [];
+            $whereConditions = ['a.tarea_pendiente = 1'];
+            
+            // Filtros de fecha
+            if (!empty($filters['fecha_desde'])) {
+                $whereConditions[] = "a.fecha_creacion >= ?";
+                $params[] = $filters['fecha_desde'] . ' 00:00:00';
+            }
+            
+            if (!empty($filters['fecha_hasta'])) {
+                $whereConditions[] = "a.fecha_creacion <= ?";
+                $params[] = $filters['fecha_hasta'] . ' 23:59:59';
+            }
+            
+            // Filtro por nombre de actividad (título)
+            if (!empty($filters['nombre_actividad'])) {
+                $whereConditions[] = "a.titulo LIKE ?";
+                $params[] = '%' . $filters['nombre_actividad'] . '%';
+            }
+            
+            // Filtro por nombre de activista
+            if (!empty($filters['nombre_activista'])) {
+                $whereConditions[] = "u.nombre_completo LIKE ?";
+                $params[] = '%' . $filters['nombre_activista'] . '%';
+            }
+            
+            // Filtro por grupo
+            if (!empty($filters['grupo_id'])) {
+                $whereConditions[] = "u.grupo_id = ?";
+                $params[] = $filters['grupo_id'];
+            }
+            
+            // Filtro por líder
+            if (!empty($filters['lider_id'])) {
+                $whereConditions[] = "u.lider_id = ?";
+                $params[] = $filters['lider_id'];
+            }
+            
+            $whereClause = implode(' AND ', $whereConditions);
+            
+            $sql = "
+                SELECT 
+                    a.titulo,
+                    a.tipo_actividad_id,
+                    ta.nombre as tipo_actividad,
+                    COUNT(DISTINCT a.id) as total_asignadas,
+                    COUNT(DISTINCT CASE WHEN a.estado = 'completada' THEN a.id END) as total_completadas,
+                    ROUND(
+                        (COUNT(DISTINCT CASE WHEN a.estado = 'completada' THEN a.id END) * 100.0) / 
+                        NULLIF(COUNT(DISTINCT a.id), 0), 
+                        2
+                    ) as porcentaje_cumplimiento,
+                    MIN(a.fecha_creacion) as primera_asignacion,
+                    MAX(a.fecha_creacion) as ultima_asignacion,
+                    MIN(a.descripcion) as descripcion_ejemplo
+                FROM actividades a
+                JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id
+                JOIN usuarios u ON a.usuario_id = u.id
+                WHERE $whereClause
+                GROUP BY a.titulo, a.tipo_actividad_id, ta.nombre
+                ORDER BY total_asignadas DESC, porcentaje_cumplimiento DESC
+            ";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            logActivity("Error al obtener informe global de tareas: " . $e->getMessage(), 'ERROR');
+            return [];
+        }
+    }
+    
+    /**
+     * Obtener detalle de una tarea específica con usuarios que la completaron
+     * Ordenados por fecha de completado (quién entregó primero)
+     */
+    public function getTaskDetailReport($titulo, $tipoActividadId, $filters = []) {
+        try {
+            // Limpiar el título de espacios extra
+            $titulo = trim($titulo);
+            
+            // Log para debug detallado
+            error_log("getTaskDetailReport - Titulo: '" . $titulo . "' (length: " . strlen($titulo) . "), TipoID: " . $tipoActividadId);
+            
+            $params = [$titulo, $tipoActividadId];
+            $whereConditions = [];
+            
+            // Filtros de fecha
+            if (!empty($filters['fecha_desde'])) {
+                $whereConditions[] = "a.fecha_creacion >= ?";
+                $params[] = $filters['fecha_desde'] . ' 00:00:00';
+            }
+            
+            if (!empty($filters['fecha_hasta'])) {
+                $whereConditions[] = "a.fecha_creacion <= ?";
+                $params[] = $filters['fecha_hasta'] . ' 23:59:59';
+            }
+            
+            // Filtro por nombre de activista
+            if (!empty($filters['nombre_activista'])) {
+                $whereConditions[] = "u.nombre_completo LIKE ?";
+                $params[] = '%' . $filters['nombre_activista'] . '%';
+            }
+            
+            // Filtro por grupo
+            if (!empty($filters['grupo_id'])) {
+                $whereConditions[] = "u.grupo_id = ?";
+                $params[] = $filters['grupo_id'];
+            }
+            
+            // Filtro por líder
+            if (!empty($filters['lider_id'])) {
+                $whereConditions[] = "u.lider_id = ?";
+                $params[] = $filters['lider_id'];
+            }
+            
+            $dateFilter = !empty($whereConditions) ? ' AND ' . implode(' AND ', $whereConditions) : '';
+            
+            // Log de parámetros completos antes de ejecutar
+            error_log("getTaskDetailReport - Params antes de ejecutar: " . json_encode($params));
+            
+            $sql = "
+                SELECT 
+                    a.id,
+                    a.titulo,
+                    a.descripcion,
+                    a.estado,
+                    a.fecha_creacion as fecha_asignacion,
+                    a.fecha_actualizacion,
+                    u.id as usuario_id,
+                    u.nombre_completo as usuario_nombre,
+                    u.email as usuario_email,
+                    u.telefono as usuario_telefono,
+                    g.nombre as grupo_nombre,
+                    lider.nombre_completo as lider_nombre,
+                    ta.nombre as tipo_actividad,
+                    solicitante.nombre_completo as asignado_por,
+                    COUNT(e.id) as total_evidencias,
+                    CASE 
+                        WHEN a.estado = 'completada' THEN 
+                            TIMESTAMPDIFF(HOUR, a.fecha_creacion, a.fecha_actualizacion)
+                        ELSE NULL
+                    END as horas_para_completar
+                FROM actividades a
+                JOIN usuarios u ON a.usuario_id = u.id
+                JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id
+                LEFT JOIN grupos g ON u.grupo_id = g.id
+                LEFT JOIN usuarios lider ON u.lider_id = lider.id
+                LEFT JOIN usuarios solicitante ON a.solicitante_id = solicitante.id
+                LEFT JOIN evidencias e ON a.id = e.actividad_id
+                WHERE a.titulo = ? AND a.tipo_actividad_id = ? AND (a.tarea_pendiente = 1 OR a.tarea_pendiente IS NULL) $dateFilter
+                GROUP BY a.id, u.id, g.nombre, lider.nombre_completo, ta.nombre, solicitante.nombre_completo
+                ORDER BY 
+                    CASE WHEN a.estado = 'completada' THEN 0 ELSE 1 END,
+                    a.fecha_actualizacion ASC,
+                    a.fecha_creacion DESC
+            ";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            
+            $results = $stmt->fetchAll();
+            
+            // Log para debug - incluir información del error si hay
+            error_log("getTaskDetailReport - Resultados encontrados: " . count($results));
+            if (count($results) === 0) {
+                error_log("getTaskDetailReport - SQL ejecutado: " . $sql);
+                error_log("getTaskDetailReport - Params enviados: " . json_encode($params));
+                error_log("getTaskDetailReport - PDO ErrorInfo: " . json_encode($stmt->errorInfo()));
+            }
+            
+            return $results;
+        } catch (Exception $e) {
+            logActivity("Error al obtener detalle de tarea: " . $e->getMessage(), 'ERROR');
+            error_log("getTaskDetailReport - Error: " . $e->getMessage());
             return [];
         }
     }

@@ -87,9 +87,9 @@
 
                             <div class="mb-3">
                                 <label for="descripcion" class="form-label">Descripción</label>
-                                <textarea class="form-control" id="descripcion" name="descripcion" rows="4" 
-                                          maxlength="1000"><?= htmlspecialchars($_SESSION['form_data']['descripcion'] ?? '') ?></textarea>
-                                <div class="form-text">Describe brevemente los objetivos y detalles de la actividad.</div>
+                                <textarea class="form-control" id="descripcion" name="descripcion" rows="6" 
+                                          maxlength="5000"><?= htmlspecialchars($_SESSION['form_data']['descripcion'] ?? '') ?></textarea>
+                                <div class="form-text">Describe los objetivos y detalles de la actividad (máximo 5000 caracteres).</div>
                             </div>
 
                             <!-- Enlaces opcionales de actividad -->
@@ -108,12 +108,12 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="enlace_2" class="form-label">
-                                            <i class="fas fa-link me-1"></i>Banco de contenido (Opcional)
+                                            <i class="fas fa-link me-1"></i>Enlace 2 (Opcional)
                                         </label>
                                         <input type="url" class="form-control" id="enlace_2" name="enlace_2" 
                                                value="<?= htmlspecialchars($_SESSION['form_data']['enlace_2'] ?? '') ?>"
                                                placeholder="https://ejemplo.com/banco-contenido">
-                                        <div class="form-text">Enlace opcional al banco de contenido relacionado con la actividad</div>
+                                        <div class="form-text">Enlace opcional adicional relacionado con la actividad</div>
                                     </div>
                                 </div>
                             </div>

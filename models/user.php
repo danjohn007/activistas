@@ -742,5 +742,94 @@ class User {
             return false;
         }
     }
+    
+    /**
+     * Obtener usuario por email
+     */
+    public function getUserByEmail($email) {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM usuarios WHERE email = ? AND estado = 'activo'");
+            $stmt->execute([$email]);
+            return $stmt->fetch();
+        } catch (Exception $e) {
+            logActivity("Error al obtener usuario por email: " . $e->getMessage(), 'ERROR');
+            return false;
+        }
+    }
+    
+    /**
+     * Crear token de recuperación de contraseña
+     */
+    public function createPasswordResetToken($userId, $token, $expires) {
+        try {
+            // Eliminar tokens antiguos del usuario
+            $stmt = $this->db->prepare("DELETE FROM password_reset_tokens WHERE user_id = ?");
+            $stmt->execute([$userId]);
+            
+            // Crear nuevo token
+            $stmt = $this->db->prepare("
+                INSERT INTO password_reset_tokens (user_id, token, expires_at) 
+                VALUES (?, ?, ?)
+            ");
+            
+            return $stmt->execute([$userId, $token, $expires]);
+        } catch (Exception $e) {
+            logActivity("Error al crear token de recuperación: " . $e->getMessage(), 'ERROR');
+            return false;
+        }
+    }
+    
+    /**
+     * Validar token de recuperación de contraseña
+     */
+    public function validatePasswordResetToken($token) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT * FROM password_reset_tokens 
+                WHERE token = ? 
+                AND used = 0 
+                AND expires_at > NOW()
+            ");
+            $stmt->execute([$token]);
+            return $stmt->fetch();
+        } catch (Exception $e) {
+            logActivity("Error al validar token de recuperación: " . $e->getMessage(), 'ERROR');
+            return false;
+        }
+    }
+    
+    /**
+     * Actualizar contraseña del usuario
+     */
+    public function updatePassword($userId, $newPassword) {
+        try {
+            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+            
+            $stmt = $this->db->prepare("UPDATE usuarios SET password_hash = ? WHERE id = ?");
+            $result = $stmt->execute([$hashedPassword, $userId]);
+            
+            if ($result) {
+                logActivity("Contraseña actualizada para usuario ID: $userId");
+            }
+            
+            return $result;
+        } catch (Exception $e) {
+            logActivity("Error al actualizar contraseña: " . $e->getMessage(), 'ERROR');
+            return false;
+        }
+    }
+    
+    /**
+     * Marcar token como usado
+     */
+    public function markTokenAsUsed($token) {
+        try {
+            $stmt = $this->db->prepare("UPDATE password_reset_tokens SET used = 1 WHERE token = ?");
+            return $stmt->execute([$token]);
+        } catch (Exception $e) {
+            logActivity("Error al marcar token como usado: " . $e->getMessage(), 'ERROR');
+            return false;
+        }
+    }
 }
 ?>

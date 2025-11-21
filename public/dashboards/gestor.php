@@ -64,6 +64,11 @@ $controller->gestorDashboard();
                             </a>
                         </li>
                         <li class="nav-item mb-2">
+                            <a class="nav-link text-white" href="<?= url('admin/groups.php') ?>">
+                                <i class="fas fa-layer-group me-2"></i>Gestión de Grupos
+                            </a>
+                        </li>
+                        <li class="nav-item mb-2">
                             <a class="nav-link text-white" href="<?= url('activities/') ?>">
                                 <i class="fas fa-tasks me-2"></i>Actividades
                             </a>
@@ -308,7 +313,6 @@ $controller->gestorDashboard();
                                                     <th>Tipo</th>
                                                     <th>Fecha</th>
                                                     <th>Estado</th>
-                                                    <th>Alcance</th>
                                                     <th>Acciones</th>
                                                 </tr>
                                             </thead>
@@ -324,7 +328,6 @@ $controller->gestorDashboard();
                                                                 <?= ucfirst($activity['estado']) ?>
                                                             </span>
                                                         </td>
-                                                        <td><?= number_format($activity['alcance_estimado']) ?></td>
                                                         <td>
                                                             <a href="<?= url('activities/detail.php?id=' . $activity['id']) ?>" 
                                                                class="btn btn-sm btn-outline-primary">

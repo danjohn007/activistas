@@ -261,9 +261,9 @@ class UserController {
         
         $liders = $this->userModel->getActiveLiders();
         
-        // Load groups for SuperAdmin
+        // Load groups for SuperAdmin and Gestor
         $groups = [];
-        if ($_SESSION['user_role'] === 'SuperAdmin') {
+        if (in_array($_SESSION['user_role'], ['SuperAdmin', 'Gestor'])) {
             require_once __DIR__ . '/../models/group.php';
             $groupModel = new Group();
             $groups = $groupModel->getActiveGroups();
@@ -324,8 +324,8 @@ class UserController {
             $updateData['lider_id'] = intval($_POST['lider_id']);
         }
         
-        // Handle group assignment (only for SuperAdmin)
-        if ($currentUser['rol'] === 'SuperAdmin' && isset($_POST['grupo_id'])) {
+        // Handle group assignment (for SuperAdmin and Gestor)
+        if (in_array($currentUser['rol'], ['SuperAdmin', 'Gestor']) && isset($_POST['grupo_id'])) {
             $groupId = !empty($_POST['grupo_id']) ? intval($_POST['grupo_id']) : null;
             $updateData['grupo_id'] = $groupId;
         }
@@ -478,6 +478,314 @@ class UserController {
         } else {
             redirectWithMessage('profile.php', 'Error al actualizar perfil', 'error');
         }
+    }
+    
+    /**
+     * Mostrar formulario de recuperación de contraseña
+     */
+    public function showForgotPassword() {
+        if ($this->auth->isLoggedIn()) {
+            $this->redirectToDashboard();
+            return;
+        }
+        
+        include __DIR__ . '/../views/forgot-password.php';
+    }
+    
+    /**
+     * Procesar solicitud de recuperación de contraseña
+     */
+    public function processForgotPassword() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirectWithMessage('forgot-password.php', 'Método no permitido', 'error');
+        }
+        
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            redirectWithMessage('forgot-password.php', 'Token de seguridad inválido', 'error');
+        }
+        
+        $email = cleanInput($_POST['email'] ?? '');
+        
+        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            redirectWithMessage('forgot-password.php', 'Por favor ingresa un correo válido', 'error');
+        }
+        
+        // Verificar si el usuario existe
+        $user = $this->userModel->getUserByEmail($email);
+        
+        if (!$user) {
+            // Usuario no existe - mostrar error claro
+            redirectWithMessage('forgot-password.php', 'El correo ingresado no está registrado en el sistema', 'error');
+            return;
+        }
+        
+        // Usuario existe - proceder con recuperación
+        // Generar token de recuperación
+        $token = bin2hex(random_bytes(32));
+        $expires = date('Y-m-d H:i:s', strtotime('+2 hours'));
+        
+        // Guardar token en base de datos
+        if ($this->userModel->createPasswordResetToken($user['id'], $token, $expires)) {
+            // Construir enlace de recuperación
+            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+            $host = $_SERVER['HTTP_HOST'];
+            $path = dirname($_SERVER['PHP_SELF']);
+            $resetLink = $protocol . $host . rtrim($path, '/') . '/reset-password.php?token=' . $token;
+            
+            // Enviar correo
+            $emailSent = $this->sendPasswordResetEmail($email, $user['nombre_completo'], $resetLink);
+            
+            if ($emailSent) {
+                redirectWithMessage('forgot-password.php', 'Se ha enviado un enlace de recuperación a tu correo. El enlace expirará en 2 horas.', 'success');
+            } else {
+                logActivity("Error al enviar correo de recuperación a: $email", 'ERROR');
+                redirectWithMessage('forgot-password.php', 'Error al enviar el correo. Por favor intenta nuevamente o contacta al administrador.', 'error');
+                return;
+            }
+        } else {
+            redirectWithMessage('forgot-password.php', 'Error al procesar la solicitud. Por favor intenta nuevamente.', 'error');
+            return;
+        }
+    }
+    
+    /**
+     * Mostrar formulario de restablecer contraseña
+     */
+    public function showResetPassword() {
+        $token = $_GET['token'] ?? '';
+        
+        if (empty($token)) {
+            redirectWithMessage('login.php', 'Token inválido', 'error');
+        }
+        
+        // Verificar si el token es válido
+        $validToken = $this->userModel->validatePasswordResetToken($token);
+        
+        include __DIR__ . '/../views/reset-password.php';
+    }
+    
+    /**
+     * Procesar restablecimiento de contraseña
+     */
+    public function processResetPassword() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirectWithMessage('login.php', 'Método no permitido', 'error');
+        }
+        
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            redirectWithMessage('login.php', 'Token de seguridad inválido', 'error');
+        }
+        
+        $token = cleanInput($_POST['token'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $passwordConfirm = $_POST['password_confirm'] ?? '';
+        
+        if (empty($token) || empty($password) || empty($passwordConfirm)) {
+            redirectWithMessage("reset-password.php?token=$token", 'Todos los campos son obligatorios', 'error');
+        }
+        
+        if ($password !== $passwordConfirm) {
+            redirectWithMessage("reset-password.php?token=$token", 'Las contraseñas no coinciden', 'error');
+        }
+        
+        if (strlen($password) < 8) {
+            redirectWithMessage("reset-password.php?token=$token", 'La contraseña debe tener al menos 8 caracteres', 'error');
+        }
+        
+        // Validar token y obtener usuario
+        $tokenData = $this->userModel->validatePasswordResetToken($token);
+        
+        if (!$tokenData) {
+            redirectWithMessage('login.php', 'El enlace de recuperación es inválido o ha expirado', 'error');
+        }
+        
+        // Actualizar contraseña
+        if ($this->userModel->updatePassword($tokenData['user_id'], $password)) {
+            // Marcar token como usado
+            $this->userModel->markTokenAsUsed($token);
+            
+            redirectWithMessage('login.php', 'Contraseña actualizada exitosamente. Ya puedes iniciar sesión', 'success');
+        } else {
+            redirectWithMessage("reset-password.php?token=$token", 'Error al actualizar la contraseña', 'error');
+        }
+    }
+    
+    /**
+     * Enviar correo de recuperación de contraseña
+     */
+    private function sendPasswordResetEmail($to, $name, $resetLink) {
+        // Primero intentar con PHPMailer (SMTP) - más confiable y menos spam
+        $phpmailerPath = __DIR__ . '/../includes/phpmailer/PHPMailerAutoload.php';
+        if (file_exists($phpmailerPath)) {
+            logActivity("Enviando correo con PHPMailer (SMTP) a: $to", 'INFO');
+            $result = $this->sendEmailWithPHPMailer($to, $name, $resetLink);
+            if ($result) {
+                return true;
+            }
+            logActivity("PHPMailer falló, intentando con mail() como respaldo", 'WARNING');
+        }
+        
+        // Si PHPMailer falla o no está disponible, usar mail() como respaldo
+        $result = $this->sendEmailWithMailFunction($to, $name, $resetLink);
+        
+        if ($result) {
+            return true;
+        }
+        
+        logActivity("Error: No se pudo enviar correo a: $to con ningún método", 'ERROR');
+        return false;
+    }
+    
+    /**
+     * Enviar correo usando PHPMailer (recomendado)
+     */
+    private function sendEmailWithPHPMailer($to, $name, $resetLink) {
+        try {
+            // Intentar cargar PHPMailer - usa autoload que ya crea los alias
+            $autoloadPath = __DIR__ . '/../includes/phpmailer/PHPMailerAutoload.php';
+            if (!file_exists($autoloadPath)) {
+                logActivity("PHPMailer no encontrado, usando mail() como respaldo", 'WARNING');
+                return $this->sendEmailWithMailFunction($to, $name, $resetLink);
+            }
+            
+            require_once $autoloadPath;
+            
+            // Verificar que la clase esté disponible
+            if (!class_exists('PHPMailer')) {
+                logActivity("Clase PHPMailer no disponible después de cargar autoload", 'ERROR');
+                return $this->sendEmailWithMailFunction($to, $name, $resetLink);
+            }
+            
+            $mail = new PHPMailer(true);
+            
+            // Configuración del servidor SMTP
+            $mail->isSMTP();
+            $mail->Host = 'ejercitodigital.com.mx';
+            $mail->SMTPAuth = true;
+            $mail->Username = 'resetpassword@ejercitodigital.com.mx';
+            $mail->Password = 'Danjohn007';
+            $mail->SMTPSecure = 'ssl';
+            $mail->Port = 465;
+            $mail->CharSet = 'UTF-8';
+            
+            // Configuración adicional
+            $mail->SMTPDebug = 0;
+            $mail->Timeout = 30;
+            $mail->SMTPKeepAlive = false;
+            
+            // Remitente y destinatario
+            $mail->setFrom('resetpassword@ejercitodigital.com.mx', 'Activistas Digitales');
+            $mail->addAddress($to, $name);
+            
+            // Contenido del correo
+            $mail->isHTML(true);
+            $mail->Subject = 'Recuperación de Contraseña - Activistas Digitales';
+            $mail->Body = $this->getPasswordResetEmailHTML($name, $resetLink);
+            $mail->AltBody = $this->getPasswordResetEmailText($name, $resetLink);
+            
+            $mail->send();
+            logActivity("Correo de recuperación enviado a: $to (PHPMailer)", 'INFO');
+            return true;
+            
+        } catch (Exception $e) {
+            $errorMsg = isset($mail) && property_exists($mail, 'ErrorInfo') ? $mail->ErrorInfo : $e->getMessage();
+            logActivity("Error al enviar correo de recuperación: $errorMsg", 'ERROR');
+            // Intentar con mail() como respaldo
+            return $this->sendEmailWithMailFunction($to, $name, $resetLink);
+        }
+    }
+    
+    /**
+     * Enviar correo usando función mail() de PHP (alternativa)
+     */
+    private function sendEmailWithMailFunction($to, $name, $resetLink) {
+        try {
+            $subject = 'Recuperación de Contraseña - Activistas Digitales';
+            
+            // Headers optimizados para evitar spam
+            $headers = "MIME-Version: 1.0\r\n";
+            $headers .= "Content-type: text/html; charset=UTF-8\r\n";
+            $headers .= "From: Activistas Digitales <resetpassword@ejercitodigital.com.mx>\r\n";
+            $headers .= "Reply-To: resetpassword@ejercitodigital.com.mx\r\n";
+            $headers .= "Return-Path: resetpassword@ejercitodigital.com.mx\r\n";
+            $headers .= "X-Mailer: PHP/" . phpversion() . "\r\n";
+            $headers .= "X-Priority: 3\r\n";
+            $headers .= "Importance: Normal\r\n";
+            $headers .= "Message-ID: <" . time() . "." . md5($to . $resetLink) . "@ejercitodigital.com.mx>\r\n";
+            
+            $message = $this->getPasswordResetEmailHTML($name, $resetLink);
+            
+            $result = mail($to, $subject, $message, $headers);
+            
+            if ($result) {
+                logActivity("Correo de recuperación enviado a: $to", 'INFO');
+            } else {
+                logActivity("Error al enviar correo de recuperación a: $to", 'ERROR');
+            }
+            
+            return $result;
+            
+        } catch (Exception $e) {
+            logActivity("Error al enviar correo: " . $e->getMessage(), 'ERROR');
+            return false;
+        }
+    }
+    
+    /**
+     * Obtener HTML del correo de recuperación
+     */
+    private function getPasswordResetEmailHTML($name, $resetLink) {
+        return "<!DOCTYPE html>
+            <html lang='es'>
+            <head>
+                <meta charset='UTF-8'>
+                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                <title>Recuperación de Contraseña</title>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4; margin: 0; padding: 0; }
+                    .container { max-width: 600px; margin: 20px auto; background-color: white; }
+                    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; text-align: center; }
+                    .content { padding: 30px; }
+                    .button { display: inline-block; padding: 15px 30px; background: #667eea; color: white !important; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: bold; }
+                    .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; background-color: #f9f9f9; }
+                    .link-box { background: #f0f0f0; padding: 10px; border-radius: 5px; word-break: break-all; margin: 15px 0; }
+                </style>
+            </head>
+            <body>
+                <div class='container'>
+                    <div class='header'>
+                        <h1 style='margin: 0;'>Recuperación de Contraseña</h1>
+                    </div>
+                    <div class='content'>
+                        <p>Hola <strong>" . htmlspecialchars($name) . "</strong>,</p>
+                        <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>Activistas Digitales</strong>.</p>
+                        <p>Haz clic en el siguiente botón para crear una nueva contraseña:</p>
+                        <div style='text-align: center;'>
+                            <a href='" . htmlspecialchars($resetLink) . "' class='button' style='color: white;'>Restablecer Contraseña</a>
+                        </div>
+                        <p>Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
+                        <div class='link-box'>
+                            <a href='" . htmlspecialchars($resetLink) . "' style='color: #667eea; word-break: break-all;'>" . htmlspecialchars($resetLink) . "</a>
+                        </div>
+                        <p><strong>⏰ Este enlace expirará en 2 horas por seguridad.</strong></p>
+                        <p style='color: #666; font-size: 14px;'>Si no solicitaste restablecer tu contraseña, puedes ignorar este correo de forma segura. Tu contraseña no será cambiada.</p>
+                    </div>
+                    <div class='footer'>
+                        <p style='margin: 5px 0;'><strong>Activistas Digitales</strong></p>
+                        <p style='margin: 5px 0;'>© " . date('Y') . " Todos los derechos reservados.</p>
+                        <p style='margin: 5px 0; font-size: 11px;'>Este es un correo automático, por favor no responder.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        ";
+    }
+    
+    /**
+     * Obtener texto plano del correo de recuperación
+     */
+    private function getPasswordResetEmailText($name, $resetLink) {
+        return "Hola $name,\n\nRecibimos una solicitud para restablecer la contraseña de tu cuenta en Activistas Digitales.\n\nVisita este enlace para crear una nueva contraseña:\n$resetLink\n\nEste enlace expirará en 2 horas.\n\nSi no solicitaste restablecer tu contraseña, puedes ignorar este correo de forma segura.\n\n© " . date('Y') . " Activistas Digitales. Todos los derechos reservados.";
     }
     
     /**

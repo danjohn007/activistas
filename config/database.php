@@ -5,12 +5,20 @@
  */
 
 class Database {
+    private static $instance = null;
     private $host = 'localhost';
     private $db_name = 'ejercito_activistas';
     private $username = 'ejercito_activistas';
     private $password = 'Danjohn007!';
     private $charset = 'utf8mb4';
     private $conn;
+
+    public static function getInstance() {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
 
     public function getConnection() {
         $this->conn = null;

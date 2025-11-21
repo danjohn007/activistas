@@ -248,12 +248,12 @@ class Group {
             
             // Date filters
             if (!empty($filters['fecha_desde'])) {
-                $dateFilter .= " AND a.fecha_creacion >= ?";
+                $dateFilter .= " AND fecha_creacion >= ?";
                 $params[] = $filters['fecha_desde'] . ' 00:00:00';
             }
             
             if (!empty($filters['fecha_hasta'])) {
-                $dateFilter .= " AND a.fecha_creacion <= ?";
+                $dateFilter .= " AND fecha_creacion <= ?";
                 $params[] = $filters['fecha_hasta'] . ' 23:59:59';
             }
             
@@ -264,110 +264,128 @@ class Group {
                 FROM grupos g
                 WHERE g.activo = 1
                 ORDER BY g.nombre
-                LIMIT ? OFFSET ?
+                LIMIT $perPage OFFSET $offset
             ";
             
-            $groupStmt = $this->db->prepare($groupsQuery);
-            $groupStmt->execute([$perPage, $offset]);
+            $groupStmt = $this->db->query($groupsQuery);
             $groups = $groupStmt->fetchAll();
             
             // Get total count for pagination
-            $countStmt = $this->db->prepare("SELECT COUNT(*) as total FROM grupos WHERE activo = 1");
-            $countStmt->execute();
+            $countStmt = $this->db->query("SELECT COUNT(*) as total FROM grupos WHERE activo = 1");
             $totalGroups = $countStmt->fetch()['total'];
             
-            // For each group, get best performers (leaders and activists)
+            // Optimización: Obtener todos los usuarios de una vez con sus estadísticas
+            $groupIds = array_column($groups, 'id');
+            $groupIdsStr = implode(',', $groupIds);
+            
+            // Si hay filtros de fecha, usamos query más compleja pero filtrada
+            // Si no hay filtros, usamos query simple y rápida
+            if (!empty($dateFilter)) {
+                $allUsersQuery = "
+                    SELECT 
+                        u.id,
+                        u.nombre_completo,
+                        u.email,
+                        u.rol,
+                        u.grupo_id,
+                        u.ranking_puntos,
+                        COALESCE(stats.tareas_completadas, 0) as tareas_completadas,
+                        COALESCE(stats.tareas_asignadas, 0) as tareas_asignadas,
+                        ROUND(
+                            CASE 
+                                WHEN COALESCE(stats.tareas_asignadas, 0) > 0 
+                                THEN (COALESCE(stats.tareas_completadas, 0) * 100.0 / stats.tareas_asignadas)
+                                ELSE 0 
+                            END, 2
+                        ) as porcentaje_cumplimiento
+                    FROM usuarios u
+                    LEFT JOIN (
+                        SELECT 
+                            usuario_id,
+                            SUM(CASE WHEN estado = 'completada' AND autorizada = 1 THEN 1 ELSE 0 END) as tareas_completadas,
+                            SUM(CASE WHEN tarea_pendiente = 1 THEN 1 ELSE 0 END) as tareas_asignadas
+                        FROM actividades
+                        WHERE 1=1 $dateFilter
+                        GROUP BY usuario_id
+                    ) stats ON u.id = stats.usuario_id
+                    WHERE u.grupo_id IN ($groupIdsStr) 
+                        AND u.estado = 'activo' 
+                        AND u.id != 1
+                    ORDER BY u.grupo_id, porcentaje_cumplimiento DESC, u.ranking_puntos DESC
+                ";
+                $allUsersStmt = $this->db->prepare($allUsersQuery);
+                $allUsersStmt->execute($params);
+            } else {
+                // Query simple sin filtros de fecha (mucho más rápida)
+                $allUsersQuery = "
+                    SELECT 
+                        u.id,
+                        u.nombre_completo,
+                        u.email,
+                        u.rol,
+                        u.grupo_id,
+                        u.ranking_puntos,
+                        COALESCE(completed.total, 0) as tareas_completadas,
+                        COALESCE(pending.total, 0) as tareas_asignadas,
+                        ROUND(
+                            CASE 
+                                WHEN COALESCE(pending.total, 0) > 0 
+                                THEN (COALESCE(completed.total, 0) * 100.0 / pending.total)
+                                ELSE 0 
+                            END, 2
+                        ) as porcentaje_cumplimiento
+                    FROM usuarios u
+                    LEFT JOIN (
+                        SELECT usuario_id, COUNT(*) as total
+                        FROM actividades
+                        WHERE estado = 'completada' AND autorizada = 1
+                        GROUP BY usuario_id
+                    ) completed ON u.id = completed.usuario_id
+                    LEFT JOIN (
+                        SELECT usuario_id, COUNT(*) as total
+                        FROM actividades
+                        WHERE tarea_pendiente = 1
+                        GROUP BY usuario_id
+                    ) pending ON u.id = pending.usuario_id
+                    WHERE u.grupo_id IN ($groupIdsStr) 
+                        AND u.estado = 'activo' 
+                        AND u.id != 1
+                    ORDER BY u.grupo_id, porcentaje_cumplimiento DESC, u.ranking_puntos DESC
+                ";
+                $allUsersStmt = $this->db->query($allUsersQuery);
+            }
+            
+            $allUsers = $allUsersStmt->fetchAll();
+            
+            // Agrupar usuarios por grupo_id
+            $usersByGroup = [];
+            $leadersByGroup = [];
+            foreach ($allUsers as $user) {
+                if (!isset($usersByGroup[$user['grupo_id']])) {
+                    $usersByGroup[$user['grupo_id']] = [];
+                }
+                
+                // Separar líderes
+                if ($user['rol'] === 'Líder') {
+                    if (!isset($leadersByGroup[$user['grupo_id']])) {
+                        $leadersByGroup[$user['grupo_id']] = $user;
+                    }
+                } else {
+                    $usersByGroup[$user['grupo_id']][] = $user;
+                }
+            }
+            
+            // Asignar datos a cada grupo
             foreach ($groups as &$group) {
-                // Build the query to get best performers in this group
-                $performersQuery = "
-                    SELECT 
-                        u.id,
-                        u.nombre_completo,
-                        u.email,
-                        u.rol,
-                        COALESCE(completed.total, 0) as tareas_completadas,
-                        COALESCE(pending.total, 0) as tareas_asignadas,
-                        ROUND(
-                            CASE 
-                                WHEN COALESCE(pending.total, 0) > 0 THEN (COALESCE(completed.total, 0) * 100.0 / pending.total)
-                                ELSE 0 
-                            END, 2
-                        ) as porcentaje_cumplimiento,
-                        u.ranking_puntos
-                    FROM usuarios u
-                    LEFT JOIN (
-                        SELECT 
-                            usuario_id,
-                            COUNT(*) as total
-                        FROM actividades
-                        WHERE estado = 'completada' AND autorizada = 1 $dateFilter
-                        GROUP BY usuario_id
-                    ) completed ON u.id = completed.usuario_id
-                    LEFT JOIN (
-                        SELECT 
-                            usuario_id,
-                            COUNT(*) as total
-                        FROM actividades
-                        WHERE tarea_pendiente = 1 $dateFilter
-                        GROUP BY usuario_id
-                    ) pending ON u.id = pending.usuario_id
-                    WHERE u.grupo_id = ? AND u.estado = 'activo' 
-                        AND u.id != 1  -- Exclude system admin user
-                    ORDER BY porcentaje_cumplimiento DESC, u.ranking_puntos DESC
-                    LIMIT 5
-                ";
+                $groupId = $group['id'];
                 
-                $performersStmt = $this->db->prepare($performersQuery);
-                // Params need to be duplicated: first for completed subquery date filter, 
-                // second for pending subquery date filter, then group ID
-                $performersParams = array_merge($params, $params, [$group['id']]);
-                $performersStmt->execute($performersParams);
-                $group['best_performers'] = $performersStmt->fetchAll();
+                // Top 5 performers
+                $group['best_performers'] = array_slice($usersByGroup[$groupId] ?? [], 0, 5);
                 
-                // Get leader separately if exists
-                $leaderQuery = "
-                    SELECT 
-                        u.id,
-                        u.nombre_completo,
-                        u.email,
-                        u.rol,
-                        COALESCE(completed.total, 0) as tareas_completadas,
-                        COALESCE(pending.total, 0) as tareas_asignadas,
-                        ROUND(
-                            CASE 
-                                WHEN COALESCE(pending.total, 0) > 0 THEN (COALESCE(completed.total, 0) * 100.0 / pending.total)
-                                ELSE 0 
-                            END, 2
-                        ) as porcentaje_cumplimiento,
-                        u.ranking_puntos
-                    FROM usuarios u
-                    LEFT JOIN (
-                        SELECT 
-                            usuario_id,
-                            COUNT(*) as total
-                        FROM actividades
-                        WHERE estado = 'completada' AND autorizada = 1 $dateFilter
-                        GROUP BY usuario_id
-                    ) completed ON u.id = completed.usuario_id
-                    LEFT JOIN (
-                        SELECT 
-                            usuario_id,
-                            COUNT(*) as total
-                        FROM actividades
-                        WHERE tarea_pendiente = 1 $dateFilter
-                        GROUP BY usuario_id
-                    ) pending ON u.id = pending.usuario_id
-                    WHERE u.grupo_id = ? AND u.rol = 'Líder' AND u.estado = 'activo'
-                    LIMIT 1
-                ";
+                // Líder
+                $group['leader'] = $leadersByGroup[$groupId] ?? null;
                 
-                $leaderStmt = $this->db->prepare($leaderQuery);
-                // Same param pattern as above: completed date filter + pending date filter + group ID
-                $leaderParams = array_merge($params, $params, [$group['id']]);
-                $leaderStmt->execute($leaderParams);
-                $group['leader'] = $leaderStmt->fetch();
-                
-                // Calculate group statistics
+                // Estadísticas del grupo
                 $group['total_members'] = count($group['best_performers']);
                 $group['avg_compliance'] = 0;
                 if (!empty($group['best_performers'])) {

@@ -219,6 +219,7 @@
                 <?php endif; ?>
 
                 <!-- Lista de actividades -->
+                
                 <!-- Completion Percentage Display -->
                 <?php if (!empty($activities)): ?>
                     <?php
@@ -256,7 +257,22 @@
                 
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="card-title mb-0">Lista de Actividades</h5>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Lista de Actividades</h5>
+                            <?php if ($_SESSION['user_role'] === 'SuperAdmin' && !empty($activities)): ?>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-outline-primary" onclick="selectAllActivities()">
+                                    <i class="fas fa-check-square me-1"></i>Seleccionar Todo
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="deselectAllActivities()">
+                                    <i class="fas fa-square me-1"></i>Deseleccionar Todo
+                                </button>
+                                <button type="button" class="btn btn-danger" id="deleteActivities" style="display: none;" onclick="deleteSelectedActivities()">
+                                    <i class="fas fa-trash me-1"></i>Borrar (<span id="selectedCount">0</span>)
+                                </button>
+                            </div>
+                            <?php endif; ?>
+                        </div>
                     </div>
                     <div class="card-body">
                         <?php if (empty($activities)): ?>
@@ -285,6 +301,11 @@
                                 <table class="table table-striped table-hover">
                                     <thead>
                                         <tr>
+                                            <?php if ($_SESSION['user_role'] === 'SuperAdmin'): ?>
+                                            <th style="width: 40px;">
+                                                <input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleSelectAll()" style="cursor: pointer;">
+                                            </th>
+                                            <?php endif; ?>
                                             <th>Título</th>
                                             <th>Tipo</th>
                                             <?php if (in_array($_SESSION['user_role'], ['SuperAdmin', 'Gestor', 'Líder'])): ?>
@@ -299,6 +320,14 @@
                                     <tbody>
                                         <?php foreach ($activities as $activity): ?>
                                         <tr>
+                                            <?php if ($_SESSION['user_role'] === 'SuperAdmin'): ?>
+                                            <td>
+                                                <input type="checkbox" class="form-check-input activity-checkbox" 
+                                                       value="<?= $activity['id'] ?>" 
+                                                       onchange="updateDeleteButton()" 
+                                                       style="cursor: pointer;">
+                                            </td>
+                                            <?php endif; ?>
                                             <td>
                                                 <strong><?= htmlspecialchars($activity['titulo']) ?></strong>
                                                 <?php if (!empty($activity['descripcion'])): ?>
@@ -432,6 +461,12 @@
                                                        class="btn btn-outline-warning" title="Editar">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
+                                                    <button type="button" 
+                                                            class="btn btn-outline-danger" 
+                                                            onclick="confirmDelete(<?= $activity['id'] ?>, '<?= htmlspecialchars(addslashes($activity['titulo'])) ?>')" 
+                                                            title="Eliminar">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -514,5 +549,123 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <?php if ($_SESSION['user_role'] === 'SuperAdmin'): ?>
+    <script>
+        function updateDeleteButton() {
+            const checkboxes = document.querySelectorAll('.activity-checkbox:checked');
+            const deleteBtn = document.getElementById('deleteActivities');
+            const countSpan = document.getElementById('selectedCount');
+            const selectAllCheckbox = document.getElementById('selectAll');
+            
+            if (checkboxes.length > 0) {
+                deleteBtn.style.display = 'block';
+                countSpan.textContent = checkboxes.length;
+            } else {
+                deleteBtn.style.display = 'none';
+            }
+            
+            // Update select all checkbox state
+            const totalCheckboxes = document.querySelectorAll('.activity-checkbox').length;
+            if (checkboxes.length === totalCheckboxes && totalCheckboxes > 0) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkboxes.length > 0) {
+                selectAllCheckbox.indeterminate = true;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            }
+        }
+        
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.activity-checkbox');
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+            updateDeleteButton();
+        }
+        
+        function selectAllActivities() {
+            document.querySelectorAll('.activity-checkbox').forEach(cb => cb.checked = true);
+            document.getElementById('selectAll').checked = true;
+            updateDeleteButton();
+        }
+        
+        function deselectAllActivities() {
+            document.querySelectorAll('.activity-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('selectAll').checked = false;
+            updateDeleteButton();
+        }
+        
+        function deleteSelectedActivities() {
+            const checkboxes = document.querySelectorAll('.activity-checkbox:checked');
+            const activityIds = Array.from(checkboxes).map(cb => cb.value);
+            
+            if (activityIds.length === 0) {
+                alert('No hay actividades seleccionadas');
+                return;
+            }
+            
+            const activityCount = activityIds.length;
+            const confirmMsg = activityCount === 1 
+                ? '¿Estás seguro de que deseas eliminar esta actividad?' 
+                : `¿Estás seguro de que deseas eliminar ${activityCount} actividades?`;
+            
+            if (!confirm(confirmMsg + '\n\nEsta acción no se puede deshacer y eliminará todas las evidencias asociadas.')) {
+                return;
+            }
+            
+            // Crear formulario y enviar
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'delete.php';
+            
+            // Token CSRF
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = '<?= generateCSRFToken() ?>';
+            form.appendChild(csrfInput);
+            
+            // IDs de actividades
+            activityIds.forEach(id => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'activity_ids[]';
+                input.value = id;
+                form.appendChild(input);
+            });
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    </script>
+    <?php endif; ?>
+    
+    <script>
+    function confirmDelete(activityId, activityTitle) {
+        if (confirm('¿Estás seguro de que deseas eliminar la actividad "' + activityTitle + '"?\n\nEsta acción no se puede deshacer.')) {
+            // Create and submit form
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '<?= url('activities/delete.php') ?>';
+            
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = '<?= generateCSRFToken() ?>';
+            
+            const idInput = document.createElement('input');
+            idInput.type = 'hidden';
+            idInput.name = 'activity_id';
+            idInput.value = activityId;
+            
+            form.appendChild(csrfInput);
+            form.appendChild(idInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+    </script>
 </body>
 </html>

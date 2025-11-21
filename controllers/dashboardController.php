@@ -369,8 +369,8 @@ class DashboardController {
                     u.nombre_completo,
                     COUNT(a.id) as total_actividades,
                     COUNT(CASE WHEN a.estado = 'completada' THEN 1 END) as completadas,
-                    COUNT(e.id) as evidencias,
-                    COALESCE(SUM(a.alcance_estimado), 0) as alcance_total
+                    COUNT(DISTINCT e.id) as evidencias,
+                    0 as alcance_total
                 FROM usuarios u
                 LEFT JOIN actividades a ON u.id = a.usuario_id
                 LEFT JOIN evidencias e ON a.id = e.actividad_id
@@ -475,7 +475,7 @@ class DashboardController {
                     COUNT(CASE WHEN a.estado = 'programada' THEN 1 END) as programadas_mes,
                     COUNT(CASE WHEN a.estado = 'en_progreso' THEN 1 END) as en_progreso_mes,
                     COUNT(CASE WHEN a.estado = 'cancelada' THEN 1 END) as canceladas_mes,
-                    COALESCE(SUM(a.alcance_estimado), 0) as alcance_total_mes
+                    0 as alcance_total_mes
                 FROM actividades a
                 JOIN usuarios u ON a.usuario_id = u.id
                 WHERE DATE_FORMAT(a.fecha_actividad, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')

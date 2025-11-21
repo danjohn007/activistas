@@ -193,8 +193,8 @@
                         <div class="form-text">Solo requerido para activistas.</div>
                     </div>
                     
-                    <!-- Group Assignment - only for SuperAdmin -->
-                    <?php if ($_SESSION['user_role'] === 'SuperAdmin'): ?>
+                    <!-- Group Assignment - for SuperAdmin and Gestor -->
+                    <?php if (in_array($_SESSION['user_role'], ['SuperAdmin', 'Gestor'])): ?>
                     <?php if (!empty($groups)): ?>
                     <div class="mb-3">
                         <label for="grupoInput" class="form-label">Grupo (opcional):</label>

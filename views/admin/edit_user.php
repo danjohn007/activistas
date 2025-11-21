@@ -270,8 +270,8 @@
                                                 <small class="text-muted">Solo requerido para activistas</small>
                                             </div>
                                             
-                                            <!-- Grupo - visible para SuperAdmin -->
-                                            <?php if ($_SESSION['user_role'] === 'SuperAdmin' && !empty($groups)): ?>
+                                            <!-- Grupo - visible para SuperAdmin y Gestor -->
+                                            <?php if (in_array($_SESSION['user_role'], ['SuperAdmin', 'Gestor']) && !empty($groups)): ?>
                                             <div class="mb-3">
                                                 <label for="grupo_id" class="form-label">Grupo Asignado</label>
                                                 <select class="form-select" id="grupo_id" name="grupo_id">

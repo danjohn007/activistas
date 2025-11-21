@@ -88,9 +88,9 @@
 
                             <div class="mb-3">
                                 <label for="descripcion" class="form-label">Descripción</label>
-                                <textarea class="form-control" id="descripcion" name="descripcion" rows="4" 
-                                          maxlength="1000"><?= htmlspecialchars($activity['descripcion'] ?? '') ?></textarea>
-                                <div class="form-text">Describe brevemente los objetivos y detalles de la actividad.</div>
+                                <textarea class="form-control" id="descripcion" name="descripcion" rows="6" 
+                                          maxlength="5000"><?= htmlspecialchars($activity['descripcion'] ?? '') ?></textarea>
+                                <div class="form-text">Describe los objetivos y detalles de la actividad (máximo 5000 caracteres).</div>
                             </div>
 
                             <!-- Grupo (Opcional) -->
@@ -132,6 +132,31 @@
                                     <option value="completada" <?= $activity['estado'] === 'completada' ? 'selected' : '' ?>>Completada</option>
                                     <option value="cancelada" <?= $activity['estado'] === 'cancelada' ? 'selected' : '' ?>>Cancelada</option>
                                 </select>
+                            </div>
+
+                            <!-- Enlaces relacionados -->
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-link me-2"></i>Enlaces Relacionados (Opcional)
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="enlace_1" class="form-label">Enlace de Publicaciones</label>
+                                        <input type="url" class="form-control" id="enlace_1" name="enlace_1" 
+                                               value="<?= htmlspecialchars($activity['enlace_1'] ?? '') ?>"
+                                               placeholder="https://facebook.com/post/...">
+                                        <div class="form-text">URL del post en Facebook, Instagram, TikTok, X, etc.</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="enlace_2" class="form-label">Enlace Adicional</label>
+                                        <input type="url" class="form-control" id="enlace_2" name="enlace_2" 
+                                               value="<?= htmlspecialchars($activity['enlace_2'] ?? '') ?>"
+                                               placeholder="https://...">
+                                        <div class="form-text">Otro enlace relacionado con la actividad (opcional)</div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="mb-3">
