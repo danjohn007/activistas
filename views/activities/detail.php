@@ -207,8 +207,24 @@ require_once __DIR__ . '/../../includes/functions.php';
                                 <?php 
                                 $isPendingTask = isset($activity['tarea_pendiente']) && $activity['tarea_pendiente'] == 1;
                                 $isCompleted = $activity['estado'] === 'completada';
+                                
+                                // Verificar si la actividad/tarea está vencida
+                                $isExpired = false;
+                                if (!empty($activity['fecha_cierre'])) {
+                                    $today = new DateTime();
+                                    $closeDate = new DateTime($activity['fecha_cierre']);
+                                    if (!empty($activity['hora_cierre'])) {
+                                        $closeDate->setTime(...explode(':', $activity['hora_cierre']));
+                                    }
+                                    $isExpired = $closeDate <= $today;
+                                }
                                 ?>
-                                <?php if ($isPendingTask && !$isCompleted): ?>
+                                <?php if ($isExpired): ?>
+                                    <!-- Tarea/Actividad vencida -->
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>Vencida - No se puede agregar evidencia
+                                    </span>
+                                <?php elseif ($isPendingTask && !$isCompleted): ?>
                                     <!-- For pending tasks, show only COMPLETAR TAREA button -->
                                     <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addEvidenceModal">
                                         <i class="fas fa-check me-1"></i>COMPLETAR TAREA
@@ -221,11 +237,19 @@ require_once __DIR__ . '/../../includes/functions.php';
                                 <?php endif; ?>
                             </div>
                             <div class="card-body">
+                                <?php if ($isExpired && !$isCompleted): ?>
+                                    <div class="alert alert-danger">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <strong>Esta tarea/actividad está vencida.</strong> Ya no es posible agregar evidencia o completarla.
+                                    </div>
+                                <?php endif; ?>
                                 <?php if (empty($evidence)): ?>
                                     <div class="text-center py-4">
                                         <i class="fas fa-camera fa-3x text-muted mb-3"></i>
                                         <h6 class="text-muted">No hay evidencias registradas</h6>
-                                        <p class="text-muted">Agrega fotos, videos o documentos para respaldar esta actividad.</p>
+                                        <?php if (!$isExpired): ?>
+                                            <p class="text-muted">Agrega fotos, videos o documentos para respaldar esta actividad.</p>
+                                        <?php endif; ?>
                                     </div>
                                 <?php else: ?>
                                     <?php foreach ($evidence as $item): ?>

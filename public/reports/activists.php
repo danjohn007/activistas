@@ -80,6 +80,11 @@ if ($userRole === 'SuperAdmin') {
 // Get report data
 $reportData = $activityModel->getActivistReport($filters);
 
+// Debug: Log if no data
+if (empty($reportData)) {
+    error_log("No activist report data found. Filters: " . print_r($filters, true));
+}
+
 // Page title
 $title = $userRole === 'Líder' ? 'Reporte de mi Equipo' : 'Reporte de Activistas';
 

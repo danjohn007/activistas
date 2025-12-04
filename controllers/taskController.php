@@ -53,6 +53,11 @@ class TaskController {
             redirectWithMessage('tasks/', 'Esta tarea ya está completada', 'info');
         }
         
+        // Verificar si la tarea está vencida
+        if ($this->isTaskExpired($task)) {
+            redirectWithMessage('tasks/', 'Esta tarea ya está vencida y no se puede completar', 'error');
+        }
+        
         // Verificar si ya tiene evidencias bloqueadas
         if (!$this->activityModel->canModifyEvidence($taskId)) {
             redirectWithMessage('tasks/', 'Esta tarea ya tiene evidencias bloqueadas', 'warning');
@@ -87,6 +92,11 @@ class TaskController {
         // Verificar si la tarea ya está completada
         if ($task['estado'] === 'completada') {
             redirectWithMessage('tasks/', 'Esta tarea ya está completada', 'info');
+        }
+        
+        // Verificar si la tarea está vencida
+        if ($this->isTaskExpired($task)) {
+            redirectWithMessage('tasks/', 'Esta tarea ya está vencida y no se puede completar', 'error');
         }
         
         // Procesar evidencia
@@ -218,6 +228,34 @@ class TaskController {
         if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
             // Return only the filename - path construction will be handled in display
             return $filename;
+        }
+        
+        return false;
+    }
+    
+    // Verificar si una tarea está vencida
+    private function isTaskExpired($task) {
+        // Si no tiene fecha de cierre, nunca vence
+        if (empty($task['fecha_cierre'])) {
+            return false;
+        }
+        
+        $fechaCierre = strtotime($task['fecha_cierre']);
+        $fechaActual = strtotime(date('Y-m-d'));
+        
+        // Si la fecha de cierre ya pasó
+        if ($fechaCierre < $fechaActual) {
+            return true;
+        }
+        
+        // Si es el mismo día, verificar la hora de cierre
+        if ($fechaCierre == $fechaActual && !empty($task['hora_cierre'])) {
+            $horaCierre = strtotime($task['hora_cierre']);
+            $horaActual = strtotime(date('H:i:s'));
+            
+            if ($horaCierre < $horaActual) {
+                return true;
+            }
         }
         
         return false;

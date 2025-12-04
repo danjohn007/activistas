@@ -40,6 +40,16 @@
             padding: 1.5rem;
             margin-bottom: 2rem;
         }
+        .activist-name-link {
+            color: #0d6efd;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .activist-name-link:hover {
+            color: #0a58ca;
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -239,12 +249,22 @@
                                             ?>
                                             <tr>
                                                 <td>
-                                                    <div class="d-flex align-items-center">
+                                                    <div class="d-flex align-items-center justify-content-between">
                                                         <div>
-                                                            <strong><?= htmlspecialchars($user['nombre_completo']) ?></strong>
+                                                            <a href="<?= url('reports/activist_tasks.php?user_id=' . $user['id']) ?>" 
+                                                               class="activist-name-link" 
+                                                               title="Clic para ver detalle de tareas">
+                                                                <?= htmlspecialchars($user['nombre_completo']) ?>
+                                                                <i class="fas fa-external-link-alt fa-xs ms-1"></i>
+                                                            </a>
                                                             <br>
                                                             <small class="text-muted"><?= htmlspecialchars($user['rol']) ?></small>
                                                         </div>
+                                                        <a href="<?= url('reports/activist_tasks.php?user_id=' . $user['id']) ?>" 
+                                                           class="btn btn-sm btn-outline-primary" 
+                                                           title="Ver detalle de tareas">
+                                                            <i class="fas fa-list-check me-1"></i>Detalle
+                                                        </a>
                                                     </div>
                                                 </td>
                                                 <td>

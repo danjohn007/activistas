@@ -962,8 +962,6 @@ class Activity {
                 AND a.usuario_id = ?
                 AND a.usuario_id != a.solicitante_id
                 AND a.estado != 'completada'
-                AND (a.fecha_cierre IS NULL OR a.fecha_cierre > CURDATE() 
-                     OR (a.fecha_cierre = CURDATE() AND (a.hora_cierre IS NULL OR a.hora_cierre > CURTIME())))
                 GROUP BY a.id
                 ORDER BY 
                     -- Tareas con fecha de cierre van primero, ordenadas por urgencia (más próximas a vencer)
@@ -1455,14 +1453,14 @@ class Activity {
                 $params[] = $filters['grupo_id'];
             }
             
-            // Filter by date range
+            // Filter by date range (only apply to activities, not to user selection)
             if (!empty($filters['fecha_desde'])) {
-                $where[] = "a.fecha_actividad >= ?";
+                $where[] = "(a.fecha_actividad IS NULL OR a.fecha_actividad >= ?)";
                 $params[] = $filters['fecha_desde'];
             }
             
             if (!empty($filters['fecha_hasta'])) {
-                $where[] = "a.fecha_actividad <= ?";
+                $where[] = "(a.fecha_actividad IS NULL OR a.fecha_actividad <= ?)";
                 $params[] = $filters['fecha_hasta'];
             }
             

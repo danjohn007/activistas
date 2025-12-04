@@ -29,12 +29,12 @@
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">Mis Actividades</h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
+                        <?php if (in_array($_SESSION['user_role'], ['SuperAdmin', 'Gestor', 'Líder'])): ?>
                         <div class="btn-group me-2">
                             <a href="<?= url('activities/create.php') ?>" class="btn btn-primary">
                                 <i class="fas fa-plus me-1"></i>Nueva Actividad
                             </a>
                         </div>
-                        <?php if (in_array($_SESSION['user_role'], ['SuperAdmin', 'Gestor', 'Líder'])): ?>
                         <div class="btn-group me-2">
                             <button type="button" class="btn btn-outline-success" onclick="exportCurrentMonth()" title="Exportar reporte del mes actual">
                                 <i class="fas fa-file-excel me-1"></i>Exportar Mes Actual
@@ -457,16 +457,14 @@
                                                        class="btn btn-outline-primary" title="Ver detalle">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
-                                                    <a href="<?= url('activities/edit.php?id=' . $activity['id']) ?>" 
-                                                       class="btn btn-outline-warning" title="Editar">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
+                                                    <?php if (in_array($_SESSION['user_role'], ['SuperAdmin', 'Gestor', 'Líder'])): ?>
                                                     <button type="button" 
                                                             class="btn btn-outline-danger" 
                                                             onclick="confirmDelete(<?= $activity['id'] ?>, '<?= htmlspecialchars(addslashes($activity['titulo'])) ?>')" 
                                                             title="Eliminar">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
+                                                    <?php endif; ?>
                                                 </div>
                                             </td>
                                         </tr>

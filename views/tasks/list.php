@@ -133,6 +133,7 @@
                             $urgencyClass = 'task-pending';
                             $urgencyDays = null;
                             $urgencyText = '';
+                            $isExpired = false;
                             
                             if (!empty($task['fecha_cierre'])) {
                                 $today = new DateTime();
@@ -155,6 +156,7 @@
                                     $urgencyText = $urgencyDays == 0 ? 'Vence hoy' : 'Vence mañana';
                                 } elseif ($closeDate <= $today) {
                                     $isUrgent = true;
+                                    $isExpired = true;
                                     $urgencyClass = 'task-urgent';
                                     $urgencyText = 'Vencida';
                                 } else {
@@ -407,24 +409,39 @@
                                     </div>
                                     <div class="card-footer bg-transparent">
                                         <!-- Added VER DETALLE button as requested for all user levels -->
-                                        <div class="row g-2">
-                                            <div class="col">
-                                                <div class="d-grid">
-                                                    <a href="<?= url('activities/detail.php?id=' . $task['id']) ?>" 
-                                                       class="btn btn-outline-primary">
-                                                        <i class="fas fa-eye me-1"></i>Ver Detalle
-                                                    </a>
+                                        <?php if ($isExpired): ?>
+                                            <!-- Tarea vencida: solo mostrar mensaje y botón de Ver Detalle -->
+                                            <div class="alert alert-danger mb-2">
+                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                <strong>Esta tarea está vencida</strong> y no se puede completar.
+                                            </div>
+                                            <div class="d-grid">
+                                                <a href="<?= url('activities/detail.php?id=' . $task['id']) ?>" 
+                                                   class="btn btn-outline-primary">
+                                                    <i class="fas fa-eye me-1"></i>Ver Detalle
+                                                </a>
+                                            </div>
+                                        <?php else: ?>
+                                            <!-- Tarea activa: mostrar ambos botones -->
+                                            <div class="row g-2">
+                                                <div class="col">
+                                                    <div class="d-grid">
+                                                        <a href="<?= url('activities/detail.php?id=' . $task['id']) ?>" 
+                                                           class="btn btn-outline-primary">
+                                                            <i class="fas fa-eye me-1"></i>Ver Detalle
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                                <div class="col">
+                                                    <div class="d-grid">
+                                                        <a href="<?= url('tasks/complete.php?id=' . $task['id']) ?>" 
+                                                           class="btn btn-success">
+                                                            <i class="fas fa-upload me-1"></i>Completar Tarea
+                                                        </a>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div class="col">
-                                                <div class="d-grid">
-                                                    <a href="<?= url('tasks/complete.php?id=' . $task['id']) ?>" 
-                                                       class="btn btn-success">
-                                                        <i class="fas fa-upload me-1"></i>Completar Tarea
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>

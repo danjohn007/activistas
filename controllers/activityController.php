@@ -418,11 +418,21 @@ class ActivityController {
             redirectWithMessage('activities/', 'No tiene permisos para editar esta actividad', 'error');
         }
         
+        $estadoNuevo = cleanInput($_POST['estado'] ?? '');
+        
+        // Validar que no se pueda marcar como completada si está vencida
+        if ($estadoNuevo === 'completada' && $activity['estado'] !== 'completada') {
+            if ($this->isActivityExpired($activity)) {
+                redirectWithMessage("activities/edit.php?id=$activityId", 
+                    'No se puede marcar como completada una tarea vencida. Solo se puede cancelar.', 'error');
+            }
+        }
+        
         $updateData = [
             'titulo' => cleanInput($_POST['titulo'] ?? ''),
             'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
             'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? ''),
-            'estado' => cleanInput($_POST['estado'] ?? ''),
+            'estado' => $estadoNuevo,
             'grupo' => cleanInput($_POST['grupo'] ?? ''),
             'enlace_1' => cleanInput($_POST['enlace_1'] ?? ''),
             'enlace_2' => cleanInput($_POST['enlace_2'] ?? '')
@@ -621,6 +631,11 @@ class ActivityController {
         $currentUser = $this->auth->getCurrentUser();
         if (!$this->canEditActivity($currentUser, $activity)) {
             redirectWithMessage('activities/', 'No tiene permisos para agregar evidencia', 'error');
+        }
+        
+        // Verificar si la actividad/tarea está vencida
+        if ($this->isActivityExpired($activity)) {
+            redirectWithMessage("activities/detail.php?id=$activityId", 'Esta actividad/tarea ya está vencida y no se puede agregar evidencia', 'error');
         }
         
         $fileName = null;
@@ -912,6 +927,34 @@ class ActivityController {
         } else {
             redirectWithMessage('activities/proposals.php', 'Error al procesar propuesta', 'error');
         }
+    }
+    
+    // Verificar si una actividad/tarea está vencida
+    private function isActivityExpired($activity) {
+        // Si no tiene fecha de cierre, nunca vence
+        if (empty($activity['fecha_cierre'])) {
+            return false;
+        }
+        
+        $fechaCierre = strtotime($activity['fecha_cierre']);
+        $fechaActual = strtotime(date('Y-m-d'));
+        
+        // Si la fecha de cierre ya pasó
+        if ($fechaCierre < $fechaActual) {
+            return true;
+        }
+        
+        // Si es el mismo día, verificar la hora de cierre
+        if ($fechaCierre == $fechaActual && !empty($activity['hora_cierre'])) {
+            $horaCierre = strtotime($activity['hora_cierre']);
+            $horaActual = strtotime(date('H:i:s'));
+            
+            if ($horaCierre < $horaActual) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 }
 ?>

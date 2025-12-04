@@ -126,12 +126,32 @@
 
                             <div class="mb-3">
                                 <label for="estado" class="form-label">Estado</label>
+                                <?php 
+                                // Verificar si la actividad/tarea está vencida
+                                $isExpired = false;
+                                if (!empty($activity['fecha_cierre'])) {
+                                    $today = new DateTime();
+                                    $closeDate = new DateTime($activity['fecha_cierre']);
+                                    if (!empty($activity['hora_cierre'])) {
+                                        $closeDate->setTime(...explode(':', $activity['hora_cierre']));
+                                    }
+                                    $isExpired = $closeDate <= $today;
+                                }
+                                ?>
                                 <select class="form-select" id="estado" name="estado">
                                     <option value="programada" <?= $activity['estado'] === 'programada' ? 'selected' : '' ?>>Programada</option>
                                     <option value="en_progreso" <?= $activity['estado'] === 'en_progreso' ? 'selected' : '' ?>>En Progreso</option>
-                                    <option value="completada" <?= $activity['estado'] === 'completada' ? 'selected' : '' ?>>Completada</option>
+                                    <option value="completada" <?= $activity['estado'] === 'completada' ? 'selected' : '' ?> <?= $isExpired && $activity['estado'] !== 'completada' ? 'disabled' : '' ?>>
+                                        Completada<?= $isExpired && $activity['estado'] !== 'completada' ? ' (No disponible - Tarea vencida)' : '' ?>
+                                    </option>
                                     <option value="cancelada" <?= $activity['estado'] === 'cancelada' ? 'selected' : '' ?>>Cancelada</option>
                                 </select>
+                                <?php if ($isExpired && $activity['estado'] !== 'completada'): ?>
+                                    <div class="form-text text-danger">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                        <strong>Esta tarea está vencida.</strong> No se puede marcar como completada manualmente. Solo se puede cambiar a "Cancelada".
+                                    </div>
+                                <?php endif; ?>
                             </div>
 
                             <!-- Enlaces relacionados -->
