@@ -32,6 +32,7 @@ class ActivityController {
         switch ($currentUser['rol']) {
             case 'Activista':
                 $filters['usuario_id'] = $currentUser['id'];
+                $filters['exclude_expired'] = true; // Excluir tareas vencidas para activistas
                 break;
             case 'Líder':
                 $filters['lider_id'] = $currentUser['id'];
@@ -252,6 +253,9 @@ class ActivityController {
             // Create activity for each recipient
             $successCount = 0;
             foreach ($recipients as $recipientId) {
+                $fechaPublicacion = cleanInput($_POST['fecha_publicacion'] ?? '');
+                $fechaActividad = !empty($fechaPublicacion) ? $fechaPublicacion : date('Y-m-d');
+                
                 $activityData = [
                     'usuario_id' => $recipientId,
                     'user_role' => $currentUser['rol'], // Add user role for pending task logic
@@ -261,7 +265,9 @@ class ActivityController {
                     'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
                     'enlace_1' => cleanInput($_POST['enlace_1'] ?? ''),
                     'enlace_2' => cleanInput($_POST['enlace_2'] ?? ''),
-                    'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? ''),
+                    'fecha_actividad' => $fechaActividad,
+                    'fecha_publicacion' => $fechaPublicacion,
+                    'hora_publicacion' => cleanInput($_POST['hora_publicacion'] ?? ''),
                     'fecha_cierre' => cleanInput($_POST['fecha_cierre'] ?? ''),
                     'hora_cierre' => cleanInput($_POST['hora_cierre'] ?? ''),
                     'grupo' => cleanInput($_POST['grupo'] ?? ''),
@@ -296,6 +302,9 @@ class ActivityController {
             }
         } else {
             // Create activity for current user (original behavior)
+            $fechaPublicacion = cleanInput($_POST['fecha_publicacion'] ?? '');
+            $fechaActividad = !empty($fechaPublicacion) ? $fechaPublicacion : date('Y-m-d');
+            
             $activityData = [
                 'usuario_id' => $currentUser['id'],
                 'user_role' => $currentUser['rol'], // Add user role for pending task logic
@@ -305,7 +314,9 @@ class ActivityController {
                 'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
                 'enlace_1' => cleanInput($_POST['enlace_1'] ?? ''),
                 'enlace_2' => cleanInput($_POST['enlace_2'] ?? ''),
-                'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? ''),
+                'fecha_actividad' => $fechaActividad,
+                'fecha_publicacion' => $fechaPublicacion,
+                'hora_publicacion' => cleanInput($_POST['hora_publicacion'] ?? ''),
                 'fecha_cierre' => cleanInput($_POST['fecha_cierre'] ?? ''),
                 'hora_cierre' => cleanInput($_POST['hora_cierre'] ?? ''),
                 'grupo' => cleanInput($_POST['grupo'] ?? '')
@@ -428,10 +439,17 @@ class ActivityController {
             }
         }
         
+        $fechaPublicacion = cleanInput($_POST['fecha_publicacion'] ?? '');
+        $fechaActividad = !empty($fechaPublicacion) ? $fechaPublicacion : $activity['fecha_actividad'];
+        
         $updateData = [
             'titulo' => cleanInput($_POST['titulo'] ?? ''),
             'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
-            'fecha_actividad' => cleanInput($_POST['fecha_actividad'] ?? ''),
+            'fecha_actividad' => $fechaActividad,
+            'fecha_publicacion' => $fechaPublicacion,
+            'hora_publicacion' => cleanInput($_POST['hora_publicacion'] ?? ''),
+            'fecha_cierre' => cleanInput($_POST['fecha_cierre'] ?? ''),
+            'hora_cierre' => cleanInput($_POST['hora_cierre'] ?? ''),
             'estado' => $estadoNuevo,
             'grupo' => cleanInput($_POST['grupo'] ?? ''),
             'enlace_1' => cleanInput($_POST['enlace_1'] ?? ''),

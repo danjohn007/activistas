@@ -117,11 +117,39 @@
                                 <?php endif; ?>
                             </div>
 
-                            <div class="mb-3">
-                                <label for="fecha_actividad" class="form-label">Fecha de la Actividad *</label>
-                                <input type="date" class="form-control" id="fecha_actividad" name="fecha_actividad" 
-                                       value="<?= date('Y-m-d', strtotime($activity['fecha_actividad'])) ?>" 
-                                       required>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="fecha_publicacion" class="form-label">Fecha de Publicación</label>
+                                        <input type="date" class="form-control" id="fecha_publicacion" name="fecha_publicacion" 
+                                               value="<?= !empty($activity['fecha_publicacion']) ? date('Y-m-d', strtotime($activity['fecha_publicacion'])) : '' ?>">
+                                        <div class="form-text">Cuándo aparece la tarea</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="mb-3">
+                                        <label for="hora_publicacion" class="form-label">Hora</label>
+                                        <input type="time" class="form-control" id="hora_publicacion" name="hora_publicacion" 
+                                               value="<?= !empty($activity['hora_publicacion']) ? date('H:i', strtotime($activity['hora_publicacion'])) : '' ?>">
+                                        <div class="form-text">Hora</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="fecha_cierre" class="form-label">Fecha de Cierre</label>
+                                        <input type="date" class="form-control" id="fecha_cierre" name="fecha_cierre" 
+                                               value="<?= !empty($activity['fecha_cierre']) ? date('Y-m-d', strtotime($activity['fecha_cierre'])) : '' ?>">
+                                        <div class="form-text">Hasta cuándo pueden completarla</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="mb-3">
+                                        <label for="hora_cierre" class="form-label">Hora</label>
+                                        <input type="time" class="form-control" id="hora_cierre" name="hora_cierre" 
+                                               value="<?= !empty($activity['hora_cierre']) ? date('H:i', strtotime($activity['hora_cierre'])) : '' ?>">
+                                        <div class="form-text">Hora límite</div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="mb-3">

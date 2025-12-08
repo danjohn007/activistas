@@ -65,7 +65,12 @@ class Auth {
         }
         
         try {
-            $stmt = $this->db->prepare("SELECT * FROM usuarios WHERE id = ?");
+            $stmt = $this->db->prepare("
+                SELECT u.*, g.nombre as grupo_nombre 
+                FROM usuarios u
+                LEFT JOIN grupos g ON u.grupo_id = g.id
+                WHERE u.id = ?
+            ");
             $stmt->execute([$_SESSION['user_id']]);
             return $stmt->fetch();
         } catch (Exception $e) {

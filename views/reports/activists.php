@@ -66,6 +66,11 @@
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">
                         <i class="fas fa-chart-bar text-primary me-2"></i><?= htmlspecialchars($title) ?>
+                        <?php if ($snapshotMode): ?>
+                            <span class="badge bg-info ms-2">
+                                <i class="fas fa-camera"></i> Snapshot: <?= htmlspecialchars($snapshotData['nombre']) ?>
+                            </span>
+                        <?php endif; ?>
                     </h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <div class="btn-group me-2">
@@ -73,8 +78,135 @@
                                 <i class="fas fa-download me-1"></i>Exportar
                             </button>
                         </div>
+                        <?php if (in_array($userRole, ['SuperAdmin', 'Gestor'])): ?>
+                        <div class="btn-group me-2">
+                            <a href="<?= url('cortes/index.php') ?>" class="btn btn-outline-info">
+                                <i class="fas fa-history me-1"></i>Ver Snapshots Guardados
+                            </a>
+                        </div>
+                        <?php if (!$snapshotMode): ?>
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#captureSnapshotModal">
+                                <i class="fas fa-camera me-1"></i>Capturar Snapshot
+                            </button>
+                        </div>
+                        <?php endif; ?>
+                        <?php endif; ?>
                     </div>
                 </div>
+                
+                <!-- Cortes disponibles para Líderes -->
+                <?php if ($userRole === 'Líder' && !empty($availableCortes)): ?>
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-calendar-check me-2"></i>
+                                    Cortes de Periodo - Grupo <?= htmlspecialchars($currentUser['grupo_nombre'] ?? 'Sin grupo') ?>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted mb-3">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Los cortes son capturas históricas realizadas por los SuperAdministradores. 
+                                    Aquí puedes ver los cortes creados para tu grupo.
+                                </p>
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th><i class="fas fa-tag me-1"></i>Nombre del Corte</th>
+                                                <th><i class="fas fa-calendar-alt me-1"></i>Periodo</th>
+                                                <th><i class="fas fa-user me-1"></i>Creado por</th>
+                                                <th><i class="fas fa-clock me-1"></i>Fecha de Creación</th>
+                                                <th><i class="fas fa-users me-1"></i>Activistas</th>
+                                                <th class="text-center"><i class="fas fa-cog me-1"></i>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($availableCortes as $corte): ?>
+                                            <tr>
+                                                <td>
+                                                    <strong><?= htmlspecialchars($corte['nombre']) ?></strong>
+                                                    <?php if (!empty($corte['descripcion'])): ?>
+                                                        <br><small class="text-muted"><?= htmlspecialchars($corte['descripcion']) ?></small>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark">
+                                                        <?= date('d/m/Y', strtotime($corte['fecha_inicio'])) ?>
+                                                    </span>
+                                                    <br>
+                                                    <small class="text-muted">al</small>
+                                                    <br>
+                                                    <span class="badge bg-light text-dark">
+                                                        <?= date('d/m/Y', strtotime($corte['fecha_fin'])) ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <i class="fas fa-user-shield text-primary me-1"></i>
+                                                    <?= htmlspecialchars($corte['creador_nombre'] ?? 'Sistema') ?>
+                                                </td>
+                                                <td>
+                                                    <strong><?= date('d/m/Y', strtotime($corte['fecha_creacion'])) ?></strong>
+                                                    <br>
+                                                    <small class="text-muted"><?= date('H:i', strtotime($corte['fecha_creacion'])) ?> hrs</small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-info">
+                                                        <?= $corte['total_activistas'] ?? 0 ?> activistas
+                                                    </span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <a href="?corte_id=<?= $corte['id'] ?>" 
+                                                       class="btn btn-sm btn-primary" 
+                                                       title="Ver este corte">
+                                                        <i class="fas fa-eye me-1"></i>Ver Corte
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
+                <!-- Snapshot Selector -->
+                <?php if (!empty($availableCortes)): ?>
+                <div class="alert alert-light border mb-3">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <i class="fas fa-eye fa-lg text-primary"></i>
+                        </div>
+                        <div class="col">
+                            <strong>Modo de visualización:</strong>
+                            <select class="form-select form-select-sm d-inline-block w-auto ms-2" onchange="changeViewMode(this.value)">
+                                <option value="">Tiempo Real (Actual)</option>
+                                <optgroup label="Snapshots Guardados">
+                                    <?php foreach ($availableCortes as $corte): ?>
+                                        <option value="<?= $corte['id'] ?>" <?= $corteId == $corte['id'] ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($corte['nombre']) ?> 
+                                            (<?= date('d/m/Y', strtotime($corte['fecha_inicio'])) ?> - <?= date('d/m/Y', strtotime($corte['fecha_fin'])) ?>)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <?php if ($snapshotMode): ?>
+                        <div class="col-auto">
+                            <span class="badge bg-warning text-dark">
+                                <i class="fas fa-lock"></i> Datos Congelados al <?= date('d/m/Y H:i', strtotime($snapshotData['fecha_creacion'])) ?>
+                            </span>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
 
                 <!-- Search and Filter Form -->
                 <div class="search-form">
@@ -309,8 +441,82 @@
         </div>
     </div>
 
+    <!-- Modal: Capture Snapshot -->
+    <div class="modal fade" id="captureSnapshotModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="<?= url('cortes/create.php') ?>">
+                    <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
+                    <input type="hidden" name="from_report" value="1">
+                    <?php if (!empty($_GET['fecha_desde'])): ?>
+                        <input type="hidden" name="fecha_inicio" value="<?= htmlspecialchars($_GET['fecha_desde']) ?>">
+                    <?php endif; ?>
+                    <?php if (!empty($_GET['fecha_hasta'])): ?>
+                        <input type="hidden" name="fecha_fin" value="<?= htmlspecialchars($_GET['fecha_hasta']) ?>">
+                    <?php endif; ?>
+                    <?php if (!empty($_GET['grupo_id'])): ?>
+                        <input type="hidden" name="grupo_id" value="<?= htmlspecialchars($_GET['grupo_id']) ?>">
+                    <?php endif; ?>
+                    
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-camera me-2"></i>Capturar Snapshot
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Se guardará un snapshot con los datos actuales y filtros aplicados.
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Nombre del Snapshot</label>
+                            <input type="text" name="nombre" class="form-control" 
+                                   placeholder="Ej: Reporte Diciembre 2025" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Fecha Inicio</label>
+                            <input type="date" name="fecha_inicio" class="form-control" 
+                                   value="<?= htmlspecialchars($_GET['fecha_desde'] ?? '') ?>" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Fecha Fin</label>
+                            <input type="date" name="fecha_fin" class="form-control" 
+                                   value="<?= htmlspecialchars($_GET['fecha_hasta'] ?? date('Y-m-d')) ?>" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Descripción (Opcional)</label>
+                            <textarea name="descripcion" class="form-control" rows="2" 
+                                      placeholder="Notas sobre este snapshot"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-1"></i>Guardar Snapshot
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        function changeViewMode(corteId) {
+            const url = new URL(window.location);
+            if (corteId) {
+                url.searchParams.set('corte_id', corteId);
+            } else {
+                url.searchParams.delete('corte_id');
+            }
+            window.location.href = url.toString();
+        }
+        
         function exportReport() {
             // Simple CSV export functionality
             const table = document.querySelector('table');

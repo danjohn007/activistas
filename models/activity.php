@@ -61,8 +61,8 @@ class Activity {
             }
             
             $stmt = $this->db->prepare("
-                INSERT INTO actividades (usuario_id, tipo_actividad_id, titulo, descripcion, enlace_1, enlace_2, fecha_actividad, fecha_cierre, hora_cierre, grupo, tarea_pendiente, solicitante_id, autorizada, autorizado_por)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO actividades (usuario_id, tipo_actividad_id, titulo, descripcion, enlace_1, enlace_2, fecha_actividad, fecha_publicacion, hora_publicacion, fecha_cierre, hora_cierre, grupo, tarea_pendiente, solicitante_id, autorizada, autorizado_por)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $result = $stmt->execute([
@@ -73,6 +73,8 @@ class Activity {
                 !empty($data['enlace_1']) ? $data['enlace_1'] : null,
                 !empty($data['enlace_2']) ? $data['enlace_2'] : null,
                 $data['fecha_actividad'],
+                !empty($data['fecha_publicacion']) ? $data['fecha_publicacion'] : null,
+                !empty($data['hora_publicacion']) ? $data['hora_publicacion'] : null,
                 !empty($data['fecha_cierre']) ? $data['fecha_cierre'] : null,
                 !empty($data['hora_cierre']) ? $data['hora_cierre'] : null,
                 !empty($data['grupo']) ? $data['grupo'] : null,
@@ -126,6 +128,17 @@ class Activity {
             if (!empty($filters['usuario_id'])) {
                 $sql .= " AND a.usuario_id = ?";
                 $params[] = $filters['usuario_id'];
+                
+                // Si el filtro incluye excluir vencidas (para vista de Activista)
+                if (!empty($filters['exclude_expired'])) {
+                    $sql .= " AND (a.fecha_cierre IS NULL OR a.fecha_cierre > CURDATE() 
+                                OR (a.fecha_cierre = CURDATE() AND (a.hora_cierre IS NULL OR a.hora_cierre > CURTIME())))";
+                    
+                    // Filtro de fecha de publicación para Activistas (solo mostrar tareas ya publicadas)
+                    $sql .= " AND (a.fecha_publicacion IS NULL 
+                                OR a.fecha_publicacion < NOW()
+                                OR (DATE(a.fecha_publicacion) = CURDATE() AND (a.hora_publicacion IS NULL OR a.hora_publicacion <= CURTIME())))";
+                }
             }
             
             if (!empty($filters['lider_id'])) {
@@ -236,6 +249,17 @@ class Activity {
             if (!empty($filters['usuario_id'])) {
                 $sql .= " AND a.usuario_id = ?";
                 $params[] = $filters['usuario_id'];
+                
+                // Si el filtro incluye excluir vencidas (para vista de Activista)
+                if (!empty($filters['exclude_expired'])) {
+                    $sql .= " AND (a.fecha_cierre IS NULL OR a.fecha_cierre > CURDATE() 
+                                OR (a.fecha_cierre = CURDATE() AND (a.hora_cierre IS NULL OR a.hora_cierre > CURTIME())))";
+                    
+                    // Filtro de fecha de publicación para Activistas (solo mostrar tareas ya publicadas)
+                    $sql .= " AND (a.fecha_publicacion IS NULL 
+                                OR a.fecha_publicacion < NOW()
+                                OR (DATE(a.fecha_publicacion) = CURDATE() AND (a.hora_publicacion IS NULL OR a.hora_publicacion <= CURTIME())))";
+                }
             }
             
             if (!empty($filters['lider_id'])) {
@@ -373,6 +397,26 @@ class Activity {
             if (isset($data['enlace_2'])) {
                 $fields[] = "enlace_2 = ?";
                 $params[] = $data['enlace_2'];
+            }
+            
+            if (isset($data['fecha_publicacion'])) {
+                $fields[] = "fecha_publicacion = ?";
+                $params[] = !empty($data['fecha_publicacion']) ? $data['fecha_publicacion'] : null;
+            }
+            
+            if (isset($data['hora_publicacion'])) {
+                $fields[] = "hora_publicacion = ?";
+                $params[] = !empty($data['hora_publicacion']) ? $data['hora_publicacion'] : null;
+            }
+            
+            if (isset($data['fecha_cierre'])) {
+                $fields[] = "fecha_cierre = ?";
+                $params[] = !empty($data['fecha_cierre']) ? $data['fecha_cierre'] : null;
+            }
+            
+            if (isset($data['hora_cierre'])) {
+                $fields[] = "hora_cierre = ?";
+                $params[] = !empty($data['hora_cierre']) ? $data['hora_cierre'] : null;
             }
             
             if (empty($fields)) {
@@ -962,6 +1006,11 @@ class Activity {
                 AND a.usuario_id = ?
                 AND a.usuario_id != a.solicitante_id
                 AND a.estado != 'completada'
+                AND (a.fecha_cierre IS NULL OR a.fecha_cierre > CURDATE() 
+                     OR (a.fecha_cierre = CURDATE() AND (a.hora_cierre IS NULL OR a.hora_cierre > CURTIME())))
+                AND (a.fecha_publicacion IS NULL 
+                     OR a.fecha_publicacion < NOW()
+                     OR (DATE(a.fecha_publicacion) = CURDATE() AND (a.hora_publicacion IS NULL OR a.hora_publicacion <= CURTIME())))
                 GROUP BY a.id
                 ORDER BY 
                     -- Tareas con fecha de cierre van primero, ordenadas por urgencia (más próximas a vencer)

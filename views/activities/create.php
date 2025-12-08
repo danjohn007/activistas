@@ -118,33 +118,41 @@
                                 </div>
                             </div>
 
+                            <?php if (in_array($_SESSION['user_role'], ['SuperAdmin', 'Gestor'])): ?>
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="mb-3">
-                                        <label for="fecha_actividad" class="form-label">Fecha de la Actividad *</label>
-                                        <input type="date" class="form-control" id="fecha_actividad" name="fecha_actividad" 
-                                               value="<?= htmlspecialchars($_SESSION['form_data']['fecha_actividad'] ?? '') ?>" 
-                                               required>
+                                        <label for="fecha_publicacion" class="form-label">Fecha de Publicación</label>
+                                        <input type="date" class="form-control" id="fecha_publicacion" name="fecha_publicacion" 
+                                               value="<?= htmlspecialchars($_SESSION['form_data']['fecha_publicacion'] ?? '') ?>">
+                                        <div class="form-text">Cuándo aparecerá la tarea (vacío = inmediato)</div>
                                     </div>
                                 </div>
-                                <?php if (in_array($_SESSION['user_role'], ['SuperAdmin', 'Gestor'])): ?>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
+                                    <div class="mb-3">
+                                        <label for="hora_publicacion" class="form-label">Hora</label>
+                                        <input type="time" class="form-control" id="hora_publicacion" name="hora_publicacion" 
+                                               value="<?= htmlspecialchars($_SESSION['form_data']['hora_publicacion'] ?? '') ?>">
+                                        <div class="form-text">Hora</div>
+                                    </div>
+                                </div>
                                     <div class="mb-3">
                                         <label for="fecha_cierre" class="form-label">Fecha de Cierre</label>
                                         <input type="date" class="form-control" id="fecha_cierre" name="fecha_cierre" 
                                                value="<?= htmlspecialchars($_SESSION['form_data']['fecha_cierre'] ?? '') ?>">
-                                        <div class="form-text">Después de esta fecha la actividad no aparecerá en tareas pendientes</div>
+                                        <div class="form-text">Hasta cuándo pueden completarla</div>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <div class="mb-3">
-                                        <label for="hora_cierre" class="form-label">Hora de Cierre</label>
+                                        <label for="hora_cierre" class="form-label">Hora</label>
                                         <input type="time" class="form-control" id="hora_cierre" name="hora_cierre" 
                                                value="<?= htmlspecialchars($_SESSION['form_data']['hora_cierre'] ?? '') ?>">
-                                        <div class="form-text">Hora límite para completar la actividad</div>
+                                        <div class="form-text">Hora límite</div>
                                     </div>
                                 </div>
-                                <?php endif; ?>
+                            </div>
+                            <?php endif; ?>
                             </div>
 
                             <!-- Selección de destinatarios -->

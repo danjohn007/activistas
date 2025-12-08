@@ -173,14 +173,26 @@ require_once __DIR__ . '/../../includes/functions.php';
                                                                         <?= ucfirst($item['tipo_evidencia']) ?>
                                                                     </h6>
                                                                     <?php if (!empty($item['archivo'])): ?>
+                                                                        <?php 
+                                                                        // Construir path correcto
+                                                                        $archivo = $item['archivo'];
+                                                                        // Si no tiene path completo, agregarlo
+                                                                        if (strpos($archivo, 'assets/') !== 0 && strpos($archivo, 'public/') !== 0) {
+                                                                            $archivo = 'assets/uploads/evidencias/' . $archivo;
+                                                                        }
+                                                                        // Si tiene public/ al inicio, quitarlo
+                                                                        if (strpos($archivo, 'public/') === 0) {
+                                                                            $archivo = substr($archivo, 7);
+                                                                        }
+                                                                        ?>
                                                                         <?php if (in_array($item['tipo_evidencia'], ['foto', 'image'])): ?>
-                                                                            <img src="<?= url('assets/uploads/evidencias/' . basename($item['archivo'])) ?>" 
+                                                                            <img src="<?= url($archivo) ?>" 
                                                                                  class="img-fluid rounded mb-2" 
                                                                                  alt="Imagen de referencia"
                                                                                  style="max-height: 200px; object-fit: cover;">
                                                                         <?php endif; ?>
                                                                         <p><small><strong>Archivo:</strong> <?= htmlspecialchars(basename($item['archivo'])) ?></small></p>
-                                                                        <a href="<?= url('assets/uploads/evidencias/' . basename($item['archivo'])) ?>" 
+                                                                        <a href="<?= url($archivo) ?>" 
                                                                            class="btn btn-sm btn-outline-primary" target="_blank">
                                                                             <i class="fas fa-download me-1"></i>Descargar
                                                                         </a>
@@ -261,13 +273,27 @@ require_once __DIR__ . '/../../includes/functions.php';
                                                         <?= ucfirst($item['tipo_evidencia']) ?>
                                                     </h6>
                                                     <?php if (!empty($item['archivo'])): ?>
+                                                        <?php 
+                                                        // Construir path correcto
+                                                        $archivoEvid = $item['archivo'];
+                                                        // Si no tiene path completo, agregarlo
+                                                        if (strpos($archivoEvid, 'assets/') !== 0 && strpos($archivoEvid, 'public/') !== 0) {
+                                                            $archivoEvid = 'assets/uploads/evidencias/' . $archivoEvid;
+                                                        }
+                                                        // Si tiene public/ al inicio, quitarlo
+                                                        if (strpos($archivoEvid, 'public/') === 0) {
+                                                            $archivoEvid = substr($archivoEvid, 7);
+                                                        }
+                                                        ?>
                                                         <?php if (in_array($item['tipo_evidencia'], ['foto', 'image'])): ?>
-                                                            <img src="<?= url('assets/uploads/evidencias/' . basename($item['archivo'])) ?>" 
+                                                            <img src="<?= htmlspecialchars(url($archivoEvid)) ?>" 
                                                                  class="img-fluid rounded mb-2" 
                                                                  alt="Evidencia"
-                                                                 style="max-height: 300px; object-fit: cover;">
+                                                                 style="max-height: 300px; object-fit: cover;"
+                                                                 onerror="console.error('Error cargando imagen:', '<?= htmlspecialchars($archivoEvid) ?>'); this.style.border='2px solid red';">
                                                         <?php endif; ?>
                                                         <p class="mb-1"><strong>Archivo:</strong> <?= htmlspecialchars(basename($item['archivo'])) ?></p>
+                                                        <p class="mb-1"><small class="text-muted">Path: <?= htmlspecialchars($archivoEvid) ?></small></p>
                                                     <?php endif; ?>
                                                     <?php if (!empty($item['contenido'])): ?>
                                                         <p class="mb-1"><?= nl2br(htmlspecialchars($item['contenido'])) ?></p>
@@ -278,7 +304,7 @@ require_once __DIR__ . '/../../includes/functions.php';
                                                 </div>
                                                 <?php if (!empty($item['archivo'])): ?>
                                                     <div>
-                                                        <a href="<?= url('assets/uploads/evidencias/' . basename($item['archivo'])) ?>" 
+                                                        <a href="<?= url($archivoEvid) ?>" 
                                                            class="btn btn-sm btn-outline-primary" target="_blank">
                                                             <i class="fas fa-download"></i>
                                                         </a>
@@ -320,7 +346,19 @@ require_once __DIR__ . '/../../includes/functions.php';
                                                 </div>
                                                 <div>
                                                     <?php if (!empty($item['archivo'])): ?>
-                                                        <a href="<?= url('assets/uploads/evidencias/' . basename($item['archivo'])) ?>" 
+                                                        <?php 
+                                                        // Construir path correcto
+                                                        $archivo = $item['archivo'];
+                                                        // Si no tiene path completo, agregarlo
+                                                        if (strpos($archivo, 'assets/') !== 0 && strpos($archivo, 'public/') !== 0) {
+                                                            $archivo = 'assets/uploads/evidencias/' . $archivo;
+                                                        }
+                                                        // Si tiene public/ al inicio, quitarlo
+                                                        if (strpos($archivo, 'public/') === 0) {
+                                                            $archivo = substr($archivo, 7);
+                                                        }
+                                                        ?>
+                                                        <a href="<?= url($archivo) ?>" 
                                                            class="btn btn-sm btn-outline-primary me-1" 
                                                            target="_blank"
                                                            title="Ver/Descargar evidencia">
