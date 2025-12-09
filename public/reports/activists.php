@@ -92,11 +92,32 @@ if ($userRole === 'SuperAdmin') {
     $leaders = $userModel->getActiveLiders();
 }
 
+// Load cortes model
+require_once __DIR__ . '/../../models/corte.php';
+$corteModel = new Corte();
+
+// For Líder role, automatically load their group's latest corte
+if ($userRole === 'Líder' && !empty($currentUser['grupo_id'])) {
+    $availableCortes = $corteModel->getCortesByGrupo($currentUser['grupo_id']);
+    
+    // Debug: Log cortes info
+    error_log("Líder grupo_id: " . $currentUser['grupo_id']);
+    error_log("Cortes encontrados: " . count($availableCortes));
+    if (!empty($availableCortes)) {
+        error_log("Primer corte ID: " . $availableCortes[0]['id']);
+    }
+    
+    // If no corte_id specified and there are cortes available, use the most recent one
+    if (!$corteId && !empty($availableCortes)) {
+        $corteId = $availableCortes[0]['id']; // Most recent corte
+        $snapshotData = $availableCortes[0];
+        $snapshotMode = true;
+    }
+}
+
 // Get report data based on mode
 if ($snapshotMode) {
     // Load data from snapshot
-    require_once __DIR__ . '/../../models/corte.php';
-    $corteModel = new Corte();
     $reportData = $corteModel->getDetalleCorte($corteId, []);
     
     // Transform corte data to match report format
@@ -108,16 +129,16 @@ if ($snapshotMode) {
     unset($user);
     
     // Load all available snapshots for dropdown
-    $availableCortes = $corteModel->getCortes([]);
+    if ($userRole === 'Líder' && !empty($currentUser['grupo_id'])) {
+        $availableCortes = $corteModel->getCortesByGrupo($currentUser['grupo_id']);
+    } else {
+        $availableCortes = $corteModel->getCortes([]);
+    }
 } else {
-    // Get real-time data
+    // Get real-time data (only for SuperAdmin and Gestor)
     $reportData = $activityModel->getActivistReport($filters);
     
     // Load available snapshots for dropdown
-    require_once __DIR__ . '/../../models/corte.php';
-    $corteModel = new Corte();
-    
-    // For Líder role, load cortes specific to their group
     if ($userRole === 'Líder' && !empty($currentUser['grupo_id'])) {
         $availableCortes = $corteModel->getCortesByGrupo($currentUser['grupo_id']);
     } else {

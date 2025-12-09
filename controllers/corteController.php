@@ -276,6 +276,84 @@ class CorteController {
     }
     
     /**
+     * Crear cortes masivos para todos los grupos
+     */
+    public function createMassiveCortes() {
+        $this->auth->requireAuth();
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirectWithMessage('reports/activists.php', 'Método no permitido', 'error');
+        }
+        
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            redirectWithMessage('reports/activists.php', 'Token de seguridad inválido', 'error');
+        }
+        
+        $currentUser = $this->auth->getCurrentUser();
+        
+        // Solo SuperAdmin
+        if ($currentUser['rol'] !== 'SuperAdmin') {
+            redirectWithMessage('reports/activists.php', 'No tienes permisos para esta acción', 'error');
+        }
+        
+        // Validar datos
+        $errors = $this->validateCorteData($_POST);
+        if (!empty($errors)) {
+            $_SESSION['message'] = implode(', ', $errors);
+            $_SESSION['message_type'] = 'error';
+            redirectWithMessage('reports/activists.php', implode(', ', $errors), 'error');
+        }
+        
+        // Obtener todos los grupos activos
+        require_once __DIR__ . '/../models/group.php';
+        $groupModel = new Group();
+        $groups = $groupModel->getAllGroups(['activo' => 1]);
+        
+        if (empty($groups)) {
+            redirectWithMessage('reports/activists.php', 'No hay grupos activos', 'error');
+        }
+        
+        $createdCount = 0;
+        $errors = [];
+        
+        // Crear un corte por cada grupo
+        foreach ($groups as $group) {
+            try {
+                $data = [
+                    'nombre' => cleanInput($_POST['nombre']) . ' - ' . $group['nombre'],
+                    'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
+                    'fecha_inicio' => cleanInput($_POST['fecha_inicio']),
+                    'fecha_fin' => cleanInput($_POST['fecha_fin']),
+                    'creado_por' => $currentUser['id'],
+                    'grupo_id' => $group['id'],
+                    'actividad_id' => null,
+                    'usuario_id' => null
+                ];
+                
+                $corteId = $this->corteModel->crearCorte($data);
+                
+                if ($corteId) {
+                    $createdCount++;
+                } else {
+                    $errors[] = 'Error al crear corte para grupo: ' . $group['nombre'];
+                }
+            } catch (Exception $e) {
+                $errors[] = 'Error en grupo ' . $group['nombre'] . ': ' . $e->getMessage();
+            }
+        }
+        
+        if ($createdCount > 0) {
+            $message = "Se crearon exitosamente $createdCount cortes (uno por cada grupo)";
+            if (!empty($errors)) {
+                $message .= '. Algunos cortes fallaron: ' . implode(', ', $errors);
+            }
+            redirectWithMessage('cortes/', $message, 'success');
+        } else {
+            redirectWithMessage('reports/activists.php', 'Error al crear los cortes: ' . implode(', ', $errors), 'error');
+        }
+    }
+    
+    /**
      * Validar datos del corte
      */
     private function validateCorteData($data) {

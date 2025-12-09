@@ -317,23 +317,30 @@ class Corte {
     public function getDetalleCorte($corteId, $filters = []) {
         try {
             $sql = "
-                SELECT *
-                FROM cortes_detalle
-                WHERE corte_id = ?
+                SELECT cd.*,
+                       u.rol,
+                       u.email,
+                       u.telefono,
+                       u.lider_id,
+                       ul.nombre_completo as lider_nombre
+                FROM cortes_detalle cd
+                LEFT JOIN usuarios u ON cd.usuario_id = u.id
+                LEFT JOIN usuarios ul ON u.lider_id = ul.id
+                WHERE cd.corte_id = ?
             ";
             $params = [$corteId];
             
             if (!empty($filters['search'])) {
-                $sql .= " AND nombre_completo LIKE ?";
+                $sql .= " AND cd.nombre_completo LIKE ?";
                 $params[] = '%' . $filters['search'] . '%';
             }
             
             if (!empty($filters['usuario_id'])) {
-                $sql .= " AND usuario_id = ?";
+                $sql .= " AND cd.usuario_id = ?";
                 $params[] = $filters['usuario_id'];
             }
             
-            $sql .= " ORDER BY ranking_posicion ASC";
+            $sql .= " ORDER BY cd.ranking_posicion ASC";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);

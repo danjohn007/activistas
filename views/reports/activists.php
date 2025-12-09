@@ -50,6 +50,13 @@
             color: #0a58ca;
             text-decoration: underline;
         }
+        .card {
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+        }
     </style>
 </head>
 <body>
@@ -64,14 +71,30 @@
             <!-- Main Content -->
             <main class="col-md-10 ms-sm-auto px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2">
-                        <i class="fas fa-chart-bar text-primary me-2"></i><?= htmlspecialchars($title) ?>
-                        <?php if ($snapshotMode): ?>
-                            <span class="badge bg-info ms-2">
-                                <i class="fas fa-camera"></i> Snapshot: <?= htmlspecialchars($snapshotData['nombre']) ?>
-                            </span>
+                    <div>
+                        <h1 class="h2">
+                            <i class="fas fa-chart-bar text-primary me-2"></i><?= htmlspecialchars($title) ?>
+                            <?php if ($snapshotMode): ?>
+                                <span class="badge bg-info ms-2">
+                                    <i class="fas fa-camera"></i> Snapshot: <?= htmlspecialchars($snapshotData['nombre']) ?>
+                                </span>
+                            <?php endif; ?>
+                        </h1>
+                        <?php if ($userRole === 'Líder'): ?>
+                            <?php if (empty($availableCortes)): ?>
+                                <div class="alert alert-warning mt-3 mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>No hay cortes disponibles.</strong> 
+                                    El SuperAdministrador aún no ha creado ningún corte para tu grupo.
+                                    <?php if (empty($currentUser['grupo_id'])): ?>
+                                        <br><small class="text-danger">No tienes un grupo asignado. Contacta al administrador.</small>
+                                    <?php else: ?>
+                                        <br><small>Tu grupo: <strong><?= htmlspecialchars($currentUser['grupo_nombre'] ?? 'ID: ' . $currentUser['grupo_id']) ?></strong></small>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
                         <?php endif; ?>
-                    </h1>
+                    </div>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <div class="btn-group me-2">
                             <button type="button" class="btn btn-outline-primary" onclick="exportReport()">
@@ -90,85 +113,99 @@
                                 <i class="fas fa-camera me-1"></i>Capturar Snapshot
                             </button>
                         </div>
+                        <?php if ($userRole === 'SuperAdmin'): ?>
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#massiveSnapshotModal">
+                                <i class="fas fa-layer-group me-1"></i>Cortes Masivos (Todos los Grupos)
+                            </button>
+                        </div>
+                        <?php endif; ?>
                         <?php endif; ?>
                         <?php endif; ?>
                     </div>
                 </div>
                 
                 <!-- Cortes disponibles para Líderes -->
-                <?php if ($userRole === 'Líder' && !empty($availableCortes)): ?>
+                <?php if ($userRole === 'Líder' && !empty($snapshotData)): ?>
                 <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="card shadow-sm">
-                            <div class="card-header bg-primary text-white">
-                                <h5 class="mb-0">
-                                    <i class="fas fa-calendar-check me-2"></i>
-                                    Cortes de Periodo - Grupo <?= htmlspecialchars($currentUser['grupo_nombre'] ?? 'Sin grupo') ?>
-                                </h5>
+                    <div class="col-12 mb-3">
+                        <div class="card border-success shadow-sm">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-camera me-2"></i>Se ha hecho un corte
+                                </h6>
                             </div>
                             <div class="card-body">
-                                <p class="text-muted mb-3">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Los cortes son capturas históricas realizadas por los SuperAdministradores. 
-                                    Aquí puedes ver los cortes creados para tu grupo.
-                                </p>
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead>
-                                            <tr>
-                                                <th><i class="fas fa-tag me-1"></i>Nombre del Corte</th>
-                                                <th><i class="fas fa-calendar-alt me-1"></i>Periodo</th>
-                                                <th><i class="fas fa-user me-1"></i>Creado por</th>
-                                                <th><i class="fas fa-clock me-1"></i>Fecha de Creación</th>
-                                                <th><i class="fas fa-users me-1"></i>Activistas</th>
-                                                <th class="text-center"><i class="fas fa-cog me-1"></i>Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php foreach ($availableCortes as $corte): ?>
-                                            <tr>
-                                                <td>
-                                                    <strong><?= htmlspecialchars($corte['nombre']) ?></strong>
-                                                    <?php if (!empty($corte['descripcion'])): ?>
-                                                        <br><small class="text-muted"><?= htmlspecialchars($corte['descripcion']) ?></small>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td>
-                                                    <span class="badge bg-light text-dark">
-                                                        <?= date('d/m/Y', strtotime($corte['fecha_inicio'])) ?>
-                                                    </span>
-                                                    <br>
-                                                    <small class="text-muted">al</small>
-                                                    <br>
-                                                    <span class="badge bg-light text-dark">
-                                                        <?= date('d/m/Y', strtotime($corte['fecha_fin'])) ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <i class="fas fa-user-shield text-primary me-1"></i>
-                                                    <?= htmlspecialchars($corte['creador_nombre'] ?? 'Sistema') ?>
-                                                </td>
-                                                <td>
-                                                    <strong><?= date('d/m/Y', strtotime($corte['fecha_creacion'])) ?></strong>
-                                                    <br>
-                                                    <small class="text-muted"><?= date('H:i', strtotime($corte['fecha_creacion'])) ?> hrs</small>
-                                                </td>
-                                                <td>
-                                                    <span class="badge bg-info">
-                                                        <?= $corte['total_activistas'] ?? 0 ?> activistas
-                                                    </span>
-                                                </td>
-                                                <td class="text-center">
-                                                    <a href="?corte_id=<?= $corte['id'] ?>" 
-                                                       class="btn btn-sm btn-primary" 
-                                                       title="Ver este corte">
-                                                        <i class="fas fa-eye me-1"></i>Ver Corte
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                            <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
+                                <h5 class="card-title text-primary mb-3">
+                                    <?= htmlspecialchars($snapshotData['nombre']) ?>
+                                </h5>
+                                
+                                <div class="alert alert-warning mb-3">
+                                    <strong><i class="fas fa-calendar-check me-2"></i>Rango de fechas del corte:</strong>
+                                    <div class="mt-2">
+                                        El administrador hizo un corte del periodo comprendido del 
+                                        <strong><?= date('d/m/Y', strtotime($snapshotData['fecha_inicio'])) ?></strong>
+                                        al
+                                        <strong><?= date('d/m/Y', strtotime($snapshotData['fecha_fin'])) ?></strong>
+                                    </div>
+                                </div>
+                                
+                                <?php if (!empty($snapshotData['descripcion'])): ?>
+                                    <p class="text-muted small mb-3">
+                                        <i class="fas fa-quote-left me-1"></i>
+                                        <?= htmlspecialchars($snapshotData['descripcion']) ?>
+                                    </p>
+                                <?php endif; ?>
+                                
+                                <div class="alert alert-info mb-3">
+                                    <div class="row">
+                                        <div class="col-12 mb-2">
+                                            <strong><i class="fas fa-calendar-alt me-2"></i>Periodo del Corte:</strong>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="d-flex align-items-center justify-content-center">
+                                                <span class="badge bg-primary fs-6 px-3 py-2">
+                                                    <?= date('d/m/Y', strtotime($snapshotData['fecha_inicio'])) ?>
+                                                </span>
+                                                <i class="fas fa-arrow-right mx-3 text-primary"></i>
+                                                <span class="badge bg-primary fs-6 px-3 py-2">
+                                                    <?= date('d/m/Y', strtotime($snapshotData['fecha_fin'])) ?>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3 p-3 bg-light rounded">
+                                    <div class="row">
+                                        <div class="col-12 mb-2">
+                                            <strong><i class="fas fa-clock text-success me-2"></i>Fecha y Hora del Corte:</strong>
+                                        </div>
+                                        <div class="col-12">
+                                            <h5 class="text-success mb-0">
+                                                <?= date('d/m/Y', strtotime($snapshotData['fecha_creacion'])) ?>
+                                                <span class="text-muted">a las</span>
+                                                <?= date('H:i', strtotime($snapshotData['fecha_creacion'])) ?> hrs
+                                            </h5>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-user-shield me-1"></i>Creado por:
+                                        </small>
+                                        <br>
+                                        <strong><?= htmlspecialchars($snapshotData['creador_nombre'] ?? 'Sistema') ?></strong>
+                                    </div>
+                                    <div class="text-end">
+                                        <small class="text-muted">
+                                            <i class="fas fa-users me-1"></i>Activistas:
+                                        </small>
+                                        <br>
+                                        <span class="badge bg-secondary fs-6"><?= $snapshotData['total_activistas'] ?? 0 ?></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -208,6 +245,15 @@
                 </div>
                 <?php endif; ?>
 
+                <?php 
+                // Para líderes: solo mostrar datos si hay cortes disponibles
+                $showData = true;
+                if ($userRole === 'Líder' && empty($availableCortes)) {
+                    $showData = false;
+                }
+                ?>
+                
+                <?php if ($showData): ?>
                 <!-- Search and Filter Form -->
                 <div class="search-form">
                     <h5 class="mb-3"><i class="fas fa-search me-2"></i>Filtros de Búsqueda</h5>
@@ -231,6 +277,9 @@
                                        value="<?= htmlspecialchars($_GET['search_phone'] ?? '') ?>" 
                                        placeholder="Buscar por teléfono">
                             </div>
+                            
+                            <!-- Filtros de fecha - Solo para SuperAdmin y Gestor -->
+                            <?php if (in_array($userRole, ['SuperAdmin', 'Gestor'])): ?>
                             <div class="col-md-3 mb-3">
                                 <label for="fecha_desde" class="form-label">Desde</label>
                                 <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" 
@@ -243,6 +292,7 @@
                                 <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" 
                                        value="<?= htmlspecialchars($_GET['fecha_hasta'] ?? '') ?>">
                             </div>
+                            <?php endif; ?>
                             
                             <!-- Group filtering - SuperAdmin only -->
                             <?php if ($_SESSION['user_role'] === 'SuperAdmin' && !empty($groups)): ?>
@@ -390,7 +440,7 @@
                                                                 <i class="fas fa-external-link-alt fa-xs ms-1"></i>
                                                             </a>
                                                             <br>
-                                                            <small class="text-muted"><?= htmlspecialchars($user['rol']) ?></small>
+                                                            <small class="text-muted"><?= htmlspecialchars($user['rol'] ?? 'Activista') ?></small>
                                                         </div>
                                                         <a href="<?= url('reports/activist_tasks.php?user_id=' . $user['id']) ?>" 
                                                            class="btn btn-sm btn-outline-primary" 
@@ -401,8 +451,8 @@
                                                 </td>
                                                 <td>
                                                     <small>
-                                                        <i class="fas fa-envelope me-1"></i><?= htmlspecialchars($user['email']) ?><br>
-                                                        <i class="fas fa-phone me-1"></i><?= htmlspecialchars($user['telefono']) ?>
+                                                        <i class="fas fa-envelope me-1"></i><?= htmlspecialchars($user['email'] ?? 'Sin email') ?><br>
+                                                        <i class="fas fa-phone me-1"></i><?= htmlspecialchars($user['telefono'] ?? 'Sin teléfono') ?>
                                                     </small>
                                                 </td>
                                                 <?php if (in_array($userRole, ['SuperAdmin', 'Gestor'])): ?>
@@ -437,6 +487,7 @@
                         <?php endif; ?>
                     </div>
                 </div>
+                <?php endif; // Fin de $showData ?>
             </main>
         </div>
     </div>
@@ -505,6 +556,89 @@
         </div>
     </div>
 
+    <!-- Modal: Cortes Masivos para Todos los Grupos -->
+    <div class="modal fade" id="massiveSnapshotModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form method="POST" action="<?= url('cortes/create_massive.php') ?>" id="massiveSnapshotForm">
+                    <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
+                    
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-layer-group me-2"></i>Crear Cortes Masivos (Todos los Grupos)
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-exclamation-triangle me-2"></i>¿Cómo funciona?
+                            </h6>
+                            <p class="mb-0">
+                                Esta función creará <strong>un corte para cada grupo activo</strong> automáticamente, 
+                                todos con las mismas fechas que especifiques. Esto ahorra tiempo al no tener que 
+                                crear los cortes uno por uno.
+                            </p>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <strong><i class="fas fa-info-circle me-2"></i>Resultado esperado:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Se creará 1 corte por cada grupo activo en el sistema</li>
+                                <li>Cada corte tendrá el nombre base + el nombre del grupo</li>
+                                <li>Todos los cortes tendrán las mismas fechas de inicio y fin</li>
+                                <li>Los líderes verán automáticamente su corte correspondiente</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label required">Nombre Base del Corte</label>
+                            <input type="text" name="nombre" class="form-control" 
+                                   placeholder="Ej: Corte Diciembre 2025" required>
+                            <small class="text-muted">
+                                Se agregará automáticamente " - [Nombre del Grupo]" a cada corte
+                            </small>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label required">Fecha Inicio del Periodo</label>
+                                    <input type="date" name="fecha_inicio" class="form-control" 
+                                           value="<?= htmlspecialchars($_GET['fecha_desde'] ?? '') ?>" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label required">Fecha Fin del Periodo</label>
+                                    <input type="date" name="fecha_fin" class="form-control" 
+                                           value="<?= htmlspecialchars($_GET['fecha_hasta'] ?? date('Y-m-d')) ?>" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Descripción (Opcional)</label>
+                            <textarea name="descripcion" class="form-control" rows="2" 
+                                      placeholder="Descripción que se aplicará a todos los cortes"></textarea>
+                        </div>
+                        
+                        <div class="alert alert-success mb-0">
+                            <strong><i class="fas fa-clock me-2"></i>Tiempo estimado:</strong>
+                            Este proceso puede tardar unos segundos dependiendo del número de grupos y activistas.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success" id="massiveSnapshotBtn">
+                            <i class="fas fa-layer-group me-1"></i>Crear Cortes para Todos los Grupos
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function changeViewMode(corteId) {
@@ -545,6 +679,13 @@
             downloadLink.click();
             document.body.removeChild(downloadLink);
         }
+        
+        // Manejar envío del formulario de cortes masivos
+        document.getElementById('massiveSnapshotForm')?.addEventListener('submit', function(e) {
+            const btn = document.getElementById('massiveSnapshotBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creando cortes...';
+        });
     </script>
 </body>
 </html>
