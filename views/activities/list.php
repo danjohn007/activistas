@@ -371,9 +371,15 @@
                                                         <?php foreach ($activity['evidences'] as $evidence): ?>
                                                             <div class="evidence-item mb-2">
                                                                 <?php if ($evidence['tipo_evidencia'] === 'foto' && !empty($evidence['archivo'])): ?>
+                                                                    <?php 
+                                                                    // Check if archivo already contains full URL
+                                                                    $imageUrl = (strpos($evidence['archivo'], 'http://') === 0 || strpos($evidence['archivo'], 'https://') === 0) 
+                                                                        ? $evidence['archivo'] 
+                                                                        : url('assets/uploads/evidencias/' . $evidence['archivo']);
+                                                                    ?>
                                                                     <div class="d-flex align-items-center justify-content-between">
                                                                         <div class="d-flex align-items-center">
-                                                                            <img src="<?= url('assets/uploads/evidencias/' . htmlspecialchars($evidence['archivo'])) ?>" 
+                                                                            <img src="<?= htmlspecialchars($imageUrl) ?>" 
                                                                                  class="evidence-thumbnail me-2" 
                                                                                  alt="Evidencia"
                                                                                  style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
@@ -381,7 +387,7 @@
                                                                                 <i class="fas fa-image me-1"></i>Foto
                                                                             </small>
                                                                         </div>
-                                                                        <a href="<?= url('assets/uploads/evidencias/' . htmlspecialchars($evidence['archivo'])) ?>" 
+                                                                        <a href="<?= htmlspecialchars($imageUrl) ?>" 
                                                                            class="btn btn-sm btn-outline-primary" 
                                                                            target="_blank"
                                                                            title="Ver imagen">
@@ -389,11 +395,17 @@
                                                                         </a>
                                                                     </div>
                                                                 <?php elseif ($evidence['tipo_evidencia'] === 'video' && !empty($evidence['archivo'])): ?>
+                                                                    <?php 
+                                                                    // Check if archivo already contains full URL
+                                                                    $videoUrl = (strpos($evidence['archivo'], 'http://') === 0 || strpos($evidence['archivo'], 'https://') === 0) 
+                                                                        ? $evidence['archivo'] 
+                                                                        : url('assets/uploads/evidencias/' . $evidence['archivo']);
+                                                                    ?>
                                                                     <div class="d-flex align-items-center justify-content-between">
                                                                         <small class="text-muted">
                                                                             <i class="fas fa-video me-1"></i>Video: <?= htmlspecialchars(basename($evidence['archivo'])) ?>
                                                                         </small>
-                                                                        <a href="<?= url('assets/uploads/evidencias/' . htmlspecialchars($evidence['archivo'])) ?>" 
+                                                                        <a href="<?= htmlspecialchars($videoUrl) ?>" 
                                                                            class="btn btn-sm btn-outline-primary" 
                                                                            target="_blank"
                                                                            title="Ver/Descargar video">
@@ -401,11 +413,17 @@
                                                                         </a>
                                                                     </div>
                                                                 <?php elseif ($evidence['tipo_evidencia'] === 'audio' && !empty($evidence['archivo'])): ?>
+                                                                    <?php 
+                                                                    // Check if archivo already contains full URL
+                                                                    $audioUrl = (strpos($evidence['archivo'], 'http://') === 0 || strpos($evidence['archivo'], 'https://') === 0) 
+                                                                        ? $evidence['archivo'] 
+                                                                        : url('assets/uploads/evidencias/' . $evidence['archivo']);
+                                                                    ?>
                                                                     <div class="d-flex align-items-center justify-content-between">
                                                                         <small class="text-muted">
                                                                             <i class="fas fa-music me-1"></i>Audio: <?= htmlspecialchars(basename($evidence['archivo'])) ?>
                                                                         </small>
-                                                                        <a href="<?= url('assets/uploads/evidencias/' . htmlspecialchars($evidence['archivo'])) ?>" 
+                                                                        <a href="<?= htmlspecialchars($audioUrl) ?>" 
                                                                            class="btn btn-sm btn-outline-primary" 
                                                                            target="_blank"
                                                                            title="Escuchar/Descargar audio">
@@ -426,11 +444,17 @@
                                                                         </a>
                                                                     </div>
                                                                 <?php elseif (!empty($evidence['archivo'])): ?>
+                                                                    <?php 
+                                                                    // Check if archivo already contains full URL
+                                                                    $fileUrl = (strpos($evidence['archivo'], 'http://') === 0 || strpos($evidence['archivo'], 'https://') === 0) 
+                                                                        ? $evidence['archivo'] 
+                                                                        : url('assets/uploads/evidencias/' . $evidence['archivo']);
+                                                                    ?>
                                                                     <div class="d-flex align-items-center justify-content-between">
                                                                         <small class="text-muted">
                                                                             <i class="fas fa-file me-1"></i><?= ucfirst($evidence['tipo_evidencia']) ?>: <?= htmlspecialchars(basename($evidence['archivo'])) ?>
                                                                         </small>
-                                                                        <a href="<?= url('assets/uploads/evidencias/' . htmlspecialchars($evidence['archivo'])) ?>" 
+                                                                        <a href="<?= htmlspecialchars($fileUrl) ?>" 
                                                                            class="btn btn-sm btn-outline-primary" 
                                                                            target="_blank"
                                                                            title="Ver/Descargar archivo">

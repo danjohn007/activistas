@@ -220,11 +220,17 @@
                                     ?>
                                     
                                     <?php if ($primaryImage): ?>
+                                        <?php 
+                                        // Check if archivo already contains full URL
+                                        $primaryImageUrl = (strpos($primaryImage['archivo'], 'http://') === 0 || strpos($primaryImage['archivo'], 'https://') === 0) 
+                                            ? $primaryImage['archivo'] 
+                                            : url('assets/uploads/evidencias/' . $primaryImage['archivo']);
+                                        ?>
                                         <div class="card-img-container position-relative mb-3">
-                                            <a href="<?= url('assets/uploads/evidencias/' . htmlspecialchars($primaryImage['archivo'])) ?>" 
+                                            <a href="<?= htmlspecialchars($primaryImageUrl) ?>" 
                                                target="_blank" 
                                                rel="noopener noreferrer">
-                                                <img src="<?= url('assets/uploads/evidencias/' . htmlspecialchars($primaryImage['archivo'])) ?>" 
+                                                <img src="<?= htmlspecialchars($primaryImageUrl) ?>" 
                                                      class="card-img-top rounded" 
                                                      alt="Imagen de actividad: <?= htmlspecialchars($task['titulo']) ?>" 
                                                      style="height: 200px; object-fit: cover;"
@@ -300,9 +306,15 @@
                                                                             break;
                                                                     }
                                                                     ?>
-                                                                    <i class="<?= $iconClass ?> me-2"></i>
+                                                                    <?php 
+                                                                    // Check if archivo already contains full URL
+                                                                    $attachmentUrl = (strpos($attachment['archivo'], 'http://') === 0 || strpos($attachment['archivo'], 'https://') === 0) 
+                                                                        ? $attachment['archivo'] 
+                                                                        : url('assets/uploads/evidencias/' . $attachment['archivo']);
+                                                                    ?>
+                                                                    <i class="<?= $iconClass ?>" me-2"></i>
                                                                     <small>
-                                                                        <a href="<?= url('assets/uploads/evidencias/' . htmlspecialchars($attachment['archivo'])) ?>" 
+                                                                        <a href="<?= htmlspecialchars($attachmentUrl) ?>" 
                                                                            target="_blank" class="text-decoration-none">
                                                                             <?= htmlspecialchars(basename($attachment['archivo'])) ?>
                                                                         </a>
@@ -350,9 +362,15 @@
                                                                             break;
                                                                     }
                                                                     ?>
+                                                                    <?php 
+                                                                    // Check if archivo already contains full URL
+                                                                    $attachmentUrl = (strpos($attachment['archivo'], 'http://') === 0 || strpos($attachment['archivo'], 'https://') === 0) 
+                                                                        ? $attachment['archivo'] 
+                                                                        : url('assets/uploads/evidencias/' . $attachment['archivo']);
+                                                                    ?>
                                                                     <i class="<?= $iconClass ?> me-2"></i>
                                                                     <small>
-                                                                        <a href="<?= url('assets/uploads/evidencias/' . htmlspecialchars($attachment['archivo'])) ?>" 
+                                                                        <a href="<?= htmlspecialchars($attachmentUrl) ?>" 
                                                                            target="_blank" class="text-decoration-none">
                                                                             <?= htmlspecialchars(basename($attachment['archivo'])) ?>
                                                                         </a>
