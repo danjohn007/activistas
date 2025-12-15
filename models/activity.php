@@ -1457,6 +1457,41 @@ class Activity {
      */
     public function getActivistReport($filters = []) {
         try {
+            // Build subquery filters for activities
+            $activityWhere = ["1=1"];
+            $activityParams = [];
+            
+            // Filter by date range
+            if (!empty($filters['fecha_desde'])) {
+                $activityWhere[] = "a.fecha_actividad >= ?";
+                $activityParams[] = $filters['fecha_desde'];
+            }
+            
+            if (!empty($filters['fecha_hasta'])) {
+                $activityWhere[] = "a.fecha_actividad <= ?";
+                $activityParams[] = $filters['fecha_hasta'];
+            }
+            
+            // Filter by activity type
+            if (!empty($filters['tipo_actividad_id'])) {
+                $activityWhere[] = "a.tipo_actividad_id = ?";
+                $activityParams[] = $filters['tipo_actividad_id'];
+            }
+            
+            // Filter by state
+            if (!empty($filters['estado'])) {
+                $activityWhere[] = "a.estado = ?";
+                $activityParams[] = $filters['estado'];
+            }
+            
+            // Filter by title
+            if (!empty($filters['search_titulo'])) {
+                $activityWhere[] = "a.titulo LIKE ?";
+                $activityParams[] = '%' . $filters['search_titulo'] . '%';
+            }
+            
+            $activityWhereClause = implode(' AND ', $activityWhere);
+            
             $sql = "
                 SELECT 
                     u.id,
@@ -1465,22 +1500,30 @@ class Activity {
                     u.telefono,
                     u.rol,
                     l.nombre_completo as lider_nombre,
-                    COUNT(CASE WHEN a.tarea_pendiente = 1 THEN 1 END) as total_tareas_asignadas,
-                    COUNT(CASE WHEN a.estado = 'completada' AND a.tarea_pendiente = 1 THEN 1 END) as tareas_completadas,
+                    COALESCE(act.total_tareas_asignadas, 0) as total_tareas_asignadas,
+                    COALESCE(act.tareas_completadas, 0) as tareas_completadas,
                     ROUND(
                         CASE 
-                            WHEN COUNT(CASE WHEN a.tarea_pendiente = 1 THEN 1 END) > 0 
-                            THEN (COUNT(CASE WHEN a.estado = 'completada' AND a.tarea_pendiente = 1 THEN 1 END) * 100.0) / COUNT(CASE WHEN a.tarea_pendiente = 1 THEN 1 END)
+                            WHEN COALESCE(act.total_tareas_asignadas, 0) > 0 
+                            THEN (COALESCE(act.tareas_completadas, 0) * 100.0) / act.total_tareas_asignadas
                             ELSE 0 
                         END, 2
                     ) as porcentaje_cumplimiento,
                     u.ranking_puntos as puntos_actuales
                 FROM usuarios u
                 LEFT JOIN usuarios l ON u.lider_id = l.id
-                LEFT JOIN actividades a ON u.id = a.usuario_id
+                LEFT JOIN (
+                    SELECT 
+                        usuario_id,
+                        COUNT(CASE WHEN tarea_pendiente = 1 THEN 1 END) as total_tareas_asignadas,
+                        COUNT(CASE WHEN estado = 'completada' AND tarea_pendiente = 1 THEN 1 END) as tareas_completadas
+                    FROM actividades a
+                    WHERE " . $activityWhereClause . "
+                    GROUP BY usuario_id
+                ) act ON u.id = act.usuario_id
             ";
             
-            $params = [];
+            $params = $activityParams;
             $where = ["u.estado = 'activo'", "u.id != 1"];
             
             // Filter by leader (for leader dashboard)
@@ -1502,17 +1545,6 @@ class Activity {
                 $params[] = $filters['grupo_id'];
             }
             
-            // Filter by date range (only apply to activities, not to user selection)
-            if (!empty($filters['fecha_desde'])) {
-                $where[] = "(a.fecha_actividad IS NULL OR a.fecha_actividad >= ?)";
-                $params[] = $filters['fecha_desde'];
-            }
-            
-            if (!empty($filters['fecha_hasta'])) {
-                $where[] = "(a.fecha_actividad IS NULL OR a.fecha_actividad <= ?)";
-                $params[] = $filters['fecha_hasta'];
-            }
-            
             // Search filters
             if (!empty($filters['search_name'])) {
                 $where[] = "u.nombre_completo LIKE ?";
@@ -1530,7 +1562,6 @@ class Activity {
             }
             
             $sql .= " WHERE " . implode(' AND ', $where);
-            $sql .= " GROUP BY u.id, u.nombre_completo, u.email, u.telefono, u.rol, l.nombre_completo, u.ranking_puntos";
             $sql .= " ORDER BY porcentaje_cumplimiento DESC, tareas_completadas DESC";
             
             $stmt = $this->db->prepare($sql);

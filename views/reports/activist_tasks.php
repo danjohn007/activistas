@@ -78,12 +78,62 @@
                     </div>
                 </div>
 
+                <!-- Snapshot Mode Alert -->
+                <?php if (isset($isSnapshot) && $isSnapshot): ?>
+                <div class="alert alert-warning mb-4">
+                    <h5 class="alert-heading">
+                        <i class="fas fa-camera me-2"></i>Viendo Snapshot Congelado
+                    </h5>
+                    <hr>
+                    <p class="mb-2">
+                        <strong>Corte:</strong> <?= htmlspecialchars($snapshotInfo['nombre']) ?>
+                        <?php if (!empty($snapshotInfo['descripcion'])): ?>
+                            - <?= htmlspecialchars($snapshotInfo['descripcion']) ?>
+                        <?php endif; ?>
+                    </p>
+                    <p class="mb-2">
+                        <strong>Periodo:</strong> 
+                        <?= date('d/m/Y', strtotime($snapshotInfo['fecha_inicio'])) ?> 
+                        al 
+                        <?= date('d/m/Y', strtotime($snapshotInfo['fecha_fin'])) ?>
+                    </p>
+                    <p class="mb-0">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Los datos mostrados son un <strong>snapshot congelado</strong> del momento en que se creó el corte 
+                        (<?= date('d/m/Y H:i', strtotime($snapshotInfo['fecha_creacion'])) ?>).
+                        Estas estadísticas NO cambian aunque se completen nuevas tareas.
+                    </p>
+                </div>
+                <?php elseif (!empty($_GET['fecha_desde']) || !empty($_GET['fecha_hasta'])): ?>
+                <div class="alert alert-primary mb-4">
+                    <i class="fas fa-calendar me-2"></i><strong>Periodo Filtrado (Tiempo Real):</strong>
+                    <?php if (!empty($_GET['fecha_desde'])): ?>
+                        Desde <strong><?= date('d/m/Y', strtotime($_GET['fecha_desde'])) ?></strong>
+                    <?php endif; ?>
+                    <?php if (!empty($_GET['fecha_hasta'])): ?>
+                        Hasta <strong><?= date('d/m/Y', strtotime($_GET['fecha_hasta'])) ?></strong>
+                    <?php endif; ?>
+                    <br>
+                    <small class="text-muted">
+                        <i class="fas fa-sync-alt me-1"></i>
+                        Los datos se actualizan en tiempo real y pueden cambiar si el activista completa nuevas tareas.
+                    </small>
+                </div>
+                <?php endif; ?>
+
                 <!-- Statistics Summary -->
                 <div class="row mb-4">
                     <?php
-                    $totalAssigned = count($assignedTasks) + count($completedTasks);
-                    $totalCompleted = count($completedTasks);
-                    $completionPercentage = $totalAssigned > 0 ? ($totalCompleted / $totalAssigned) * 100 : 0;
+                    // Use frozen stats if viewing a snapshot, otherwise calculate from tasks
+                    if (isset($isSnapshot) && $isSnapshot && isset($frozenStatistics) && $frozenStatistics) {
+                        $totalAssigned = $frozenStatistics['tareas_asignadas'];
+                        $totalCompleted = $frozenStatistics['tareas_entregadas'];
+                        $completionPercentage = $frozenStatistics['porcentaje_cumplimiento'];
+                    } else {
+                        $totalAssigned = count($assignedTasks) + count($completedTasks);
+                        $totalCompleted = count($completedTasks);
+                        $completionPercentage = $totalAssigned > 0 ? ($totalCompleted / $totalAssigned) * 100 : 0;
+                    }
                     ?>
                     <div class="col-md-3">
                         <div class="card border-primary">
@@ -129,6 +179,13 @@
                         <i class="fas fa-calculator me-2"></i>Cómo se calcula el rendimiento
                     </h5>
                     <hr>
+                    <?php if (isset($isSnapshot) && $isSnapshot): ?>
+                    <div class="alert alert-warning mb-2">
+                        <i class="fas fa-camera me-1"></i>
+                        <strong>Estas son estadísticas CONGELADAS del corte.</strong>
+                        Los números se calcularon cuando se creó el snapshot y no cambian.
+                    </div>
+                    <?php endif; ?>
                     <p class="mb-2"><strong>Fórmula del Porcentaje de Cumplimiento:</strong></p>
                     <p class="mb-2">
                         <code>(Tareas Entregadas/Completadas / Total de Tareas Asignadas) × 100</code>

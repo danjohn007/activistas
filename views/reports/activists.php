@@ -80,19 +80,17 @@
                                 </span>
                             <?php endif; ?>
                         </h1>
-                        <?php if ($userRole === 'Líder'): ?>
-                            <?php if (empty($availableCortes)): ?>
-                                <div class="alert alert-warning mt-3 mb-0">
-                                    <i class="fas fa-exclamation-triangle me-2"></i>
-                                    <strong>No hay cortes disponibles.</strong> 
-                                    El SuperAdministrador aún no ha creado ningún corte para tu grupo.
-                                    <?php if (empty($currentUser['grupo_id'])): ?>
-                                        <br><small class="text-danger">No tienes un grupo asignado. Contacta al administrador.</small>
-                                    <?php else: ?>
-                                        <br><small>Tu grupo: <strong><?= htmlspecialchars($currentUser['grupo_nombre'] ?? 'ID: ' . $currentUser['grupo_id']) ?></strong></small>
-                                    <?php endif; ?>
-                                </div>
-                            <?php endif; ?>
+                        <?php if ($userRole === 'Líder' && empty($availableCortes)): ?>
+                            <div class="alert alert-info mt-3 mb-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Información:</strong> 
+                                El SuperAdministrador aún no ha creado ningún corte para tu grupo, pero puedes ver los datos en tiempo real.
+                                <?php if (empty($currentUser['grupo_id'])): ?>
+                                    <br><small class="text-danger">No tienes un grupo asignado. Contacta al administrador.</small>
+                                <?php else: ?>
+                                    <br><small>Tu grupo: <strong><?= htmlspecialchars($currentUser['grupo_nombre'] ?? 'ID: ' . $currentUser['grupo_id']) ?></strong></small>
+                                <?php endif; ?>
+                            </div>
                         <?php endif; ?>
                     </div>
                     <div class="btn-toolbar mb-2 mb-md-0">
@@ -101,38 +99,36 @@
                                 <i class="fas fa-download me-1"></i>Exportar
                             </button>
                         </div>
-                        <?php if (in_array($userRole, ['SuperAdmin', 'Gestor'])): ?>
-                        <div class="btn-group me-2">
-                            <a href="<?= url('cortes/index.php') ?>" class="btn btn-outline-info">
-                                <i class="fas fa-history me-1"></i>Ver Snapshots Guardados
-                            </a>
-                        </div>
-                        <?php if (!$snapshotMode): ?>
-                        <div class="btn-group me-2">
-                            <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#captureSnapshotModal">
-                                <i class="fas fa-camera me-1"></i>Capturar Snapshot
-                            </button>
-                        </div>
-                        <?php if ($userRole === 'SuperAdmin'): ?>
-                        <div class="btn-group me-2">
-                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#massiveSnapshotModal">
-                                <i class="fas fa-layer-group me-1"></i>Cortes Masivos (Todos los Grupos)
-                            </button>
-                        </div>
-                        <?php endif; ?>
-                        <?php endif; ?>
-                        <?php endif; ?>
                     </div>
                 </div>
                 
-                <!-- Cortes disponibles para Líderes -->
-                <?php if ($userRole === 'Líder' && !empty($snapshotData)): ?>
+                <!-- Alerta de modo de visualización -->
+                <?php if ($snapshotMode): ?>
+                <div class="alert alert-info border-primary mb-4">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <i class="fas fa-camera fa-2x text-primary"></i>
+                        </div>
+                        <div class="col">
+                            <h6 class="mb-1">
+                                <i class="fas fa-lock me-2"></i>Viendo datos de corte (congelados)
+                            </h6>
+                            <small>
+                                Los datos mostrados corresponden al snapshot capturado. 
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
+                <!-- Información detallada del corte (solo cuando está en modo snapshot) -->
+                <?php if ($snapshotMode && !empty($snapshotData)): ?>
                 <div class="row mb-4">
                     <div class="col-12 mb-3">
-                        <div class="card border-success shadow-sm">
-                            <div class="card-header bg-success text-white">
+                        <div class="card border-info shadow-sm">
+                            <div class="card-header bg-info text-white">
                                 <h6 class="mb-0">
-                                    <i class="fas fa-camera me-2"></i>Se ha hecho un corte
+                                    <i class="fas fa-info-circle me-2"></i>Detalles del Corte
                                 </h6>
                             </div>
                             <div class="card-body">
@@ -213,51 +209,13 @@
                 </div>
                 <?php endif; ?>
                 
-                <!-- Snapshot Selector -->
-                <?php if (!empty($availableCortes)): ?>
-                <div class="alert alert-light border mb-3">
-                    <div class="row align-items-center">
-                        <div class="col-auto">
-                            <i class="fas fa-eye fa-lg text-primary"></i>
-                        </div>
-                        <div class="col">
-                            <strong>Modo de visualización:</strong>
-                            <select class="form-select form-select-sm d-inline-block w-auto ms-2" onchange="changeViewMode(this.value)">
-                                <option value="">Tiempo Real (Actual)</option>
-                                <optgroup label="Snapshots Guardados">
-                                    <?php foreach ($availableCortes as $corte): ?>
-                                        <option value="<?= $corte['id'] ?>" <?= $corteId == $corte['id'] ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($corte['nombre']) ?> 
-                                            (<?= date('d/m/Y', strtotime($corte['fecha_inicio'])) ?> - <?= date('d/m/Y', strtotime($corte['fecha_fin'])) ?>)
-                                        </option>
-                                    <?php endforeach; ?>
-                                </optgroup>
-                            </select>
-                        </div>
-                        <?php if ($snapshotMode): ?>
-                        <div class="col-auto">
-                            <span class="badge bg-warning text-dark">
-                                <i class="fas fa-lock"></i> Datos Congelados al <?= date('d/m/Y H:i', strtotime($snapshotData['fecha_creacion'])) ?>
-                            </span>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                <?php endif; ?>
-
-                <?php 
-                // Para líderes: solo mostrar datos si hay cortes disponibles
-                $showData = true;
-                if ($userRole === 'Líder' && empty($availableCortes)) {
-                    $showData = false;
-                }
-                ?>
-                
-                <?php if ($showData): ?>
                 <!-- Search and Filter Form -->
                 <div class="search-form">
                     <h5 class="mb-3"><i class="fas fa-search me-2"></i>Filtros de Búsqueda</h5>
                     <form method="GET" action="">
+                        <?php if (!empty($_GET['corte_id'])): ?>
+                            <input type="hidden" name="corte_id" value="<?= intval($_GET['corte_id']) ?>">
+                        <?php endif; ?>
                         <div class="row">
                             <div class="col-md-3 mb-3">
                                 <label for="search_name" class="form-label">Nombre</label>
@@ -278,8 +236,7 @@
                                        placeholder="Buscar por teléfono">
                             </div>
                             
-                            <!-- Filtros de fecha - Solo para SuperAdmin y Gestor -->
-                            <?php if (in_array($userRole, ['SuperAdmin', 'Gestor'])): ?>
+                            <!-- Filtros de fecha -->
                             <div class="col-md-3 mb-3">
                                 <label for="fecha_desde" class="form-label">Desde</label>
                                 <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" 
@@ -292,8 +249,41 @@
                                 <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" 
                                        value="<?= htmlspecialchars($_GET['fecha_hasta'] ?? '') ?>">
                             </div>
-                            <?php endif; ?>
                             
+                            <!-- Activity Type Filter -->
+                            <div class="col-md-3 mb-3">
+                                <label for="tipo_actividad_id" class="form-label">Tipo de Actividad</label>
+                                <select class="form-select" id="tipo_actividad_id" name="tipo_actividad_id">
+                                    <option value="">Todos los tipos</option>
+                                    <?php if (!empty($activityTypes)): ?>
+                                        <?php foreach ($activityTypes as $type): ?>
+                                            <option value="<?= $type['id'] ?>" 
+                                                    <?= ($_GET['tipo_actividad_id'] ?? '') == $type['id'] ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($type['nombre']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                            </div>
+                            
+                            <!-- State Filter -->
+                            <div class="col-md-3 mb-3">
+                                <label for="estado" class="form-label">Estado</label>
+                                <select class="form-select" id="estado" name="estado">
+                                    <option value="">Todos los estados</option>
+                                    <option value="pendiente" <?= ($_GET['estado'] ?? '') === 'pendiente' ? 'selected' : '' ?>>Pendiente</option>
+                                    <option value="completada" <?= ($_GET['estado'] ?? '') === 'completada' ? 'selected' : '' ?>>Completada</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <!-- Title Filter -->
+                            <div class="col-md-3 mb-3">
+                                <label for="search_titulo" class="form-label">Título de Actividad</label>
+                                <input type="text" class="form-control" id="search_titulo" name="search_titulo" 
+                                       value="<?= htmlspecialchars($_GET['search_titulo'] ?? '') ?>" 
+                                       placeholder="Buscar por título">
+                            </div>
                             <!-- Group filtering - SuperAdmin only -->
                             <?php if ($_SESSION['user_role'] === 'SuperAdmin' && !empty($groups)): ?>
                             <div class="col-md-3 mb-3">
@@ -433,7 +423,24 @@
                                                 <td>
                                                     <div class="d-flex align-items-center justify-content-between">
                                                         <div>
-                                                            <a href="<?= url('reports/activist_tasks.php?user_id=' . $user['id']) ?>" 
+                                                            <?php 
+                                                            // Determine which detail page to use based on context
+                                                            if (!empty($_GET['corte_id'])) {
+                                                                // When viewing a corte, use the corte-specific detail page
+                                                                $params = [
+                                                                    'corte_id' => intval($_GET['corte_id']),
+                                                                    'usuario_id' => $user['id']
+                                                                ];
+                                                                $detailUrl = 'cortes/tareas_activista.php?' . http_build_query($params);
+                                                            } else {
+                                                                // Real-time view, use the regular report page
+                                                                $params = ['user_id' => $user['id']];
+                                                                if (!empty($_GET['fecha_desde'])) $params['fecha_desde'] = $_GET['fecha_desde'];
+                                                                if (!empty($_GET['fecha_hasta'])) $params['fecha_hasta'] = $_GET['fecha_hasta'];
+                                                                $detailUrl = 'reports/activist_tasks.php?' . http_build_query($params);
+                                                            }
+                                                            ?>
+                                                            <a href="<?= url($detailUrl) ?>" 
                                                                class="activist-name-link" 
                                                                title="Clic para ver detalle de tareas">
                                                                 <?= htmlspecialchars($user['nombre_completo']) ?>
@@ -442,7 +449,7 @@
                                                             <br>
                                                             <small class="text-muted"><?= htmlspecialchars($user['rol'] ?? 'Activista') ?></small>
                                                         </div>
-                                                        <a href="<?= url('reports/activist_tasks.php?user_id=' . $user['id']) ?>" 
+                                                        <a href="<?= url($detailUrl) ?>" 
                                                            class="btn btn-sm btn-outline-primary" 
                                                            title="Ver detalle de tareas">
                                                             <i class="fas fa-list-check me-1"></i>Detalle
@@ -487,76 +494,11 @@
                         <?php endif; ?>
                     </div>
                 </div>
-                <?php endif; // Fin de $showData ?>
             </main>
         </div>
     </div>
 
-    <!-- Modal: Capture Snapshot -->
-    <div class="modal fade" id="captureSnapshotModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form method="POST" action="<?= url('cortes/create.php') ?>">
-                    <input type="hidden" name="csrf_token" value="<?= generateCSRFToken() ?>">
-                    <input type="hidden" name="from_report" value="1">
-                    <?php if (!empty($_GET['fecha_desde'])): ?>
-                        <input type="hidden" name="fecha_inicio" value="<?= htmlspecialchars($_GET['fecha_desde']) ?>">
-                    <?php endif; ?>
-                    <?php if (!empty($_GET['fecha_hasta'])): ?>
-                        <input type="hidden" name="fecha_fin" value="<?= htmlspecialchars($_GET['fecha_hasta']) ?>">
-                    <?php endif; ?>
-                    <?php if (!empty($_GET['grupo_id'])): ?>
-                        <input type="hidden" name="grupo_id" value="<?= htmlspecialchars($_GET['grupo_id']) ?>">
-                    <?php endif; ?>
-                    
-                    <div class="modal-header">
-                        <h5 class="modal-title">
-                            <i class="fas fa-camera me-2"></i>Capturar Snapshot
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Se guardará un snapshot con los datos actuales y filtros aplicados.
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Nombre del Snapshot</label>
-                            <input type="text" name="nombre" class="form-control" 
-                                   placeholder="Ej: Reporte Diciembre 2025" required>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Fecha Inicio</label>
-                            <input type="date" name="fecha_inicio" class="form-control" 
-                                   value="<?= htmlspecialchars($_GET['fecha_desde'] ?? '') ?>" required>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Fecha Fin</label>
-                            <input type="date" name="fecha_fin" class="form-control" 
-                                   value="<?= htmlspecialchars($_GET['fecha_hasta'] ?? date('Y-m-d')) ?>" required>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Descripción (Opcional)</label>
-                            <textarea name="descripcion" class="form-control" rows="2" 
-                                      placeholder="Notas sobre este snapshot"></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-save me-1"></i>Guardar Snapshot
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Cortes Masivos para Todos los Grupos -->
+    <!-- Modal: Cortes Masivos para Todos los Líderes -->
     <div class="modal fade" id="massiveSnapshotModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -565,7 +507,7 @@
                     
                     <div class="modal-header bg-success text-white">
                         <h5 class="modal-title">
-                            <i class="fas fa-layer-group me-2"></i>Crear Cortes Masivos (Todos los Grupos)
+                            <i class="fas fa-layer-group me-2"></i>Crear Cortes Masivos (Todos los Líderes)
                         </h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
@@ -575,7 +517,7 @@
                                 <i class="fas fa-exclamation-triangle me-2"></i>¿Cómo funciona?
                             </h6>
                             <p class="mb-0">
-                                Esta función creará <strong>un corte para cada grupo activo</strong> automáticamente, 
+                                Esta función creará <strong>un corte para cada líder activo</strong> automáticamente, 
                                 todos con las mismas fechas que especifiques. Esto ahorra tiempo al no tener que 
                                 crear los cortes uno por uno.
                             </p>
@@ -584,8 +526,8 @@
                         <div class="alert alert-info">
                             <strong><i class="fas fa-info-circle me-2"></i>Resultado esperado:</strong>
                             <ul class="mb-0 mt-2">
-                                <li>Se creará 1 corte por cada grupo activo en el sistema</li>
-                                <li>Cada corte tendrá el nombre base + el nombre del grupo</li>
+                                <li>Se creará 1 corte por cada líder activo en el sistema</li>
+                                <li>Cada corte tendrá el nombre base + el nombre completo del líder</li>
                                 <li>Todos los cortes tendrán las mismas fechas de inicio y fin</li>
                                 <li>Los líderes verán automáticamente su corte correspondiente</li>
                             </ul>
@@ -596,7 +538,7 @@
                             <input type="text" name="nombre" class="form-control" 
                                    placeholder="Ej: Corte Diciembre 2025" required>
                             <small class="text-muted">
-                                Se agregará automáticamente " - [Nombre del Grupo]" a cada corte
+                                Se agregará automáticamente " - [Nombre del Líder]" a cada corte
                             </small>
                         </div>
                         
@@ -625,13 +567,13 @@
                         
                         <div class="alert alert-success mb-0">
                             <strong><i class="fas fa-clock me-2"></i>Tiempo estimado:</strong>
-                            Este proceso puede tardar unos segundos dependiendo del número de grupos y activistas.
+                            Este proceso puede tardar unos segundos dependiendo del número de líderes y activistas.
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <button type="submit" class="btn btn-success" id="massiveSnapshotBtn">
-                            <i class="fas fa-layer-group me-1"></i>Crear Cortes para Todos los Grupos
+                            <i class="fas fa-layer-group me-1"></i>Crear Cortes para Todos los Líderes
                         </button>
                     </div>
                 </form>

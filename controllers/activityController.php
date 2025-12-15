@@ -52,12 +52,13 @@ class ActivityController {
         if (!empty($_GET['fecha_hasta'])) {
             $filters['fecha_hasta'] = cleanInput($_GET['fecha_hasta']);
         }
+        // Título de actividad - disponible para Líder también
+        if (!empty($_GET['search_title'])) {
+            $filters['search_title'] = cleanInput($_GET['search_title']);
+        }
         
-        // Advanced search filters for SuperAdmin
-        if ($currentUser['rol'] === 'SuperAdmin') {
-            if (!empty($_GET['search_title'])) {
-                $filters['search_title'] = cleanInput($_GET['search_title']);
-            }
+        // Advanced search filters for SuperAdmin and Líder
+        if (in_array($currentUser['rol'], ['SuperAdmin', 'Líder', 'Gestor'])) {
             if (!empty($_GET['search_name'])) {
                 $filters['search_name'] = cleanInput($_GET['search_name']);
             }
@@ -67,6 +68,10 @@ class ActivityController {
             if (!empty($_GET['search_phone'])) {
                 $filters['search_phone'] = cleanInput($_GET['search_phone']);
             }
+        }
+        
+        // Additional filters only for SuperAdmin
+        if ($currentUser['rol'] === 'SuperAdmin') {
             // Add leader filter for SuperAdmin - includes leader's activities and their team's activities
             if (!empty($_GET['filter_lider_id'])) {
                 $filters['filter_lider_id'] = intval($_GET['filter_lider_id']);

@@ -90,7 +90,7 @@ class Corte {
      * Calcula el snapshot de cada activista para el periodo
      */
     private function calcularDetalleCorte($corteId, $fechaInicio, $fechaFin, $grupoId = null, $actividadId = null, $usuarioId = null) {
-        // Construir query de activistas con filtro de grupo y usuario opcional
+        // Construir query de activistas con filtro de grupo y líder opcional
         $sqlActivistas = "
             SELECT DISTINCT u.id, u.nombre_completo 
             FROM usuarios u
@@ -104,8 +104,9 @@ class Corte {
             $paramsActivistas[] = $grupoId;
         }
         
+        // Si usuarioId está presente, es el ID del líder, entonces filtramos por lider_id
         if ($usuarioId) {
-            $sqlActivistas .= " AND u.id = ?";
+            $sqlActivistas .= " AND u.lider_id = ?";
             $paramsActivistas[] = $usuarioId;
         }
         
@@ -225,6 +226,9 @@ class Corte {
         $stmt->execute([$corteId]);
         $stats = $stmt->fetch();
         
+        // Asegurar que promedio no sea null
+        $promedio = $stats['promedio'] !== null ? round($stats['promedio'], 2) : 0;
+        
         $stmtUpdate = $this->db->prepare("
             UPDATE cortes_periodo 
             SET total_activistas = ?,
@@ -233,7 +237,7 @@ class Corte {
         ");
         $stmtUpdate->execute([
             $stats['total_activistas'],
-            round($stats['promedio'], 2),
+            $promedio,
             $corteId
         ]);
     }
@@ -271,6 +275,18 @@ class Corte {
             if (!empty($filters['fecha_hasta'])) {
                 $sql .= " AND c.fecha_fin <= ?";
                 $params[] = $filters['fecha_hasta'];
+            }
+            
+            if (!empty($filters['search'])) {
+                $sql .= " AND (c.nombre LIKE ? OR c.descripcion LIKE ?)";
+                $searchTerm = '%' . $filters['search'] . '%';
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+            }
+            
+            if (!empty($filters['usuario_id'])) {
+                $sql .= " AND c.usuario_id = ?";
+                $params[] = $filters['usuario_id'];
             }
             
             $sql .= " ORDER BY c.fecha_creacion DESC";

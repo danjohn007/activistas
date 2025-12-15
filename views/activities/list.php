@@ -56,6 +56,7 @@
                 <div class="card mb-4">
                     <div class="card-body">
                         <form method="GET" class="row g-3">
+                            <!-- Primera fila: Filtros básicos -->
                             <div class="col-md-3">
                                 <label for="tipo" class="form-label">Tipo de Actividad</label>
                                 <select class="form-select" id="tipo" name="tipo">
@@ -77,18 +78,55 @@
                                     <option value="cancelada" <?= ($_GET['estado'] ?? '') === 'cancelada' ? 'selected' : '' ?>>Cancelada</option>
                                 </select>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-3">
                                 <label for="fecha_desde" class="form-label">Desde</label>
                                 <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" 
                                        value="<?= htmlspecialchars($_GET['fecha_desde'] ?? '') ?>">
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-3">
                                 <label for="fecha_hasta" class="form-label">Hasta</label>
                                 <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" 
                                        value="<?= htmlspecialchars($_GET['fecha_hasta'] ?? '') ?>">
                             </div>
-                            <div class="col-md-2 d-flex align-items-end">
-                                <button type="submit" class="btn btn-primary me-2">
+                            
+                            <?php 
+                            // Check if current user is Líder or SuperAdmin
+                            $auth = getAuth();
+                            $currentUser = $auth->getCurrentUser();
+                            $isLiderOrAdmin = isset($currentUser) && in_array($currentUser['rol'], ['Líder', 'SuperAdmin', 'Gestor']);
+                            ?>
+                            
+                            <?php if ($isLiderOrAdmin): ?>
+                            <!-- Segunda fila: Búsquedas avanzadas para Líder/Admin -->
+                            <div class="col-md-3">
+                                <label for="search_title" class="form-label">Título de Actividad</label>
+                                <input type="text" class="form-control" id="search_title" name="search_title" 
+                                       placeholder="Buscar por título..." 
+                                       value="<?= htmlspecialchars($_GET['search_title'] ?? '') ?>">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="search_name" class="form-label">Nombre de Usuario</label>
+                                <input type="text" class="form-control" id="search_name" name="search_name" 
+                                       placeholder="Buscar por nombre..." 
+                                       value="<?= htmlspecialchars($_GET['search_name'] ?? '') ?>">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="search_email" class="form-label">Correo Electrónico</label>
+                                <input type="email" class="form-control" id="search_email" name="search_email" 
+                                       placeholder="Buscar por correo..." 
+                                       value="<?= htmlspecialchars($_GET['search_email'] ?? '') ?>">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="search_phone" class="form-label">Teléfono</label>
+                                <input type="text" class="form-control" id="search_phone" name="search_phone" 
+                                       placeholder="Buscar por teléfono..." 
+                                       value="<?= htmlspecialchars($_GET['search_phone'] ?? '') ?>">
+                            </div>
+                            <?php endif; ?>
+                            
+                            <!-- Botones -->
+                            <div class="col-12 d-flex justify-content-start gap-2 mt-3">
+                                <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-search me-1"></i>Filtrar
                                 </button>
                                 <a href="<?= url('activities/') ?>" class="btn btn-outline-secondary">

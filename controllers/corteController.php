@@ -39,10 +39,150 @@ class CorteController {
         if (!empty($_GET['fecha_hasta'])) {
             $filters['fecha_hasta'] = cleanInput($_GET['fecha_hasta']);
         }
+        if (!empty($_GET['search'])) {
+            $filters['search'] = cleanInput($_GET['search']);
+        }
+        
+        // Paginación
+        $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+        $perPage = 15;
+        $offset = ($page - 1) * $perPage;
+        
+        $allCortes = $this->corteModel->getCortes($filters);
+        
+        // Agrupar cortes que fueron creados al mismo tiempo (cortes masivos)
+        $cortesAgrupados = $this->agruparCortesMasivos($allCortes);
+        
+        $totalCortes = count($cortesAgrupados);
+        $totalPages = ceil($totalCortes / $perPage);
+        $cortes = array_slice($cortesAgrupados, $offset, $perPage);
+        
+        include __DIR__ . '/../views/cortes/list.php';
+    }
+    
+    /**
+     * Listar cortes del líder actual
+     */
+    public function listMisCortes() {
+        $this->auth->requireAuth();
+        $currentUser = $this->auth->getCurrentUser();
+        
+        // Solo Líderes
+        if ($currentUser['rol'] !== 'Líder') {
+            redirectWithMessage('dashboard/', 'No tienes permisos para acceder a esta sección', 'error');
+        }
+        
+        // Obtener cortes del líder
+        $filters = ['usuario_id' => $currentUser['id']];
+        
+        if (!empty($_GET['estado'])) {
+            $filters['estado'] = cleanInput($_GET['estado']);
+        }
+        if (!empty($_GET['fecha_desde'])) {
+            $filters['fecha_desde'] = cleanInput($_GET['fecha_desde']);
+        }
+        if (!empty($_GET['fecha_hasta'])) {
+            $filters['fecha_hasta'] = cleanInput($_GET['fecha_hasta']);
+        }
         
         $cortes = $this->corteModel->getCortes($filters);
         
-        include __DIR__ . '/../views/cortes/list.php';
+        include __DIR__ . '/../views/cortes/mis_cortes.php';
+    }
+    
+    /**
+     * Agrupa cortes que fueron creados como parte de cortes masivos
+     */
+    private function agruparCortesMasivos($cortes) {
+        $grupos = [];
+        $procesados = [];
+        
+        foreach ($cortes as $corte) {
+            if (in_array($corte['id'], $procesados)) {
+                continue;
+            }
+            
+            // Buscar cortes relacionados (creados en el mismo minuto y con nombre similar)
+            $cortesRelacionados = [$corte];
+            $nombreBase = $this->extraerNombreBase($corte['nombre']);
+            $fechaCreacion = strtotime($corte['fecha_creacion']);
+            
+            foreach ($cortes as $otroCorte) {
+                if ($otroCorte['id'] === $corte['id'] || in_array($otroCorte['id'], $procesados)) {
+                    continue;
+                }
+                
+                $otroNombreBase = $this->extraerNombreBase($otroCorte['nombre']);
+                $otraFechaCreacion = strtotime($otroCorte['fecha_creacion']);
+                
+                // Si tienen el mismo nombre base, fechas iguales y fueron creados en el mismo minuto
+                if ($nombreBase === $otroNombreBase && 
+                    $corte['fecha_inicio'] === $otroCorte['fecha_inicio'] &&
+                    $corte['fecha_fin'] === $otroCorte['fecha_fin'] &&
+                    abs($fechaCreacion - $otraFechaCreacion) < 120) { // 2 minutos de diferencia
+                    
+                    $cortesRelacionados[] = $otroCorte;
+                    $procesados[] = $otroCorte['id'];
+                }
+            }
+            
+            $procesados[] = $corte['id'];
+            
+            // Si hay más de un corte, es un grupo
+            if (count($cortesRelacionados) > 1) {
+                $grupos[] = [
+                    'es_grupo' => true,
+                    'nombre_grupo' => $nombreBase,
+                    'cantidad' => count($cortesRelacionados),
+                    'cortes' => $cortesRelacionados,
+                    'fecha_inicio' => $corte['fecha_inicio'],
+                    'fecha_fin' => $corte['fecha_fin'],
+                    'fecha_creacion' => $corte['fecha_creacion'],
+                    'estado' => $corte['estado'],
+                    'creador_nombre' => $corte['creador_nombre'],
+                    // Calcular totales del grupo
+                    'total_activistas' => array_sum(array_column($cortesRelacionados, 'total_activistas')),
+                    'promedio_cumplimiento' => $this->calcularPromedioGrupo($cortesRelacionados)
+                ];
+            } else {
+                $grupos[] = [
+                    'es_grupo' => false,
+                    'corte' => $corte
+                ];
+            }
+        }
+        
+        return $grupos;
+    }
+    
+    /**
+     * Extrae el nombre base de un corte (sin el sufijo del líder/grupo)
+     */
+    private function extraerNombreBase($nombreCompleto) {
+        // Buscar el último " - " y tomar lo que está antes
+        $pos = strrpos($nombreCompleto, ' - ');
+        if ($pos !== false) {
+            return substr($nombreCompleto, 0, $pos);
+        }
+        return $nombreCompleto;
+    }
+    
+    /**
+     * Calcula el promedio ponderado del grupo
+     */
+    private function calcularPromedioGrupo($cortes) {
+        $totalActivistas = 0;
+        $sumaProductos = 0;
+        
+        foreach ($cortes as $corte) {
+            $activistas = $corte['total_activistas'] ?? 0;
+            $promedio = $corte['promedio_cumplimiento'] ?? 0;
+            
+            $totalActivistas += $activistas;
+            $sumaProductos += ($promedio * $activistas);
+        }
+        
+        return $totalActivistas > 0 ? round($sumaProductos / $totalActivistas, 2) : 0;
     }
     
     /**
@@ -213,8 +353,8 @@ class CorteController {
         $this->auth->requireAuth();
         $currentUser = $this->auth->getCurrentUser();
         
-        // Solo SuperAdmin y Gestor
-        if (!in_array($currentUser['rol'], ['SuperAdmin', 'Gestor'])) {
+        // SuperAdmin, Gestor y Líder
+        if (!in_array($currentUser['rol'], ['SuperAdmin', 'Gestor', 'Líder'])) {
             redirectWithMessage('cortes/', 'No tienes permisos para ver tareas', 'error');
         }
         
@@ -228,6 +368,16 @@ class CorteController {
         $corte = $this->corteModel->getCorteById($corteId);
         if (!$corte) {
             redirectWithMessage('cortes/', 'Corte no encontrado', 'error');
+        }
+        
+        // Para líderes, verificar que el usuario pertenece a su equipo
+        if ($currentUser['rol'] === 'Líder') {
+            require_once __DIR__ . '/../models/user.php';
+            $userModel = new User();
+            $usuario = $userModel->getUserById($usuarioId);
+            if (!$usuario || $usuario['lider_id'] != $currentUser['id']) {
+                redirectWithMessage('cortes/mis_cortes.php', 'No tienes permisos para ver este usuario', 'error');
+            }
         }
         
         // Obtener info del activista del detalle del corte
@@ -276,7 +426,60 @@ class CorteController {
     }
     
     /**
-     * Crear cortes masivos para todos los grupos
+     * Eliminar múltiples cortes
+     */
+    public function deleteMultipleCortes() {
+        $this->auth->requireAuth();
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirectWithMessage('cortes/', 'Método no permitido', 'error');
+        }
+        
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            redirectWithMessage('cortes/', 'Token de seguridad inválido', 'error');
+        }
+        
+        $currentUser = $this->auth->getCurrentUser();
+        
+        // Solo SuperAdmin
+        if ($currentUser['rol'] !== 'SuperAdmin') {
+            redirectWithMessage('cortes/', 'No tienes permisos para eliminar cortes', 'error');
+        }
+        
+        $corteIds = $_POST['corte_ids'] ?? [];
+        
+        if (empty($corteIds) || !is_array($corteIds)) {
+            redirectWithMessage('cortes/', 'No se seleccionaron cortes para eliminar', 'warning');
+        }
+        
+        $deleted = 0;
+        $errors = 0;
+        
+        foreach ($corteIds as $corteId) {
+            $corteId = intval($corteId);
+            if ($corteId > 0) {
+                $result = $this->corteModel->deleteCorte($corteId);
+                if ($result) {
+                    $deleted++;
+                } else {
+                    $errors++;
+                }
+            }
+        }
+        
+        if ($deleted > 0) {
+            $message = "Se eliminaron $deleted corte(s) exitosamente";
+            if ($errors > 0) {
+                $message .= ", pero hubo $errors error(es)";
+            }
+            redirectWithMessage('cortes/', $message, 'success');
+        } else {
+            redirectWithMessage('cortes/', 'No se pudieron eliminar los cortes seleccionados', 'error');
+        }
+    }
+    
+    /**
+     * Crear cortes masivos para todos los líderes
      */
     public function createMassiveCortes() {
         $this->auth->requireAuth();
@@ -304,30 +507,30 @@ class CorteController {
             redirectWithMessage('reports/activists.php', implode(', ', $errors), 'error');
         }
         
-        // Obtener todos los grupos activos
-        require_once __DIR__ . '/../models/group.php';
-        $groupModel = new Group();
-        $groups = $groupModel->getAllGroups(['activo' => 1]);
+        // Obtener todos los líderes activos
+        require_once __DIR__ . '/../models/user.php';
+        $userModel = new User();
+        $leaders = $userModel->getActiveLiders();
         
-        if (empty($groups)) {
-            redirectWithMessage('reports/activists.php', 'No hay grupos activos', 'error');
+        if (empty($leaders)) {
+            redirectWithMessage('reports/activists.php', 'No hay líderes activos', 'error');
         }
         
         $createdCount = 0;
         $errors = [];
         
-        // Crear un corte por cada grupo
-        foreach ($groups as $group) {
+        // Crear un corte por cada líder
+        foreach ($leaders as $leader) {
             try {
                 $data = [
-                    'nombre' => cleanInput($_POST['nombre']) . ' - ' . $group['nombre'],
+                    'nombre' => cleanInput($_POST['nombre']) . ' - ' . $leader['nombre_completo'],
                     'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
                     'fecha_inicio' => cleanInput($_POST['fecha_inicio']),
                     'fecha_fin' => cleanInput($_POST['fecha_fin']),
                     'creado_por' => $currentUser['id'],
-                    'grupo_id' => $group['id'],
+                    'grupo_id' => $leader['grupo_id'] ?? null,
                     'actividad_id' => null,
-                    'usuario_id' => null
+                    'usuario_id' => $leader['id']
                 ];
                 
                 $corteId = $this->corteModel->crearCorte($data);
@@ -335,15 +538,15 @@ class CorteController {
                 if ($corteId) {
                     $createdCount++;
                 } else {
-                    $errors[] = 'Error al crear corte para grupo: ' . $group['nombre'];
+                    $errors[] = 'Error al crear corte para líder: ' . $leader['nombre_completo'];
                 }
             } catch (Exception $e) {
-                $errors[] = 'Error en grupo ' . $group['nombre'] . ': ' . $e->getMessage();
+                $errors[] = 'Error para líder ' . $leader['nombre_completo'] . ': ' . $e->getMessage();
             }
         }
         
         if ($createdCount > 0) {
-            $message = "Se crearon exitosamente $createdCount cortes (uno por cada grupo)";
+            $message = "Se crearon exitosamente $createdCount cortes (uno por cada líder)";
             if (!empty($errors)) {
                 $message .= '. Algunos cortes fallaron: ' . implode(', ', $errors);
             }

@@ -140,14 +140,6 @@ function renderSidebar($currentPage = '') {
             ];
         }
         
-        // Cortes de Periodo - solo para SuperAdmin y Gestor
-        $menuItems[] = [
-            'url' => url('cortes/'),
-            'icon' => 'fas fa-chart-line',
-            'text' => 'Cortes de Periodo',
-            'active' => ($currentPage === 'cortes')
-        ];
-        
         // Reporte de Activistas - solo para SuperAdmin y Gestor
         $menuItems[] = [
             'url' => url('reports/activists.php'),

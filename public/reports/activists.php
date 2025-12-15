@@ -66,6 +66,21 @@ if (!empty($_GET['fecha_hasta'])) {
     $filters['fecha_hasta'] = $_GET['fecha_hasta'];
 }
 
+// Activity type filter
+if (!empty($_GET['tipo_actividad_id'])) {
+    $filters['tipo_actividad_id'] = intval($_GET['tipo_actividad_id']);
+}
+
+// State filter
+if (!empty($_GET['estado'])) {
+    $filters['estado'] = cleanInput($_GET['estado']);
+}
+
+// Title filter
+if (!empty($_GET['search_titulo'])) {
+    $filters['search_titulo'] = cleanInput($_GET['search_titulo']);
+}
+
 // Group filtering (SuperAdmin only)
 if (!empty($_GET['grupo_id']) && $userRole === 'SuperAdmin') {
     $filters['grupo_id'] = intval($_GET['grupo_id']);
@@ -79,6 +94,13 @@ if (!empty($_GET['filter_lider_id']) && in_array($userRole, ['SuperAdmin', 'Gest
 // Load groups and leaders for filtering
 $groups = [];
 $leaders = [];
+$activityTypes = [];
+
+// Load activity types for all roles
+require_once __DIR__ . '/../../models/activityType.php';
+$activityTypeModel = new ActivityType();
+$activityTypes = $activityTypeModel->getAllActivityTypes();
+
 if ($userRole === 'SuperAdmin') {
     require_once __DIR__ . '/../../models/group.php';
     require_once __DIR__ . '/../../models/user.php';
@@ -96,7 +118,7 @@ if ($userRole === 'SuperAdmin') {
 require_once __DIR__ . '/../../models/corte.php';
 $corteModel = new Corte();
 
-// For Líder role, automatically load their group's latest corte
+// For Líder role, load available cortes for their group
 if ($userRole === 'Líder' && !empty($currentUser['grupo_id'])) {
     $availableCortes = $corteModel->getCortesByGrupo($currentUser['grupo_id']);
     
@@ -107,12 +129,14 @@ if ($userRole === 'Líder' && !empty($currentUser['grupo_id'])) {
         error_log("Primer corte ID: " . $availableCortes[0]['id']);
     }
     
-    // If no corte_id specified and there are cortes available, use the most recent one
-    if (!$corteId && !empty($availableCortes)) {
-        $corteId = $availableCortes[0]['id']; // Most recent corte
-        $snapshotData = $availableCortes[0];
-        $snapshotMode = true;
+    // If corte_id is specified, use that snapshot
+    if ($corteId) {
+        $snapshotData = $corteModel->getCorteById($corteId);
+        if ($snapshotData) {
+            $snapshotMode = true;
+        }
     }
+    // Otherwise, show real-time data (líder can see real-time too)
 }
 
 // Get report data based on mode
@@ -135,7 +159,7 @@ if ($snapshotMode) {
         $availableCortes = $corteModel->getCortes([]);
     }
 } else {
-    // Get real-time data (only for SuperAdmin and Gestor)
+    // Get real-time data (for SuperAdmin, Gestor, and Líder)
     $reportData = $activityModel->getActivistReport($filters);
     
     // Load available snapshots for dropdown
