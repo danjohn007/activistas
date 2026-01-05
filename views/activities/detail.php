@@ -125,21 +125,35 @@ require_once __DIR__ . '/../../includes/functions.php';
                                 <?php endif; ?>
                                 
                                 <!-- Enlaces relacionados -->
-                                <?php if (!empty($activity['enlace_1']) || !empty($activity['enlace_2'])): ?>
+                                <?php if (!empty($activity['enlace_1']) || !empty($activity['enlace_2']) || !empty($activity['enlace_3']) || !empty($activity['enlace_4'])): ?>
                                     <hr>
-                                    <h6><i class="fas fa-link me-2"></i>Enlaces relacionados:</h6>
+                                    <h6><i class="fas fa-link me-2"></i>Enlaces de Redes Sociales:</h6>
                                     <div class="mb-2">
                                         <?php if (!empty($activity['enlace_1'])): ?>
                                             <div class="mb-2">
                                                 <a href="<?= htmlspecialchars($activity['enlace_1']) ?>" target="_blank" class="btn btn-outline-primary btn-sm">
-                                                    <i class="fas fa-external-link-alt me-1"></i>Enlace de publicaciones
+                                                    <i class="fab fa-facebook me-1"></i>Facebook
                                                 </a>
                                             </div>
                                         <?php endif; ?>
                                         <?php if (!empty($activity['enlace_2'])): ?>
                                             <div class="mb-2">
                                                 <a href="<?= htmlspecialchars($activity['enlace_2']) ?>" target="_blank" class="btn btn-outline-primary btn-sm">
-                                                    <i class="fas fa-external-link-alt me-1"></i>Enlace 2
+                                                    <i class="fab fa-instagram me-1"></i>Instagram
+                                                </a>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($activity['enlace_3'])): ?>
+                                            <div class="mb-2">
+                                                <a href="<?= htmlspecialchars($activity['enlace_3']) ?>" target="_blank" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fab fa-tiktok me-1"></i>TikTok
+                                                </a>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($activity['enlace_4'])): ?>
+                                            <div class="mb-2">
+                                                <a href="<?= htmlspecialchars($activity['enlace_4']) ?>" target="_blank" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fab fa-x-twitter me-1"></i>X (Twitter)
                                                 </a>
                                             </div>
                                         <?php endif; ?>

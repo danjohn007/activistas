@@ -186,23 +186,57 @@
                             <div class="card mb-3">
                                 <div class="card-header">
                                     <h6 class="mb-0">
-                                        <i class="fas fa-link me-2"></i>Enlaces Relacionados (Opcional)
+                                        <i class="fas fa-link me-2"></i>Enlaces de Redes Sociales (Opcional)
                                     </h6>
                                 </div>
                                 <div class="card-body">
-                                    <div class="mb-3">
-                                        <label for="enlace_1" class="form-label">Enlace de Publicaciones</label>
-                                        <input type="url" class="form-control" id="enlace_1" name="enlace_1" 
-                                               value="<?= htmlspecialchars($activity['enlace_1'] ?? '') ?>"
-                                               placeholder="https://facebook.com/post/...">
-                                        <div class="form-text">URL del post en Facebook, Instagram, TikTok, X, etc.</div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="enlace_1" class="form-label">
+                                                    <i class="fab fa-facebook me-1"></i>Facebook
+                                                </label>
+                                                <input type="url" class="form-control" id="enlace_1" name="enlace_1" 
+                                                       value="<?= htmlspecialchars($activity['enlace_1'] ?? '') ?>"
+                                                       placeholder="https://facebook.com/...">
+                                                <div class="form-text">Enlace a publicación de Facebook</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="enlace_2" class="form-label">
+                                                    <i class="fab fa-instagram me-1"></i>Instagram
+                                                </label>
+                                                <input type="url" class="form-control" id="enlace_2" name="enlace_2" 
+                                                       value="<?= htmlspecialchars($activity['enlace_2'] ?? '') ?>"
+                                                       placeholder="https://instagram.com/...">
+                                                <div class="form-text">Enlace a publicación de Instagram</div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="mb-3">
-                                        <label for="enlace_2" class="form-label">Enlace Adicional</label>
-                                        <input type="url" class="form-control" id="enlace_2" name="enlace_2" 
-                                               value="<?= htmlspecialchars($activity['enlace_2'] ?? '') ?>"
-                                               placeholder="https://...">
-                                        <div class="form-text">Otro enlace relacionado con la actividad (opcional)</div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="enlace_3" class="form-label">
+                                                    <i class="fab fa-tiktok me-1"></i>TikTok
+                                                </label>
+                                                <input type="url" class="form-control" id="enlace_3" name="enlace_3" 
+                                                       value="<?= htmlspecialchars($activity['enlace_3'] ?? '') ?>"
+                                                       placeholder="https://tiktok.com/@...">
+                                                <div class="form-text">Enlace a video de TikTok</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="enlace_4" class="form-label">
+                                                    <i class="fab fa-x-twitter me-1"></i>X (Twitter)
+                                                </label>
+                                                <input type="url" class="form-control" id="enlace_4" name="enlace_4" 
+                                                       value="<?= htmlspecialchars($activity['enlace_4'] ?? '') ?>"
+                                                       placeholder="https://x.com/...">
+                                                <div class="form-text">Enlace a publicación de X (Twitter)</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
