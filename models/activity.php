@@ -61,8 +61,8 @@ class Activity {
             }
             
             $stmt = $this->db->prepare("
-                INSERT INTO actividades (usuario_id, tipo_actividad_id, titulo, descripcion, enlace_1, enlace_2, fecha_actividad, fecha_publicacion, hora_publicacion, fecha_cierre, hora_cierre, grupo, tarea_pendiente, solicitante_id, autorizada, autorizado_por)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO actividades (usuario_id, tipo_actividad_id, titulo, descripcion, enlace_1, enlace_2, enlace_3, enlace_4, fecha_actividad, fecha_publicacion, hora_publicacion, fecha_cierre, hora_cierre, grupo, tarea_pendiente, solicitante_id, autorizada, autorizado_por)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $result = $stmt->execute([
@@ -72,6 +72,8 @@ class Activity {
                 $data['descripcion'] ?? null,
                 !empty($data['enlace_1']) ? $data['enlace_1'] : null,
                 !empty($data['enlace_2']) ? $data['enlace_2'] : null,
+                !empty($data['enlace_3']) ? $data['enlace_3'] : null,
+                !empty($data['enlace_4']) ? $data['enlace_4'] : null,
                 $data['fecha_actividad'],
                 !empty($data['fecha_publicacion']) ? $data['fecha_publicacion'] : null,
                 !empty($data['hora_publicacion']) ? $data['hora_publicacion'] : null,
@@ -397,6 +399,16 @@ class Activity {
             if (isset($data['enlace_2'])) {
                 $fields[] = "enlace_2 = ?";
                 $params[] = $data['enlace_2'];
+            }
+            
+            if (isset($data['enlace_3'])) {
+                $fields[] = "enlace_3 = ?";
+                $params[] = $data['enlace_3'];
+            }
+            
+            if (isset($data['enlace_4'])) {
+                $fields[] = "enlace_4 = ?";
+                $params[] = $data['enlace_4'];
             }
             
             if (isset($data['fecha_publicacion'])) {

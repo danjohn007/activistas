@@ -130,6 +130,67 @@ try {
             }
             break;
             
+        case 'unlink_from_leader':
+            // Only SuperAdmin can unlink activists from leaders
+            if ($currentUser['rol'] !== 'SuperAdmin') {
+                throw new Exception('No tienes permisos para desvincular usuarios');
+            }
+            
+            $userInfo = $userModel->getUserById($userId);
+            if (!$userInfo) {
+                throw new Exception('Usuario no encontrado');
+            }
+            
+            if ($userInfo['rol'] !== 'Activista') {
+                throw new Exception('Solo se pueden desvincular activistas');
+            }
+            
+            $result = $userModel->unlinkFromLeader($userId);
+            if ($result) {
+                logActivity("Activista ID $userId desvinculado de su líder por SuperAdmin " . $currentUser['nombre_completo']);
+                $response = [
+                    'success' => true,
+                    'message' => 'Activista desvinculado del líder exitosamente'
+                ];
+            } else {
+                throw new Exception('Error al desvincular activista');
+            }
+            break;
+            
+        case 'check_delete':
+            // Only SuperAdmin can check delete status
+            if ($currentUser['rol'] !== 'SuperAdmin') {
+                throw new Exception('No tienes permisos para verificar eliminación de usuarios');
+            }
+            
+            $checkResult = $userModel->canDeleteUser($userId);
+            $response = [
+                'success' => true,
+                'can_delete' => $checkResult['can_delete'],
+                'reason' => $checkResult['reason'],
+                'stats' => $checkResult['stats']
+            ];
+            break;
+            
+        case 'delete_permanent':
+            // Only SuperAdmin can permanently delete users
+            if ($currentUser['rol'] !== 'SuperAdmin') {
+                throw new Exception('No tienes permisos para eliminar usuarios permanentemente');
+            }
+            
+            $force = isset($input['force']) ? (bool)$input['force'] : false;
+            
+            $result = $userModel->deleteUserPermanently($userId, $force);
+            if ($result['success']) {
+                $response = [
+                    'success' => true,
+                    'message' => $result['message']
+                ];
+            } else {
+                throw new Exception($result['message']);
+            }
+            break;
+            
         default:
             throw new Exception('Acción no válida');
     }

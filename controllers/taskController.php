@@ -240,25 +240,21 @@ class TaskController {
             return false;
         }
         
-        $fechaCierre = strtotime($task['fecha_cierre']);
-        $fechaActual = strtotime(date('Y-m-d'));
-        
-        // Si la fecha de cierre ya pasó
-        if ($fechaCierre < $fechaActual) {
-            return true;
-        }
-        
-        // Si es el mismo día, verificar la hora de cierre
-        if ($fechaCierre == $fechaActual && !empty($task['hora_cierre'])) {
-            $horaCierre = strtotime($task['hora_cierre']);
-            $horaActual = strtotime(date('H:i:s'));
+        // Si tiene hora de cierre, validar fecha Y hora
+        if (!empty($task['hora_cierre'])) {
+            // Combinar fecha y hora para comparación exacta
+            $fechaHoraCierre = strtotime($task['fecha_cierre'] . ' ' . $task['hora_cierre']);
+            $fechaHoraActual = time(); // Timestamp actual con fecha y hora
             
-            if ($horaCierre < $horaActual) {
-                return true;
-            }
+            // La tarea está vencida si la fecha-hora de cierre ya pasó
+            return ($fechaHoraCierre < $fechaHoraActual);
         }
         
-        return false;
+        // Si solo tiene fecha (sin hora), vence al final del día
+        $fechaCierre = strtotime($task['fecha_cierre'] . ' 23:59:59');
+        $fechaHoraActual = time();
+        
+        return ($fechaCierre < $fechaHoraActual);
     }
     
     // Eliminar múltiples tareas (solo SuperAdmin)

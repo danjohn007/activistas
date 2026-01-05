@@ -206,33 +206,21 @@ require_once __DIR__ . '/../../includes/functions.php';
                                                         </button>
                                                     <?php endif; ?>
                                                     
-                                                    <?php if ($user['estado'] === 'activo'): ?>
+                                                    <?php if ($currentUser['rol'] === 'SuperAdmin' && $user['rol'] === 'Activista' && !empty($user['lider_id'])): ?>
                                                         <button type="button" class="btn btn-outline-warning" 
-                                                                onclick="changeUserStatus(<?= $user['id'] ?>, 'suspendido')" title="Suspender">
-                                                            <i class="fas fa-pause"></i>
-                                                        </button>
-                                                    <?php elseif ($user['estado'] === 'suspendido' || $user['estado'] === 'desactivado'): ?>
-                                                        <!-- Mostrar botón Activar tanto para usuarios suspendidos como desactivados -->
-                                                        <button type="button" class="btn btn-outline-success" 
-                                                                onclick="changeUserStatus(<?= $user['id'] ?>, 'activo')" title="Activar">
-                                                            <i class="fas fa-play"></i>
-                                                        </button>
-                                                    <?php endif; ?>
-                                                    
-                                                    <?php if ($user['estado'] !== 'desactivado' && $user['estado'] !== 'eliminado'): ?>
-                                                        <button type="button" class="btn btn-outline-danger" 
-                                                                onclick="changeUserStatus(<?= $user['id'] ?>, 'desactivado')" title="Desactivar">
-                                                            <i class="fas fa-ban"></i>
+                                                                onclick="unlinkFromLeader(<?= $user['id'] ?>, '<?= htmlspecialchars($user['nombre_completo']) ?>')" 
+                                                                title="Desvincular de Líder">
+                                                            <i class="fas fa-unlink"></i>
                                                         </button>
                                                     <?php endif; ?>
                                                     
                                                     <?php if ($currentUser['rol'] === 'SuperAdmin' && $user['estado'] !== 'eliminado'): ?>
-                                                        <button type="button" class="btn btn-outline-danger" 
+                                                        <button type="button" class="btn btn-danger" 
                                                                 data-user-id="<?= $user['id'] ?>" 
                                                                 data-user-name="<?= htmlspecialchars($user['nombre_completo']) ?>" 
-                                                                onclick="deleteUser(<?= $user['id'] ?>, '<?= htmlspecialchars($user['nombre_completo']) ?>')" 
-                                                                title="Eliminar Usuario">
-                                                            <i class="fas fa-trash"></i>
+                                                                onclick="deletePermanently(<?= $user['id'] ?>, '<?= htmlspecialchars($user['nombre_completo']) ?>')" 
+                                                                title="Eliminar Usuario Permanentemente">
+                                                            <i class="fas fa-trash"></i> Eliminar
                                                         </button>
                                                     <?php endif; ?>
                                                 </div>
@@ -598,6 +586,132 @@ require_once __DIR__ . '/../../includes/functions.php';
                     deleteBtn.disabled = false;
                 });
             }
+        }
+        
+        // Nueva función para desvincular activista de líder
+        function unlinkFromLeader(userId, userName) {
+            if (confirm(`¿Estás seguro de que quieres desvincular a "${userName}" de su líder?\n\nEl activista quedará sin líder asignado.`)) {
+                const btn = event.target.closest('button');
+                const originalContent = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                btn.disabled = true;
+
+                fetch('<?= url('api/users.php') ?>', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'unlink_from_leader',
+                        user_id: userId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert('success', data.message);
+                        setTimeout(() => window.location.reload(), 2000);
+                    } else {
+                        showAlert('danger', data.error || 'Error al desvincular activista');
+                        btn.innerHTML = originalContent;
+                        btn.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('danger', 'Error de conexión: ' + error.message);
+                    btn.innerHTML = originalContent;
+                    btn.disabled = false;
+                });
+            }
+        }
+        
+        // Nueva función para eliminar permanentemente
+        function deletePermanently(userId, userName) {
+            // Primero verificar si se puede eliminar
+            fetch('<?= url('api/users.php') ?>?' + new URLSearchParams({
+                action: 'check_delete',
+                user_id: userId
+            }))
+            .then(response => response.json())
+            .then(checkData => {
+                if (!checkData.success) {
+                    showAlert('danger', checkData.error || 'Error al verificar usuario');
+                    return;
+                }
+                
+                const stats = checkData.stats || {};
+                let warningMessage = ` ¡ALERTA DE ELIMINACIÓN PERMANENTE! \n\n`;
+                warningMessage += `Esta acción eliminará PERMANENTEMENTE a:\n`;
+                warningMessage += `"${userName}"\n\n`;
+                warningMessage += `⛔ NO SE PODRÁ RECUPERAR\n`;
+                warningMessage += `⛔ TODOS LOS DATOS SERÁN BORRADOS\n`;
+                warningMessage += `⛔ ESTA ACCIÓN ES IRREVERSIBLE\n\n`;
+                
+                if (stats.activities > 0 || stats.activists > 0 || stats.evidences > 0) {
+                    warningMessage += ` Datos que serán eliminados:\n`;
+                    if (stats.activities > 0) {
+                        warningMessage += `   • ${stats.activities} Actividad(es)\n`;
+                    }
+                    if (stats.activists > 0) {
+                        warningMessage += `   • ${stats.activists} Activista(s) serán desvinculados\n`;
+                    }
+                    if (stats.evidences > 0) {
+                        warningMessage += `   • ${stats.evidences} Evidencia(s)\n`;
+                    }
+                    warningMessage += `\n`;
+                }
+                
+                warningMessage += `❓ ¿Estás COMPLETAMENTE SEGURO de eliminar permanentemente este usuario?\n\n`;
+                warningMessage += `💡 Recuerda: Una vez eliminado, NO HAY FORMA DE RECUPERARLO.`;
+                
+                if (confirm(warningMessage)) {
+                    // Buscar el botón usando el userId y userName
+                    const btn = document.querySelector(`button[data-user-id="${userId}"][data-user-name="${userName}"]`);
+                    
+                    if (!btn) {
+                        showAlert('danger', 'Error: No se pudo encontrar el botón de eliminar');
+                        return;
+                    }
+                    
+                    const originalContent = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    btn.disabled = true;
+
+                    fetch('<?= url('api/users.php') ?>', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: 'delete_permanent',
+                            user_id: userId,
+                            force: !checkData.can_delete // Forzar si tiene dependencias
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showAlert('success', '✅ ' + data.message);
+                            setTimeout(() => window.location.reload(), 2000);
+                        } else {
+                            showAlert('danger', '❌ ' + (data.error || 'Error al eliminar usuario'));
+                            btn.innerHTML = originalContent;
+                            btn.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showAlert('danger', 'Error de conexión: ' + error.message);
+                        btn.innerHTML = originalContent;
+                        btn.disabled = false;
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('danger', 'Error al verificar usuario: ' + error.message);
+            });
         }
     </script>
 </body>

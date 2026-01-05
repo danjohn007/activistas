@@ -831,5 +831,202 @@ class User {
             return false;
         }
     }
+    
+    /**
+     * Desvincular activista de su líder
+     * @param int $userId ID del usuario activista
+     * @return bool True si se desvinculó correctamente
+     */
+    public function unlinkFromLeader($userId) {
+        try {
+            $stmt = $this->db->prepare("UPDATE usuarios SET lider_id = NULL WHERE id = ? AND rol = 'Activista'");
+            $result = $stmt->execute([$userId]);
+            
+            if ($result) {
+                logActivity("Activista ID $userId desvinculado de su líder");
+            }
+            
+            return $result;
+        } catch (Exception $e) {
+            logActivity("Error al desvincular activista del líder: " . $e->getMessage(), 'ERROR');
+            return false;
+        }
+    }
+    
+    /**
+     * Verificar si un usuario puede ser eliminado permanentemente
+     * @param int $userId ID del usuario
+     * @return array ['can_delete' => bool, 'reason' => string, 'stats' => array]
+     */
+    public function canDeleteUser($userId) {
+        try {
+            $user = $this->getUserById($userId);
+            if (!$user) {
+                return [
+                    'can_delete' => false,
+                    'reason' => 'Usuario no encontrado',
+                    'stats' => []
+                ];
+            }
+            
+            // Contar actividades del usuario
+            $stmt = $this->db->prepare("SELECT COUNT(*) as total FROM actividades WHERE usuario_id = ?");
+            $stmt->execute([$userId]);
+            $activities = $stmt->fetch()['total'];
+            
+            // Si es líder, contar activistas asignados
+            $activists = 0;
+            if ($user['rol'] === 'Líder') {
+                $stmt = $this->db->prepare("SELECT COUNT(*) as total FROM usuarios WHERE lider_id = ?");
+                $stmt->execute([$userId]);
+                $activists = $stmt->fetch()['total'];
+            }
+            
+            // Contar evidencias subidas
+            $stmt = $this->db->prepare("
+                SELECT COUNT(*) as total 
+                FROM evidencias e 
+                JOIN actividades a ON e.actividad_id = a.id 
+                WHERE a.usuario_id = ?
+            ");
+            $stmt->execute([$userId]);
+            $evidences = $stmt->fetch()['total'];
+            
+            $stats = [
+                'activities' => $activities,
+                'activists' => $activists,
+                'evidences' => $evidences
+            ];
+            
+            // Permitir eliminación solo si no tiene actividades ni activistas asignados
+            $can_delete = ($activities == 0 && $activists == 0);
+            $reason = '';
+            
+            if ($activities > 0) {
+                $reason = "El usuario tiene $activities actividad(es) registrada(s). ";
+            }
+            if ($activists > 0) {
+                $reason .= "El líder tiene $activists activista(s) asignado(s). ";
+            }
+            
+            if ($can_delete) {
+                $reason = "Usuario sin dependencias, se puede eliminar.";
+            } else {
+                $reason .= "Debes reasignar o eliminar estas dependencias primero.";
+            }
+            
+            return [
+                'can_delete' => $can_delete,
+                'reason' => trim($reason),
+                'stats' => $stats
+            ];
+        } catch (Exception $e) {
+            logActivity("Error al verificar si usuario puede ser eliminado: " . $e->getMessage(), 'ERROR');
+            return [
+                'can_delete' => false,
+                'reason' => 'Error al verificar dependencias: ' . $e->getMessage(),
+                'stats' => []
+            ];
+        }
+    }
+    
+    /**
+     * Eliminar usuario permanentemente (HARD DELETE)
+     * ADVERTENCIA: Esta acción no se puede deshacer
+     * @param int $userId ID del usuario a eliminar
+     * @param bool $force Si es true, elimina aunque tenga dependencias
+     * @return array ['success' => bool, 'message' => string]
+     */
+    public function deleteUserPermanently($userId, $force = false) {
+        try {
+            // Verificar si se puede eliminar
+            $check = $this->canDeleteUser($userId);
+            
+            if (!$check['can_delete'] && !$force) {
+                return [
+                    'success' => false,
+                    'message' => $check['reason'],
+                    'stats' => $check['stats']
+                ];
+            }
+            
+            $user = $this->getUserById($userId);
+            if (!$user) {
+                return [
+                    'success' => false,
+                    'message' => 'Usuario no encontrado'
+                ];
+            }
+            
+            // Iniciar transacción
+            $this->db->beginTransaction();
+            
+            try {
+                // Si es forzado, eliminar dependencias primero
+                if ($force) {
+                    // Eliminar evidencias de actividades del usuario
+                    $stmt = $this->db->prepare("
+                        DELETE e FROM evidencias e 
+                        JOIN actividades a ON e.actividad_id = a.id 
+                        WHERE a.usuario_id = ?
+                    ");
+                    $stmt->execute([$userId]);
+                    
+                    // Eliminar actividades del usuario
+                    $stmt = $this->db->prepare("DELETE FROM actividades WHERE usuario_id = ?");
+                    $stmt->execute([$userId]);
+                    
+                    // Si es líder, desvincular activistas
+                    if ($user['rol'] === 'Líder') {
+                        $stmt = $this->db->prepare("UPDATE usuarios SET lider_id = NULL WHERE lider_id = ?");
+                        $stmt->execute([$userId]);
+                    }
+                }
+                
+                // Eliminar tokens de reset de contraseña (si la tabla existe)
+                try {
+                    $stmt = $this->db->prepare("DELETE FROM password_reset_tokens WHERE user_id = ?");
+                    $stmt->execute([$userId]);
+                } catch (Exception $e) {
+                    // Tabla no existe, continuar
+                    logActivity("Nota: Tabla password_reset_tokens no existe, saltando...", 'INFO');
+                }
+                
+                // Eliminar notificaciones del usuario
+                try {
+                    $stmt = $this->db->prepare("DELETE FROM notificaciones WHERE usuario_id = ?");
+                    $stmt->execute([$userId]);
+                } catch (Exception $e) {
+                    // Tabla no existe o no tiene notificaciones, continuar
+                    logActivity("Nota: No se pudieron eliminar notificaciones (puede que no existan)", 'INFO');
+                }
+                
+                // Finalmente, eliminar el usuario
+                $stmt = $this->db->prepare("DELETE FROM usuarios WHERE id = ?");
+                $stmt->execute([$userId]);
+                
+                $this->db->commit();
+                
+                logActivity("Usuario ID $userId ({$user['nombre_completo']}) eliminado PERMANENTEMENTE del sistema" . 
+                           ($force ? " (eliminación forzada con dependencias)" : ""));
+                
+                return [
+                    'success' => true,
+                    'message' => 'Usuario eliminado permanentemente del sistema'
+                ];
+                
+            } catch (Exception $e) {
+                $this->db->rollBack();
+                throw $e;
+            }
+            
+        } catch (Exception $e) {
+            logActivity("Error al eliminar usuario permanentemente: " . $e->getMessage(), 'ERROR');
+            return [
+                'success' => false,
+                'message' => 'Error al eliminar usuario: ' . $e->getMessage()
+            ];
+        }
+    }
 }
 ?>

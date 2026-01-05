@@ -92,28 +92,53 @@
                                 <div class="form-text">Describe los objetivos y detalles de la actividad (máximo 5000 caracteres).</div>
                             </div>
 
-                            <!-- Enlaces opcionales de actividad -->
+                            <!-- Enlaces de redes sociales -->
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="enlace_1" class="form-label">
-                                            <i class="fas fa-link me-1"></i>Enlace de publicaciones (Opcional)
+                                            <i class="fab fa-facebook me-1"></i>Enlace Facebook (Opcional)
                                         </label>
                                         <input type="url" class="form-control" id="enlace_1" name="enlace_1" 
                                                value="<?= htmlspecialchars($_SESSION['form_data']['enlace_1'] ?? '') ?>"
-                                               placeholder="https://ejemplo.com/enlace-publicaciones">
-                                        <div class="form-text">Enlace opcional a publicaciones relacionadas con la actividad</div>
+                                               placeholder="https://facebook.com/...">
+                                        <div class="form-text">Enlace a publicación de Facebook</div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="enlace_2" class="form-label">
-                                            <i class="fas fa-link me-1"></i>Enlace 2 (Opcional)
+                                            <i class="fab fa-instagram me-1"></i>Enlace Instagram (Opcional)
                                         </label>
                                         <input type="url" class="form-control" id="enlace_2" name="enlace_2" 
                                                value="<?= htmlspecialchars($_SESSION['form_data']['enlace_2'] ?? '') ?>"
-                                               placeholder="https://ejemplo.com/banco-contenido">
-                                        <div class="form-text">Enlace opcional adicional relacionado con la actividad</div>
+                                               placeholder="https://instagram.com/...">
+                                        <div class="form-text">Enlace a publicación de Instagram</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="enlace_3" class="form-label">
+                                            <i class="fab fa-tiktok me-1"></i>Enlace TikTok (Opcional)
+                                        </label>
+                                        <input type="url" class="form-control" id="enlace_3" name="enlace_3" 
+                                               value="<?= htmlspecialchars($_SESSION['form_data']['enlace_3'] ?? '') ?>"
+                                               placeholder="https://tiktok.com/@...">
+                                        <div class="form-text">Enlace a video de TikTok</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="enlace_4" class="form-label">
+                                            <i class="fab fa-x-twitter me-1"></i>Enlace X (Opcional)
+                                        </label>
+                                        <input type="url" class="form-control" id="enlace_4" name="enlace_4" 
+                                               value="<?= htmlspecialchars($_SESSION['form_data']['enlace_4'] ?? '') ?>"
+                                               placeholder="https://x.com/...">
+                                        <div class="form-text">Enlace a publicación de X (Twitter)</div>
                                     </div>
                                 </div>
                             </div>
@@ -399,97 +424,24 @@
                     
                     selectAllLeadersCheckbox.checked = allChecked;
                     selectAllLeadersCheckbox.indeterminate = anyChecked && !allChecked;
-                    
-                    // NUEVO: Auto-seleccionar equipo cuando se selecciona un líder
-                    autoSelectTeamMembers(this);
                 });
             });
         }
         
         // Función para auto-seleccionar miembros del equipo cuando se selecciona un líder
+        // NOTA: Esta función ya no es necesaria porque el backend maneja la asignación de activistas
+        // Se mantiene solo para compatibilidad, pero no modifica checkboxes
         function autoSelectTeamMembers(leaderCheckbox) {
-            <?php if (!empty($teamMembersData)): ?>
-            const teamMembersData = <?= json_encode($teamMembersData) ?>;
-            const leaderId = leaderCheckbox.value;
-            const isChecked = leaderCheckbox.checked;
-            
-            console.log('🎯 Auto-seleccionando equipo para líder:', leaderId, 'Checked:', isChecked);
-            
-            // Obtener los IDs de los miembros del equipo de este líder
-            if (teamMembersData[leaderId]) {
-                const teamMemberIds = teamMembersData[leaderId];
-                console.log('👥 Miembros del equipo encontrados:', teamMemberIds);
-                
-                // Seleccionar/deseleccionar los miembros del equipo en la pestaña "Todos los Usuarios"
-                teamMemberIds.forEach(memberId => {
-                    const memberCheckbox = document.getElementById('user_' + memberId);
-                    if (memberCheckbox) {
-                        memberCheckbox.checked = isChecked;
-                        console.log('✅ Miembro', memberId, isChecked ? 'seleccionado' : 'deseleccionado');
-                    } else {
-                        console.warn('⚠️ No se encontró checkbox para miembro:', memberId);
-                    }
-                });
-                
-                // Actualizar el estado del checkbox "seleccionar todos los usuarios"
-                const selectAllUsersCheckbox = document.getElementById('select_all_users');
-                if (selectAllUsersCheckbox) {
-                    const userCheckboxes = document.querySelectorAll('.all-user-checkbox');
-                    const allChecked = Array.from(userCheckboxes).every(cb => cb.checked);
-                    const anyChecked = Array.from(userCheckboxes).some(cb => cb.checked);
-                    
-                    selectAllUsersCheckbox.checked = allChecked;
-                    selectAllUsersCheckbox.indeterminate = anyChecked && !allChecked;
-                }
-            } else {
-                console.log('ℹ️ No se encontraron miembros para el líder:', leaderId);
-            }
-            <?php else: ?>
-            console.warn('⚠️ No hay datos de equipos disponibles para auto-selección');
-            <?php endif; ?>
+            // La asignación de activistas del líder se hace automáticamente en el backend
+            console.log('ℹ️ Los activistas del líder serán asignados automáticamente en el backend');
         }
         
         // Función para auto-seleccionar miembros del grupo cuando se selecciona un grupo
+        // NOTA: Esta función ya no es necesaria porque el backend maneja la asignación de miembros del grupo
+        // Se mantiene solo para compatibilidad, pero no modifica checkboxes
         function autoSelectGroupMembers(groupCheckbox) {
-            <?php if (!empty($groupMembersData)): ?>
-            const groupMembersData = <?= json_encode($groupMembersData) ?>;
-            const groupId = groupCheckbox.value;
-            const isChecked = groupCheckbox.checked;
-            
-            console.log('🏢 Auto-seleccionando grupo:', groupId, 'Checked:', isChecked);
-            
-            // Obtener los IDs de los miembros del grupo
-            if (groupMembersData[groupId]) {
-                const groupMemberIds = groupMembersData[groupId];
-                console.log('👥 Miembros del grupo encontrados:', groupMemberIds);
-                
-                // Seleccionar/deseleccionar los miembros del grupo en la pestaña "Todos los Usuarios"
-                groupMemberIds.forEach(memberId => {
-                    const memberCheckbox = document.getElementById('user_' + memberId);
-                    if (memberCheckbox) {
-                        memberCheckbox.checked = isChecked;
-                        console.log('✅ Miembro del grupo', memberId, isChecked ? 'seleccionado' : 'deseleccionado');
-                    } else {
-                        console.warn('⚠️ No se encontró checkbox para miembro del grupo:', memberId);
-                    }
-                });
-                
-                // Actualizar el estado del checkbox "seleccionar todos los usuarios"
-                const selectAllUsersCheckbox = document.getElementById('select_all_users');
-                if (selectAllUsersCheckbox) {
-                    const userCheckboxes = document.querySelectorAll('.all-user-checkbox');
-                    const allChecked = Array.from(userCheckboxes).every(cb => cb.checked);
-                    const anyChecked = Array.from(userCheckboxes).some(cb => cb.checked);
-                    
-                    selectAllUsersCheckbox.checked = allChecked;
-                    selectAllUsersCheckbox.indeterminate = anyChecked && !allChecked;
-                }
-            } else {
-                console.log('ℹ️ No se encontraron miembros para el grupo:', groupId);
-            }
-            <?php else: ?>
-            console.warn('⚠️ No hay datos de grupos disponibles para auto-selección');
-            <?php endif; ?>
+            // La asignación de miembros del grupo se hace automáticamente en el backend
+            console.log('ℹ️ Los miembros del grupo serán asignados automáticamente en el backend');
         }
         
         // Funcionalidad para seleccionar/deseleccionar todos los grupos (SuperAdmin)
@@ -499,8 +451,6 @@
                 const groupCheckboxes = document.querySelectorAll('.group-checkbox');
                 groupCheckboxes.forEach(checkbox => {
                     checkbox.checked = this.checked;
-                    // Auto-seleccionar miembros del grupo
-                    autoSelectGroupMembers(checkbox);
                 });
             });
 
@@ -513,9 +463,6 @@
                     
                     selectAllGroupsCheckbox.checked = allChecked;
                     selectAllGroupsCheckbox.indeterminate = anyChecked && !allChecked;
-                    
-                    // Auto-seleccionar miembros del grupo
-                    autoSelectGroupMembers(this);
                 });
             });
         }

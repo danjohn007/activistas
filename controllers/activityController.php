@@ -220,8 +220,9 @@ class ActivityController {
                     }
                 }
                 
-                // Remove duplicates in case there are any overlapping assignments
-                $recipients = array_unique($recipients);
+                // CRITICAL FIX: Remove duplicates that might come from multiple sources
+                // This prevents activities from being created twice for the same person
+                $recipients = array_values(array_unique($recipients));
                 $shouldCreateForRecipients = true;
             } elseif (!empty($_POST['destinatarios_grupos'])) {
                 // SuperAdmin selected groups as recipients
@@ -236,17 +237,18 @@ class ActivityController {
                     }
                 }
                 
-                // Remove duplicates in case users belong to multiple selected groups
-                $recipients = array_unique($recipients);
+                // CRITICAL FIX: Remove duplicates that might come from users in multiple groups
+                // This prevents activities from being created twice for the same person
+                $recipients = array_values(array_unique($recipients));
                 $shouldCreateForRecipients = true;
             } elseif (!empty($_POST['destinatarios_todos'])) {
                 // SuperAdmin selected all users as recipients
-                $recipients = array_map('intval', $_POST['destinatarios_todos']);
+                $recipients = array_values(array_unique(array_map('intval', $_POST['destinatarios_todos'])));
                 $shouldCreateForRecipients = true;
             }
         } elseif ($currentUser['rol'] === 'Líder' && !empty($_POST['destinatarios_activistas'])) {
             // Leader selected activists as recipients
-            $recipients = array_map('intval', $_POST['destinatarios_activistas']);
+            $recipients = array_values(array_unique(array_map('intval', $_POST['destinatarios_activistas'])));
             $shouldCreateForRecipients = true;
         }
         
@@ -270,6 +272,8 @@ class ActivityController {
                     'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
                     'enlace_1' => cleanInput($_POST['enlace_1'] ?? ''),
                     'enlace_2' => cleanInput($_POST['enlace_2'] ?? ''),
+                    'enlace_3' => cleanInput($_POST['enlace_3'] ?? ''),
+                    'enlace_4' => cleanInput($_POST['enlace_4'] ?? ''),
                     'fecha_actividad' => $fechaActividad,
                     'fecha_publicacion' => $fechaPublicacion,
                     'hora_publicacion' => cleanInput($_POST['hora_publicacion'] ?? ''),
@@ -319,6 +323,8 @@ class ActivityController {
                 'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
                 'enlace_1' => cleanInput($_POST['enlace_1'] ?? ''),
                 'enlace_2' => cleanInput($_POST['enlace_2'] ?? ''),
+                'enlace_3' => cleanInput($_POST['enlace_3'] ?? ''),
+                'enlace_4' => cleanInput($_POST['enlace_4'] ?? ''),
                 'fecha_actividad' => $fechaActividad,
                 'fecha_publicacion' => $fechaPublicacion,
                 'hora_publicacion' => cleanInput($_POST['hora_publicacion'] ?? ''),
@@ -458,7 +464,9 @@ class ActivityController {
             'estado' => $estadoNuevo,
             'grupo' => cleanInput($_POST['grupo'] ?? ''),
             'enlace_1' => cleanInput($_POST['enlace_1'] ?? ''),
-            'enlace_2' => cleanInput($_POST['enlace_2'] ?? '')
+            'enlace_2' => cleanInput($_POST['enlace_2'] ?? ''),
+            'enlace_3' => cleanInput($_POST['enlace_3'] ?? ''),
+            'enlace_4' => cleanInput($_POST['enlace_4'] ?? '')
         ];
         
         $result = $this->activityModel->updateActivity($activityId, $updateData);
