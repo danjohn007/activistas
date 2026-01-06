@@ -209,20 +209,31 @@ class TaskController {
         $maxSize = 20 * 1024 * 1024; // 20MB
         
         if (!in_array($file['type'], $allowedTypes)) {
+            error_log("Tipo de archivo no permitido: " . $file['type']);
             return false;
         }
         
         if ($file['size'] > $maxSize) {
+            error_log("Archivo demasiado grande: " . $file['size']);
             return false;
         }
         
         $uploadDir = UPLOADS_DIR . '/evidencias/';
         if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
+            if (!@mkdir($uploadDir, 0755, true)) {
+                error_log("No se pudo crear el directorio: $uploadDir");
+                return false;
+            }
+        }
+        
+        // Verificar que el directorio sea escribible
+        if (!is_writable($uploadDir)) {
+            error_log("El directorio no es escribible: $uploadDir");
+            return false;
         }
         
         $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-        $filename = 'task_' . $taskId . '_' . time() . '.' . $extension;
+        $filename = 'task_' . $taskId . '_' . time() . '_' . uniqid() . '.' . $extension;
         $uploadPath = $uploadDir . $filename;
         
         if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
@@ -230,6 +241,7 @@ class TaskController {
             return $filename;
         }
         
+        error_log("Error al mover archivo: " . $file['tmp_name'] . " a " . $uploadPath);
         return false;
     }
     

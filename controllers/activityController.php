@@ -107,6 +107,7 @@ class ActivityController {
                 $activity['evidences'] = $this->activityModel->getActivityEvidence($activity['id']);
             }
         }
+        unset($activity); // IMPORTANTE: Destruir la referencia para evitar comportamientos extraños
         
         // Calculate real completion percentage for current month (not affected by pagination)
         $currentMonthFilters = array_merge($filters, [

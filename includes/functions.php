@@ -6,6 +6,13 @@
 // Incluir configuración de la aplicación
 require_once __DIR__ . '/../config/app.php';
 
+// Configurar zona horaria de México
+if (defined('DEFAULT_TIMEZONE')) {
+    date_default_timezone_set(DEFAULT_TIMEZONE);
+} else {
+    date_default_timezone_set('America/Mexico_City');
+}
+
 // Iniciar sesión si no está iniciada
 function startSession() {
     if (session_status() == PHP_SESSION_NONE) {
@@ -142,7 +149,7 @@ function uploadFile($file, $uploadDir, $allowedTypes = ['jpg', 'jpeg', 'png', 'g
     $filePath = $uploadDir . '/' . $fileName;
     
     if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
+        @mkdir($uploadDir, 0755, true);
     }
     
     if (move_uploaded_file($file['tmp_name'], $filePath)) {
@@ -195,14 +202,29 @@ function logActivity($message, $level = 'INFO') {
         $logFile = __DIR__ . '/../logs/system.log';
         $logDir = dirname($logFile);
         
+        // Verificar si el directorio existe y es escribible
         if (!is_dir($logDir)) {
-            mkdir($logDir, 0755, true);
+            // Intentar crear el directorio, silenciando errores con @
+            if (!@mkdir($logDir, 0755, true)) {
+                // Si falla la creación, usar error_log del sistema
+                error_log("Activistas App - $level: $message");
+                return;
+            }
+        }
+        
+        // Verificar que el directorio sea escribible
+        if (!is_writable($logDir)) {
+            error_log("Activistas App - $level: $message (logs dir not writable)");
+            return;
         }
         
         $timestamp = date('Y-m-d H:i:s');
         $logEntry = "[$timestamp] [$level] $message" . PHP_EOL;
         
-        file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
+        // Intentar escribir en el archivo, silenciando errores con @
+        if (!@file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX)) {
+            error_log("Activistas App - $level: $message");
+        }
         
         // Para errores críticos, también registrar en error_log
         if ($level === 'ERROR') {
@@ -225,13 +247,19 @@ function logDashboardError($dashboard, $userId, $error) {
         $logDir = dirname($logFile);
         
         if (!is_dir($logDir)) {
-            mkdir($logDir, 0755, true);
+            @mkdir($logDir, 0755, true);
+        }
+        
+        // Verificar que el directorio sea escribible
+        if (!is_writable($logDir)) {
+            error_log("Dashboard Error - $message (logs dir not writable)");
+            return;
         }
         
         $timestamp = date('Y-m-d H:i:s');
         $logEntry = "[$timestamp] $message" . PHP_EOL;
         
-        file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
+        @file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
     } catch (Exception $e) {
         error_log("Dashboard logging failed: " . $e->getMessage());
     }

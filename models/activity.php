@@ -1018,11 +1018,14 @@ class Activity {
                 AND a.usuario_id = ?
                 AND a.usuario_id != a.solicitante_id
                 AND a.estado != 'completada'
-                AND (a.fecha_cierre IS NULL OR a.fecha_cierre > CURDATE() 
-                     OR (a.fecha_cierre = CURDATE() AND (a.hora_cierre IS NULL OR a.hora_cierre > CURTIME())))
+                AND (a.fecha_cierre IS NULL 
+                     OR a.fecha_cierre > DATE(DATE_SUB(NOW(), INTERVAL 6 HOUR))
+                     OR (a.fecha_cierre = DATE(DATE_SUB(NOW(), INTERVAL 6 HOUR)) 
+                         AND (a.hora_cierre IS NULL OR TIME(a.hora_cierre) >= TIME(DATE_SUB(NOW(), INTERVAL 6 HOUR)))))
                 AND (a.fecha_publicacion IS NULL 
-                     OR a.fecha_publicacion < NOW()
-                     OR (DATE(a.fecha_publicacion) = CURDATE() AND (a.hora_publicacion IS NULL OR a.hora_publicacion <= CURTIME())))
+                     OR DATE(a.fecha_publicacion) < DATE(DATE_SUB(NOW(), INTERVAL 6 HOUR))
+                     OR (DATE(a.fecha_publicacion) = DATE(DATE_SUB(NOW(), INTERVAL 6 HOUR)) 
+                         AND (a.hora_publicacion IS NULL OR TIME(a.hora_publicacion) <= TIME(DATE_SUB(NOW(), INTERVAL 6 HOUR)))))
                 GROUP BY a.id
                 ORDER BY 
                     -- Tareas con fecha de cierre van primero, ordenadas por urgencia (más próximas a vencer)
