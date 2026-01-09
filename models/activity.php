@@ -335,6 +335,52 @@ class Activity {
         }
     }
     
+    /**
+     * Obtener actividades recientes (VERSI\u00d3N LIGERA OPTIMIZADA)
+     * Solo devuelve los campos esenciales para mostrar en el dashboard
+     * Reduce significativamente el tama\u00f1o de los datos y el tiempo de respuesta
+     */
+    public function getRecentActivitiesLight($limit = 10, $filters = []) {
+        try {
+            if (!$this->db) {
+                throw new Exception("No hay conexi\u00f3n a la base de datos disponible");
+            }
+            
+            // Solo seleccionar campos necesarios
+            $sql = "SELECT a.id, a.titulo, a.fecha_actividad, a.estado,
+                           u.nombre_completo as usuario_nombre,
+                           ta.nombre as tipo_nombre
+                    FROM actividades a 
+                    JOIN usuarios u ON a.usuario_id = u.id 
+                    JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id
+                    WHERE a.autorizada = 1";
+            $params = [];
+            
+            if (!empty($filters['usuario_id'])) {
+                $sql .= " AND a.usuario_id = ?";
+                $params[] = $filters['usuario_id'];
+            }
+            
+            if (!empty($filters['lider_id'])) {
+                $sql .= " AND (a.usuario_id = ? OR u.lider_id = ?)";
+                $params[] = $filters['lider_id'];
+                $params[] = $filters['lider_id'];
+            }
+            
+            $sql .= " ORDER BY a.fecha_actividad DESC, a.fecha_creacion DESC
+                     LIMIT ?";
+            $params[] = $limit;
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            logActivity("Error al obtener actividades recientes: " . $e->getMessage(), 'ERROR');
+            return [];
+        }
+    }
+    
     // Obtener actividad por ID
     public function getActivityById($id) {
         try {
@@ -606,6 +652,25 @@ class Activity {
         } catch (Exception $e) {
             logActivity("Error al obtener evidencias: " . $e->getMessage(), 'ERROR');
             return [];
+        }
+    }
+    
+    /**
+     * Contar evidencias de una actividad (optimizado - solo el número)
+     */
+    public function countActivityEvidence($activityId) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT COUNT(*) as total
+                FROM evidencias 
+                WHERE actividad_id = ?
+            ");
+            $stmt->execute([$activityId]);
+            $result = $stmt->fetch();
+            return $result ? (int)$result['total'] : 0;
+        } catch (Exception $e) {
+            logActivity("Error al contar evidencias: " . $e->getMessage(), 'ERROR');
+            return 0;
         }
     }
     

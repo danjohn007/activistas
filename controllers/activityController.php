@@ -82,32 +82,65 @@ class ActivityController {
             }
         }
         
-        // Pagination parameters
+        // Pagination parameters - OPTIMIZACIÓN: Reducir a 20 por página
         $page = max(1, intval($_GET['page'] ?? 1));
-        $perPage = 10; // Activities per page
+        $perPage = 20; // Incrementado de 10 a 20 para mejor UX pero aún manejable
         $filters['page'] = $page;
         $filters['per_page'] = $perPage;
         
         $activities = $this->activityModel->getActivities($filters);
-        $totalActivities = $this->activityModel->countActivities($filters);
+        
+        // OPTIMIZACIÓN: Agregar contador de evidencias (solo el número, no el contenido completo)
+        foreach ($activities as &$activity) {
+            if ($activity['estado'] === 'completada') {
+                $activity['evidence_count'] = $this->activityModel->countActivityEvidence($activity['id']);
+            } else {
+                $activity['evidence_count'] = 0;
+            }
+        }
+        unset($activity); // Liberar referencia
+        
+        // OPTIMIZACIÓN: Caché del conteo total (pesado con muchos registros)
+        $cacheKey = 'activity_count_' . md5(serialize($filters)) . '_' . floor(time() / 300); // 5 min
+        $totalActivities = $this->getSimpleCache($cacheKey);
+        if ($totalActivities === null) {
+            $totalActivities = $this->activityModel->countActivities($filters);
+            $this->setSimpleCache($cacheKey, $totalActivities);
+        }
+        
         $totalPages = ceil($totalActivities / $perPage);
-        $activityTypes = $this->activityModel->getActivityTypes();
+        
+        // OPTIMIZACIÓN: Caché de tipos de actividad (casi nunca cambian)
+        $cacheKey = 'activity_types_' . floor(time() / 1800); // 30 min
+        $activityTypes = $this->getSimpleCache($cacheKey);
+        if ($activityTypes === null) {
+            $activityTypes = $this->activityModel->getActivityTypes();
+            $this->setSimpleCache($cacheKey, $activityTypes);
+        }
         
         // Get list of leaders and groups for SuperAdmin filter
         $leaders = [];
         $groups = [];
         if ($currentUser['rol'] === 'SuperAdmin') {
-            $leaders = $this->userModel->getActiveLiders();
-            $groups = $this->groupModel->getAllGroups();
-        }
-        
-        // Add evidence for completed activities
-        foreach ($activities as &$activity) {
-            if ($activity['estado'] === 'completada') {
-                $activity['evidences'] = $this->activityModel->getActivityEvidence($activity['id']);
+            // OPTIMIZACIÓN: Caché de líderes y grupos
+            $cacheKey = 'leaders_list_' . floor(time() / 1800); // 30 min
+            $leaders = $this->getSimpleCache($cacheKey);
+            if ($leaders === null) {
+                $leaders = $this->userModel->getActiveLiders();
+                $this->setSimpleCache($cacheKey, $leaders);
+            }
+            
+            $cacheKey = 'groups_list_' . floor(time() / 1800); // 30 min
+            $groups = $this->getSimpleCache($cacheKey);
+            if ($groups === null) {
+                $groups = $this->groupModel->getAllGroups();
+                $this->setSimpleCache($cacheKey, $groups);
             }
         }
-        unset($activity); // IMPORTANTE: Destruir la referencia para evitar comportamientos extraños
+        
+        // OPTIMIZACIÓN: NO cargar evidencias aquí (muy pesado)
+        // Las evidencias se cargan solo cuando se abre el detalle de una actividad
+        // Esto reduce significativamente el tiempo de carga
         
         // Calculate real completion percentage for current month (not affected by pagination)
         $currentMonthFilters = array_merge($filters, [
@@ -117,14 +150,10 @@ class ActivityController {
         unset($currentMonthFilters['page']);
         unset($currentMonthFilters['per_page']);
         
-        $monthlyActivities = $this->activityModel->getActivities($currentMonthFilters);
-        $totalMonthlyActivities = count($monthlyActivities);
-        $completedMonthlyActivities = 0;
-        foreach ($monthlyActivities as $activity) {
-            if ($activity['estado'] === 'completada') {
-                $completedMonthlyActivities++;
-            }
-        }
+        // OPTIMIZACIÓN: Usar consulta directa de estadísticas en lugar de cargar todas las actividades
+        $monthlyStats = $this->activityModel->getActivityStats($currentMonthFilters);
+        $totalMonthlyActivities = $monthlyStats['total_actividades'] ?? 0;
+        $completedMonthlyActivities = $monthlyStats['completadas'] ?? 0;
         $realCompletionPercentage = $totalMonthlyActivities > 0 ? round(($completedMonthlyActivities / $totalMonthlyActivities) * 100, 1) : 0;
         
         include __DIR__ . '/../views/activities/list.php';
@@ -987,6 +1016,62 @@ class ActivityController {
         }
         
         return false;
+    }
+    
+    // ============================================
+    // MÉTODOS DE CACHÉ (OPTIMIZACIÓN)
+    // ============================================
+    
+    /**
+     * Obtener datos del caché simple
+     */
+    private function getSimpleCache($key) {
+        $cacheDir = $this->getCacheDir();
+        $cacheFile = $cacheDir . '/' . md5($key) . '.cache';
+        
+        if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 300)) {
+            $data = @file_get_contents($cacheFile);
+            if ($data !== false) {
+                return unserialize($data);
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Guardar datos en caché simple
+     */
+    private function setSimpleCache($key, $data) {
+        $cacheDir = $this->getCacheDir();
+        $cacheFile = $cacheDir . '/' . md5($key) . '.cache';
+        @file_put_contents($cacheFile, serialize($data));
+    }
+    
+    /**
+     * Obtener directorio de caché con fallback
+     */
+    private function getCacheDir() {
+        // Opción 1: cache/activities
+        $cacheDir = __DIR__ . '/../cache/activities';
+        if (!is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0755, true);
+        }
+        if (is_dir($cacheDir) && is_writable($cacheDir)) {
+            return $cacheDir;
+        }
+        
+        // Opción 2: Directorio temporal
+        $tmpDir = sys_get_temp_dir() . '/activistas_cache';
+        if (!is_dir($tmpDir)) {
+            @mkdir($tmpDir, 0755, true);
+        }
+        if (is_dir($tmpDir) && is_writable($tmpDir)) {
+            return $tmpDir;
+        }
+        
+        // Opción 3: /tmp directamente
+        return sys_get_temp_dir();
     }
 }
 ?>
