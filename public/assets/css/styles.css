@@ -29,6 +29,15 @@
     box-shadow: 2px 0 10px rgba(0,0,0,0.1);
 }
 
+/* Desktop: sidebar siempre visible */
+@media (min-width: 768px) {
+    nav.sidebar,
+    .sidebar {
+        display: block !important;
+        position: relative !important;
+    }
+}
+
 .sidebar .nav-link {
     border-radius: 0.375rem;
     margin: 0.25rem;
@@ -204,27 +213,183 @@
 }
 
 /* Responsive */
-@media (max-width: 768px) {
-    .sidebar {
+@media (max-width: 767.98px) {
+    /* ============================================
+       MENÚ LATERAL DESLIZABLE PARA MÓVIL
+       Especificidad máxima para sobrescribir Bootstrap
+       ============================================ */
+    
+    /* OCULTAR sidebar completamente por defecto - máxima prioridad */
+    body nav#mobileSidebar.mobile-sidebar-hidden,
+    body .sidebar#mobileSidebar.mobile-sidebar-hidden,
+    body nav.sidebar.mobile-sidebar-hidden,
+    nav#mobileSidebar:not(.show),
+    .sidebar#mobileSidebar:not(.show) {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+    
+    /* MOSTRAR SOLO cuando tiene clase show - sobrescribir d-none de Bootstrap */
+    body nav#mobileSidebar.show,
+    body .sidebar#mobileSidebar.show,
+    body nav.sidebar#mobileSidebar.show,
+    nav#mobileSidebar.d-none.show,
+    .sidebar#mobileSidebar.d-none.show,
+    #mobileSidebar.show {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 280px !important;
+        max-width: 85vw !important;
+        height: 100vh !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        z-index: 1045 !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        box-shadow: 2px 0 15px rgba(0,0,0,0.4) !important;
+        animation: slideInFromLeft 0.3s ease-out forwards !important;
+    }
+    
+    /* Animación de entrada */
+    @keyframes slideInFromLeft {
+        from {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    /* Botón hamburguesa móvil */
+    .mobile-menu-toggle {
+        display: block !important;
+        position: fixed !important;
+        top: 15px !important;
+        left: 15px !important;
+        z-index: 1050 !important;
+        border-radius: 8px !important;
+        padding: 10px 15px !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+        font-size: 1.2rem !important;
+    }
+    
+    /* Overlay oscuro */
+    .mobile-overlay {
+        display: none;
         position: fixed;
         top: 0;
-        left: -250px;
-        width: 250px;
-        height: 100vh;
-        z-index: 1000;
-        transition: left 0.3s ease;
-    }
-    
-    .sidebar.show {
         left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 1040;
+        opacity: 0;
+        transition: opacity 0.3s ease;
     }
     
+    .mobile-overlay.show {
+        display: block;
+        opacity: 1;
+    }
+    
+    /* Botón cerrar en sidebar móvil */
+    .mobile-close-btn {
+        display: block !important;
+        position: absolute !important;
+        top: 15px !important;
+        right: 15px !important;
+        z-index: 1046 !important;
+        padding: 5px !important;
+        line-height: 1 !important;
+        background: transparent !important;
+        border: none !important;
+        color: white !important;
+    }
+    
+    .mobile-close-btn:hover {
+        opacity: 0.8;
+    }
+    
+    .mobile-close-btn:focus {
+        box-shadow: none !important;
+        outline: none !important;
+    }
+    
+    /* Contenedor principal ocupa todo el ancho */
+    .container-fluid {
+        padding: 0 !important;
+        overflow-x: hidden !important;
+    }
+    
+    .container-fluid > .row {
+        margin: 0 !important;
+        width: 100% !important;
+    }
+    
+    /* Contenido principal al 100% - VISIBLE DESDE EL INICIO */
+    .row > main,
+    main,
+    main.col-md-10,
+    main.col-md-9,
+    main.ms-sm-auto,
+    main[class*="col-"] {
+        position: relative !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding-left: 15px !important;
+        padding-right: 15px !important;
+        padding-top: 70px !important;
+        flex: 1 1 100% !important;
+        display: block !important;
+    }
+    
+    /* Ajustes generales para móvil */
     .card-stats {
         margin-bottom: 1rem;
     }
     
     .metric-card .h2 {
         font-size: 1.5rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    /* Títulos con espacio para el botón */
+    h1, .h1, h2, .h2 {
+        margin-top: 0.5rem;
+    }
+    
+    /* Ajustar padding del contenedor del sidebar cuando se muestra */
+    .sidebar .position-sticky {
+        padding-top: 60px !important;
+    }
+}
+
+/* Tablets */
+@media (min-width: 769px) and (max-width: 991px) {
+    .sidebar {
+        width: 200px;
+    }
+    
+    .sidebar .nav-link {
+        font-size: 0.875rem;
+    }
+    
+    main.col-md-10 {
+        width: calc(100% - 200px);
+        margin-left: 200px;
     }
 }
 

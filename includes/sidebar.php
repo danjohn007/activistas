@@ -205,15 +205,30 @@ function renderSidebar($currentPage = '') {
         'active' => false
     ];
     
-    // Generar HTML
-    echo '<nav class="col-md-2 d-none d-md-block sidebar" style="background: ' . $config['gradient'] . ';">';
+    // Generar HTML con soporte responsivo
+    // Botón hamburguesa para móvil
+    echo '<button class="btn btn-primary d-md-none mobile-menu-toggle" id="mobileMenuToggle" type="button">';
+    echo '<i class="fas fa-bars"></i>';
+    echo '</button>';
+    
+    // Overlay para cerrar el menú al hacer clic fuera (móvil)
+    echo '<div class="mobile-overlay" id="mobileOverlay"></div>';
+    
+    // Sidebar - oculto por defecto en móvil con clase específica
+    echo '<nav class="col-md-2 d-none d-md-block sidebar mobile-sidebar-hidden" id="mobileSidebar" style="background: ' . $config['gradient'] . ';">';
+    
+    // Botón cerrar para móvil
+    echo '<button class="btn btn-link text-white d-md-none mobile-close-btn" id="mobileCloseBtn" type="button">';
+    echo '<i class="fas fa-times fa-2x"></i>';
+    echo '</button>';
+    
     echo '<div class="position-sticky pt-3">';
-    echo '<div class="text-center text-white mb-4">';
+    echo '<div class="text-center text-white mb-4 mt-4">';
     echo '<h4><i class="' . $config['icon'] . ' me-2"></i>' . $config['title'] . '</h4>';
     echo '<small>' . htmlspecialchars($userName) . '</small>';
     echo '</div>';
     
-    echo '<ul class="nav flex-column">';
+    echo '<ul class="nav flex-column px-2">';
     
     foreach ($menuItems as $item) {
         $activeClass = $item['active'] ? ' active' : '';
@@ -225,7 +240,7 @@ function renderSidebar($currentPage = '') {
         echo '<i class="' . $item['icon'] . ' me-2"></i>' . $item['text'];
         
         if (isset($item['badge']) && $item['badge'] > 0) {
-            echo '<span class="badge bg-warning text-dark">' . $item['badge'] . '</span>';
+            echo '<span class="badge bg-warning text-dark ms-2">' . $item['badge'] . '</span>';
         }
         
         echo '</a>';
@@ -235,6 +250,89 @@ function renderSidebar($currentPage = '') {
     echo '</ul>';
     echo '</div>';
     echo '</nav>';
+    
+    // Script para manejar el menú móvil
+    echo '<script>
+    (function() {
+        // Esperar a que el DOM esté listo
+        document.addEventListener("DOMContentLoaded", function() {
+            const mobileToggle = document.getElementById("mobileMenuToggle");
+            const mobileClose = document.getElementById("mobileCloseBtn");
+            const mobileSidebar = document.getElementById("mobileSidebar");
+            const mobileOverlay = document.getElementById("mobileOverlay");
+            
+            console.log("Menú móvil inicializado", {mobileToggle, mobileClose, mobileSidebar, mobileOverlay});
+            
+            function closeMenu() {
+                console.log("Cerrando menú");
+                if (mobileSidebar) {
+                    mobileSidebar.classList.remove("show");
+                    mobileSidebar.classList.add("mobile-sidebar-hidden");
+                    mobileSidebar.classList.add("d-none"); // Restaurar d-none de Bootstrap
+                    console.log("Clases del sidebar:", mobileSidebar.className);
+                }
+                if (mobileOverlay) {
+                    mobileOverlay.classList.remove("show");
+                }
+                document.body.style.overflow = "";
+            }
+            
+            function openMenu() {
+                console.log("Abriendo menú");
+                if (mobileSidebar) {
+                    mobileSidebar.classList.remove("mobile-sidebar-hidden");
+                    mobileSidebar.classList.remove("d-none"); // Remover d-none de Bootstrap
+                    mobileSidebar.classList.add("show");
+                    console.log("Clases del sidebar:", mobileSidebar.className);
+                }
+                if (mobileOverlay) {
+                    mobileOverlay.classList.add("show");
+                }
+                document.body.style.overflow = "hidden";
+            }
+            
+            // Botón hamburguesa
+            if (mobileToggle) {
+                mobileToggle.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log("Click en botón hamburguesa");
+                    openMenu();
+                });
+            }
+            
+            // Botón cerrar X
+            if (mobileClose) {
+                mobileClose.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log("Click en botón X");
+                    closeMenu();
+                });
+            }
+            
+            // Click en overlay
+            if (mobileOverlay) {
+                mobileOverlay.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    console.log("Click en overlay");
+                    closeMenu();
+                });
+            }
+            
+            // Cerrar al hacer clic en enlaces
+            if (mobileSidebar) {
+                const links = mobileSidebar.querySelectorAll("a.nav-link");
+                links.forEach(function(link) {
+                    link.addEventListener("click", function() {
+                        console.log("Click en enlace del menú");
+                        setTimeout(closeMenu, 200);
+                    });
+                });
+            }
+        });
+    })();
+    </script>';
 }
 
 function getPendingUsersCount() {
