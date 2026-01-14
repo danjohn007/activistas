@@ -245,16 +245,74 @@
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
+        right: auto !important;
+        bottom: 0 !important;
         width: 280px !important;
         max-width: 85vw !important;
         height: 100vh !important;
+        max-height: 100vh !important;
         margin: 0 !important;
         padding: 0 !important;
         z-index: 1045 !important;
-        overflow-y: auto !important;
+        overflow-y: scroll !important;
         overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
         box-shadow: 2px 0 15px rgba(0,0,0,0.4) !important;
         animation: slideInFromLeft 0.3s ease-out forwards !important;
+    }
+    
+    /* El contenedor interno debe tener altura automática */
+    #mobileSidebar.show > div,
+    #mobileSidebar.show .position-sticky,
+    .sidebar.show > div,
+    .sidebar.show .position-sticky {
+        position: static !important;
+        height: auto !important;
+        min-height: auto !important;
+        max-height: none !important;
+        padding-top: 50px !important;
+        padding-bottom: 60px !important;
+    }
+    
+    /* Botón cerrar con posición absoluta para que no interfiera */
+    #mobileSidebar.show .mobile-close-btn,
+    .sidebar.show .mobile-close-btn {
+        position: fixed !important;
+        top: 15px !important;
+        left: auto !important;
+        right: 15px !important;
+        z-index: 1046 !important;
+    }
+    
+    /* Header del sidebar */
+    #mobileSidebar.show .text-center,
+    .sidebar.show .text-center {
+        padding: 10px 15px !important;
+        margin-top: 0 !important;
+    }
+    
+    /* Lista de navegación - altura automática */
+    #mobileSidebar.show .nav,
+    .sidebar.show .nav,
+    #mobileSidebar.show ul,
+    .sidebar.show ul {
+        height: auto !important;
+        min-height: auto !important;
+        max-height: none !important;
+        padding: 0 10px 100px 10px !important;
+    }
+    
+    #mobileSidebar.show .nav-item,
+    .sidebar.show .nav-item {
+        margin-bottom: 8px !important;
+    }
+    
+    /* Asegurar que los enlaces tengan altura completa */
+    #mobileSidebar.show .nav-link,
+    .sidebar.show .nav-link {
+        display: block !important;
+        padding: 10px 15px !important;
+        white-space: nowrap !important;
     }
     
     /* Animación de entrada */
@@ -373,7 +431,33 @@
     
     /* Ajustar padding del contenedor del sidebar cuando se muestra */
     .sidebar .position-sticky {
-        padding-top: 60px !important;
+        padding-top: 15px !important;
+    }
+    
+    /* Estilos del scroll para móvil - más visible */
+    #mobileSidebar::-webkit-scrollbar,
+    #mobileSidebar.show::-webkit-scrollbar,
+    .sidebar.show::-webkit-scrollbar {
+        width: 8px !important;
+    }
+    
+    #mobileSidebar::-webkit-scrollbar-track,
+    #mobileSidebar.show::-webkit-scrollbar-track,
+    .sidebar.show::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    #mobileSidebar::-webkit-scrollbar-thumb,
+    #mobileSidebar.show::-webkit-scrollbar-thumb,
+    .sidebar.show::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.4) !important;
+        border-radius: 4px !important;
+    }
+    
+    #mobileSidebar::-webkit-scrollbar-thumb:hover,
+    #mobileSidebar.show::-webkit-scrollbar-thumb:hover,
+    .sidebar.show::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.6) !important;
     }
 }
 

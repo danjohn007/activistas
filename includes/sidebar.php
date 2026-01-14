@@ -222,13 +222,13 @@ function renderSidebar($currentPage = '') {
     echo '<i class="fas fa-times fa-2x"></i>';
     echo '</button>';
     
-    echo '<div class="position-sticky pt-3">';
+    echo '<div class="position-sticky pt-3" style="position: static !important; height: auto !important; min-height: auto !important;">';
     echo '<div class="text-center text-white mb-4 mt-4">';
     echo '<h4><i class="' . $config['icon'] . ' me-2"></i>' . $config['title'] . '</h4>';
     echo '<small>' . htmlspecialchars($userName) . '</small>';
     echo '</div>';
     
-    echo '<ul class="nav flex-column px-2">';
+    echo '<ul class="nav flex-column px-2" style="padding-bottom: 100px !important;">';
     
     foreach ($menuItems as $item) {
         $activeClass = $item['active'] ? ' active' : '';
@@ -283,7 +283,22 @@ function renderSidebar($currentPage = '') {
                     mobileSidebar.classList.remove("mobile-sidebar-hidden");
                     mobileSidebar.classList.remove("d-none"); // Remover d-none de Bootstrap
                     mobileSidebar.classList.add("show");
+                    
+                    // Forzar estilos inline para asegurar scroll completo
+                    mobileSidebar.style.height = "100vh";
+                    mobileSidebar.style.maxHeight = "100vh";
+                    mobileSidebar.style.overflowY = "scroll";
+                    
+                    // Asegurar que los contenedores internos tengan altura automática
+                    const innerDivs = mobileSidebar.querySelectorAll("div, ul");
+                    innerDivs.forEach(function(div) {
+                        div.style.height = "auto";
+                        div.style.maxHeight = "none";
+                        div.style.minHeight = "auto";
+                    });
+                    
                     console.log("Clases del sidebar:", mobileSidebar.className);
+                    console.log("Altura del sidebar:", mobileSidebar.scrollHeight);
                 }
                 if (mobileOverlay) {
                     mobileOverlay.classList.add("show");
