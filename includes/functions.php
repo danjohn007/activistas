@@ -6,6 +6,9 @@
 // Incluir configuración de la aplicación
 require_once __DIR__ . '/../config/app.php';
 
+// Incluir helpers de evidencias
+require_once __DIR__ . '/evidence_helpers.php';
+
 // Configurar zona horaria de México
 if (defined('DEFAULT_TIMEZONE')) {
     date_default_timezone_set(DEFAULT_TIMEZONE);

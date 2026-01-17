@@ -766,7 +766,7 @@ class User {
             $stmt = $this->db->prepare("DELETE FROM password_reset_tokens WHERE user_id = ?");
             $stmt->execute([$userId]);
             
-            // Crear nuevo token
+            // Crear nuevo token con fecha ya calculada en PHP
             $stmt = $this->db->prepare("
                 INSERT INTO password_reset_tokens (user_id, token, expires_at) 
                 VALUES (?, ?, ?)
@@ -784,13 +784,18 @@ class User {
      */
     public function validatePasswordResetToken($token) {
         try {
+            // Obtener hora actual y compensar desfase del servidor MySQL
+            $now = new DateTime('now', new DateTimeZone('America/Mexico_City'));
+            $now->modify('-6 hours'); // Compensar el mismo desfase
+            $nowStr = $now->format('Y-m-d H:i:s');
+            
             $stmt = $this->db->prepare("
                 SELECT * FROM password_reset_tokens 
                 WHERE token = ? 
                 AND used = 0 
-                AND expires_at > NOW()
+                AND expires_at > ?
             ");
-            $stmt->execute([$token]);
+            $stmt->execute([$token, $nowStr]);
             return $stmt->fetch();
         } catch (Exception $e) {
             logActivity("Error al validar token de recuperación: " . $e->getMessage(), 'ERROR');

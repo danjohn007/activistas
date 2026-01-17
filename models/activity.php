@@ -110,16 +110,29 @@ class Activity {
                 throw new Exception("No hay conexión a la base de datos disponible");
             }
             
-            $sql = "SELECT DISTINCT a.*, u.nombre_completo as usuario_nombre, ta.nombre as tipo_nombre,
+            // OPTIMIZACIÓN MEJORADA: Conteo de evidencias con LEFT JOIN directo
+            // En lugar de subconsulta que procesa 91k evidencias, hacemos GROUP BY solo de las actividades filtradas
+            // IMPORTANTE: Solo contar evidencias reales (bloqueada=1), no archivos de referencia (bloqueada=0)
+            $evidenceCountSQL = "";
+            $evidenceJoinSQL = "";
+            if (!empty($filters['include_evidence_count'])) {
+                $evidenceCountSQL = ", COUNT(DISTINCT e.id) as evidence_count";
+                $evidenceJoinSQL = "\n                    LEFT JOIN evidencias e ON a.id = e.actividad_id AND e.bloqueada = 1";
+            }
+            
+            $sql = "SELECT a.*, u.nombre_completo as usuario_nombre, ta.nombre as tipo_nombre,
                            s.nombre_completo as solicitante_nombre, u.email as usuario_correo, u.telefono as usuario_telefono,
                            p.nombre_completo as propuesto_por_nombre, auth.nombre_completo as autorizado_por_nombre
+                           $evidenceCountSQL
                     FROM actividades a 
                     JOIN usuarios u ON a.usuario_id = u.id 
                     JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id 
                     LEFT JOIN usuarios s ON a.solicitante_id = s.id
                     LEFT JOIN usuarios p ON a.propuesto_por = p.id
                     LEFT JOIN usuarios auth ON a.autorizado_por = auth.id
-                    WHERE 1=1";
+                    $evidenceJoinSQL";
+            
+            $sql .= "\n                    WHERE 1=1";
             $params = [];
             
             // Only show authorized activities in general listings (unless viewing proposals)
@@ -133,13 +146,17 @@ class Activity {
                 
                 // Si el filtro incluye excluir vencidas (para vista de Activista)
                 if (!empty($filters['exclude_expired'])) {
+                    // Excluir tareas vencidas
                     $sql .= " AND (a.fecha_cierre IS NULL OR a.fecha_cierre > CURDATE() 
                                 OR (a.fecha_cierre = CURDATE() AND (a.hora_cierre IS NULL OR a.hora_cierre > CURTIME())))";
                     
+                    // Excluir tareas completadas
+                    $sql .= " AND a.estado != 'completada'";
+                    
                     // Filtro de fecha de publicación para Activistas (solo mostrar tareas ya publicadas)
+                    // CRÍTICO: Combinar fecha+hora en un DATETIME para evitar desincronización de timezones
                     $sql .= " AND (a.fecha_publicacion IS NULL 
-                                OR a.fecha_publicacion < NOW()
-                                OR (DATE(a.fecha_publicacion) = CURDATE() AND (a.hora_publicacion IS NULL OR a.hora_publicacion <= CURTIME())))";
+                                OR CONCAT(DATE(a.fecha_publicacion), ' ', COALESCE(a.hora_publicacion, '00:00:00')) <= NOW())";
                 }
             }
             
@@ -203,6 +220,11 @@ class Activity {
                 $params[] = $filters['grupo_id'];
             }
             
+            // GROUP BY necesario cuando usamos COUNT(DISTINCT e.id) para evidencias
+            if (!empty($filters['include_evidence_count'])) {
+                $sql .= " GROUP BY a.id";
+            }
+            
             $sql .= " ORDER BY a.fecha_actividad DESC, a.fecha_creacion DESC";
             
             // Add pagination support
@@ -254,13 +276,17 @@ class Activity {
                 
                 // Si el filtro incluye excluir vencidas (para vista de Activista)
                 if (!empty($filters['exclude_expired'])) {
+                    // Excluir tareas vencidas
                     $sql .= " AND (a.fecha_cierre IS NULL OR a.fecha_cierre > CURDATE() 
                                 OR (a.fecha_cierre = CURDATE() AND (a.hora_cierre IS NULL OR a.hora_cierre > CURTIME())))";
                     
+                    // Excluir tareas completadas
+                    $sql .= " AND a.estado != 'completada'";
+                    
                     // Filtro de fecha de publicación para Activistas (solo mostrar tareas ya publicadas)
+                    // CRÍTICO: Combinar fecha+hora en un DATETIME para evitar desincronización de timezones
                     $sql .= " AND (a.fecha_publicacion IS NULL 
-                                OR a.fecha_publicacion < NOW()
-                                OR (DATE(a.fecha_publicacion) = CURDATE() AND (a.hora_publicacion IS NULL OR a.hora_publicacion <= CURTIME())))";
+                                OR CONCAT(DATE(a.fecha_publicacion), ' ', COALESCE(a.hora_publicacion, '00:00:00')) <= NOW())";
                 }
             }
             
@@ -349,16 +375,26 @@ class Activity {
             // Solo seleccionar campos necesarios
             $sql = "SELECT a.id, a.titulo, a.fecha_actividad, a.estado,
                            u.nombre_completo as usuario_nombre,
-                           ta.nombre as tipo_nombre
+                           ta.nombre as tipo_nombre,
+                           s.nombre_completo as solicitante_nombre
                     FROM actividades a 
                     JOIN usuarios u ON a.usuario_id = u.id 
                     JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id
+                    LEFT JOIN usuarios s ON a.solicitante_id = s.id
                     WHERE a.autorizada = 1";
             $params = [];
             
             if (!empty($filters['usuario_id'])) {
                 $sql .= " AND a.usuario_id = ?";
                 $params[] = $filters['usuario_id'];
+                
+                // Para activistas: excluir vencidas y completadas
+                $sql .= " AND a.estado != 'completada'";
+                $sql .= " AND (a.fecha_cierre IS NULL 
+                            OR a.fecha_cierre > CURDATE()
+                            OR (a.fecha_cierre = CURDATE() AND (a.hora_cierre IS NULL OR a.hora_cierre > CURTIME())))";
+                $sql .= " AND (a.fecha_publicacion IS NULL 
+                            OR CONCAT(DATE(a.fecha_publicacion), ' ', COALESCE(a.hora_publicacion, '00:00:00')) <= NOW())";
             }
             
             if (!empty($filters['lider_id'])) {
@@ -642,9 +678,11 @@ class Activity {
     // Obtener evidencias de actividad
     public function getActivityEvidence($activityId) {
         try {
+            // Solo obtener evidencias del usuario (bloqueada = 1)
+            // No incluir archivos de referencia del admin (bloqueada = 0)
             $stmt = $this->db->prepare("
                 SELECT * FROM evidencias 
-                WHERE actividad_id = ? 
+                WHERE actividad_id = ? AND bloqueada = 1
                 ORDER BY fecha_subida DESC
             ");
             $stmt->execute([$activityId]);
@@ -656,14 +694,35 @@ class Activity {
     }
     
     /**
+     * Obtener solo archivos de referencia (subidos por el admin al crear la tarea)
+     * bloqueada = 0 indica que son archivos de referencia, no evidencias de completado
+     */
+    public function getReferenceFiles($activityId) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT * FROM evidencias 
+                WHERE actividad_id = ? AND bloqueada = 0
+                ORDER BY fecha_subida ASC
+            ");
+            $stmt->execute([$activityId]);
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            logActivity("Error al obtener archivos de referencia: " . $e->getMessage(), 'ERROR');
+            return [];
+        }
+    }
+    
+    /**
      * Contar evidencias de una actividad (optimizado - solo el número)
+     * Solo cuenta evidencias del usuario (bloqueada = 1)
+     * No cuenta archivos de referencia del admin (bloqueada = 0)
      */
     public function countActivityEvidence($activityId) {
         try {
             $stmt = $this->db->prepare("
                 SELECT COUNT(*) as total
                 FROM evidencias 
-                WHERE actividad_id = ?
+                WHERE actividad_id = ? AND bloqueada = 1
             ");
             $stmt->execute([$activityId]);
             $result = $stmt->fetch();
@@ -1082,15 +1141,14 @@ class Activity {
                 WHERE a.tarea_pendiente = 1 
                 AND a.usuario_id = ?
                 AND a.usuario_id != a.solicitante_id
+                AND a.autorizada = 1
                 AND a.estado != 'completada'
                 AND (a.fecha_cierre IS NULL 
-                     OR a.fecha_cierre > DATE(DATE_SUB(NOW(), INTERVAL 6 HOUR))
-                     OR (a.fecha_cierre = DATE(DATE_SUB(NOW(), INTERVAL 6 HOUR)) 
-                         AND (a.hora_cierre IS NULL OR TIME(a.hora_cierre) >= TIME(DATE_SUB(NOW(), INTERVAL 6 HOUR)))))
+                     OR a.fecha_cierre > CURDATE()
+                     OR (a.fecha_cierre = CURDATE() 
+                         AND (a.hora_cierre IS NULL OR a.hora_cierre > CURTIME())))
                 AND (a.fecha_publicacion IS NULL 
-                     OR DATE(a.fecha_publicacion) < DATE(DATE_SUB(NOW(), INTERVAL 6 HOUR))
-                     OR (DATE(a.fecha_publicacion) = DATE(DATE_SUB(NOW(), INTERVAL 6 HOUR)) 
-                         AND (a.hora_publicacion IS NULL OR TIME(a.hora_publicacion) <= TIME(DATE_SUB(NOW(), INTERVAL 6 HOUR)))))
+                     OR CONCAT(DATE(a.fecha_publicacion), ' ', COALESCE(a.hora_publicacion, '00:00:00')) <= NOW())
                 GROUP BY a.id
                 ORDER BY 
                     -- Tareas con fecha de cierre van primero, ordenadas por urgencia (más próximas a vencer)

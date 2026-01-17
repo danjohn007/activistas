@@ -61,8 +61,12 @@ $cardClass = $esCompletada ? 'task-completada' : 'task-pendiente';
                     <div class="text-center">
                         <?php foreach ($tarea['evidences'] as $evidence): ?>
                             <?php 
+                            // Buscar archivo real en el directorio
+                            $archivoOriginal = $evidence['archivo'];
+                            $archivoReal = findEvidenceFile($archivoOriginal);
+                            
                             // Construir path correcto
-                            $archivo = $evidence['archivo'];
+                            $archivo = $archivoReal;
                             // Si no tiene path completo, agregarlo
                             if (strpos($archivo, 'assets/') !== 0 && strpos($archivo, 'public/') !== 0) {
                                 $archivo = 'assets/uploads/evidencias/' . $archivo;

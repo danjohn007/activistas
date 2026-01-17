@@ -168,17 +168,12 @@ require_once __DIR__ . '/../../includes/functions.php';
                                     
                                     <!-- Mostrar evidencias iniciales (imágenes de referencia) -->
                                     <?php 
-                                    // Obtener evidencias iniciales (bloqueada = 0) para mostrar imágenes de referencia
-                                    if (!empty($evidence)) {
-                                        $initialEvidence = array_filter($evidence, function($e) {
-                                            return empty($e['bloqueada']) || $e['bloqueada'] == 0;
-                                        });
-                                        
-                                        if (!empty($initialEvidence)): ?>
+                                    // Mostrar archivos de referencia (subidos por el admin al crear la tarea)
+                                    if (!empty($referenceFiles) && count($referenceFiles) > 0): ?>
                                             <div class="mt-3">
                                                 <h6>Archivos de Referencia:</h6>
                                                 <div class="row">
-                                                    <?php foreach ($initialEvidence as $item): ?>
+                                                    <?php foreach ($referenceFiles as $item): ?>
                                                         <div class="col-md-6 col-lg-4 mb-3">
                                                             <div class="card">
                                                                 <div class="card-body">
@@ -188,25 +183,17 @@ require_once __DIR__ . '/../../includes/functions.php';
                                                                     </h6>
                                                                     <?php if (!empty($item['archivo'])): ?>
                                                                         <?php 
-                                                                        // Construir path correcto
-                                                                        $archivo = $item['archivo'];
-                                                                        // Si ya tiene URL completa, usarla directamente
-                                                                        if (strpos($archivo, 'http://') === 0 || strpos($archivo, 'https://') === 0) {
-                                                                            // Ya es una URL completa, no hacer nada
-                                                                        } 
-                                                                        // Si no tiene path completo, agregarlo
-                                                                        elseif (strpos($archivo, 'assets/') !== 0 && strpos($archivo, 'public/') !== 0) {
-                                                                            $archivo = 'assets/uploads/evidencias/' . $archivo;
-                                                                        }
-                                                                        // Si tiene public/ al inicio, quitarlo
-                                                                        if (strpos($archivo, 'public/') === 0) {
-                                                                            $archivo = substr($archivo, 7);
-                                                                        }
+                                                                        // Construir path correcto para archivos de evidencia
+                                                                        $archivoOriginal = $item['archivo'];
                                                                         
-                                                                        // Generar URL final
-                                                                        $archivoUrl = (strpos($archivo, 'http://') === 0 || strpos($archivo, 'https://') === 0) 
-                                                                            ? $archivo 
-                                                                            : url($archivo);
+                                                                        // Si ya es URL completa, usar directamente
+                                                                        if (strpos($archivoOriginal, 'http://') === 0 || strpos($archivoOriginal, 'https://') === 0) {
+                                                                            $archivoUrl = $archivoOriginal;
+                                                                        } else {
+                                                                            // url() ya agrega 'public/', solo pasar assets/uploads/evidencias/
+                                                                            $archivo = 'assets/uploads/evidencias/' . basename($archivoOriginal);
+                                                                            $archivoUrl = url($archivo);
+                                                                        }
                                                                         ?>
                                                                         <?php if (in_array($item['tipo_evidencia'], ['foto', 'image'])): ?>
                                                                             <img src="<?= htmlspecialchars($archivoUrl) ?>" 
@@ -230,7 +217,6 @@ require_once __DIR__ . '/../../includes/functions.php';
                                                 </div>
                                             </div>
                                         <?php endif; ?>
-                                    <?php } ?>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -297,25 +283,17 @@ require_once __DIR__ . '/../../includes/functions.php';
                                                     </h6>
                                                     <?php if (!empty($item['archivo'])): ?>
                                                         <?php 
-                                                        // Construir path correcto
+                                                        // Construir path correcto para evidencias
                                                         $archivoEvid = $item['archivo'];
-                                                        // Si ya tiene URL completa, usarla directamente
-                                                        if (strpos($archivoEvid, 'http://') === 0 || strpos($archivoEvid, 'https://') === 0) {
-                                                            // Ya es una URL completa, no hacer nada
-                                                        }
-                                                        // Si no tiene path completo, agregarlo
-                                                        elseif (strpos($archivoEvid, 'assets/') !== 0 && strpos($archivoEvid, 'public/') !== 0) {
-                                                            $archivoEvid = 'assets/uploads/evidencias/' . $archivoEvid;
-                                                        }
-                                                        // Si tiene public/ al inicio, quitarlo
-                                                        if (strpos($archivoEvid, 'public/') === 0) {
-                                                            $archivoEvid = substr($archivoEvid, 7);
-                                                        }
                                                         
-                                                        // Generar URL final
-                                                        $archivoEvidUrl = (strpos($archivoEvid, 'http://') === 0 || strpos($archivoEvid, 'https://') === 0) 
-                                                            ? $archivoEvid 
-                                                            : url($archivoEvid);
+                                                        // Si ya es URL completa, usar directamente
+                                                        if (strpos($archivoEvid, 'http://') === 0 || strpos($archivoEvid, 'https://') === 0) {
+                                                            $archivoEvidUrl = $archivoEvid;
+                                                        } else {
+                                                            // url() ya agrega 'public/', solo pasar assets/uploads/evidencias/
+                                                            $archivoEvidPath = 'assets/uploads/evidencias/' . basename($archivoEvid);
+                                                            $archivoEvidUrl = url($archivoEvidPath);
+                                                        }
                                                         ?>
                                                         <?php if (in_array($item['tipo_evidencia'], ['foto', 'image'])): ?>
                                                             <img src="<?= htmlspecialchars($archivoEvidUrl) ?>" 
@@ -379,25 +357,17 @@ require_once __DIR__ . '/../../includes/functions.php';
                                                 <div>
                                                     <?php if (!empty($item['archivo'])): ?>
                                                         <?php 
-                                                        // Construir path correcto
+                                                        // Construir path correcto para enlaces
                                                         $archivo = $item['archivo'];
-                                                        // Si ya tiene URL completa, usarla directamente
-                                                        if (strpos($archivo, 'http://') === 0 || strpos($archivo, 'https://') === 0) {
-                                                            // Ya es una URL completa, no hacer nada
-                                                        }
-                                                        // Si no tiene path completo, agregarlo
-                                                        elseif (strpos($archivo, 'assets/') !== 0 && strpos($archivo, 'public/') !== 0) {
-                                                            $archivo = 'assets/uploads/evidencias/' . $archivo;
-                                                        }
-                                                        // Si tiene public/ al inicio, quitarlo
-                                                        if (strpos($archivo, 'public/') === 0) {
-                                                            $archivo = substr($archivo, 7);
-                                                        }
                                                         
-                                                        // Generar URL final
-                                                        $archivoFinalUrl = (strpos($archivo, 'http://') === 0 || strpos($archivo, 'https://') === 0) 
-                                                            ? $archivo 
-                                                            : url($archivo);
+                                                        // Si ya es URL completa, usar directamente
+                                                        if (strpos($archivo, 'http://') === 0 || strpos($archivo, 'https://') === 0) {
+                                                            $archivoFinalUrl = $archivo;
+                                                        } else {
+                                                            // url() ya agrega 'public/', solo pasar assets/uploads/evidencias/
+                                                            $archivoPath = 'assets/uploads/evidencias/' . basename($archivo);
+                                                            $archivoFinalUrl = url($archivoPath);
+                                                        }
                                                         ?>
                                                         <a href="<?= htmlspecialchars($archivoFinalUrl) ?>" 
                                                            class="btn btn-sm btn-outline-primary me-1" 

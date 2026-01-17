@@ -522,7 +522,13 @@ class UserController {
         // Usuario existe - proceder con recuperación
         // Generar token de recuperación
         $token = bin2hex(random_bytes(32));
-        $expires = date('Y-m-d H:i:s', strtotime('+2 hours'));
+        
+        // Calcular expiración compensando el desfase del servidor MySQL
+        // El servidor guarda con +6 horas, así que restamos 6 horas al calcular
+        $expiresDate = new DateTime('now', new DateTimeZone('America/Mexico_City'));
+        $expiresDate->modify('+2 hours'); // Agregar 2 horas de validez
+        $expiresDate->modify('-6 hours'); // Compensar desfase del servidor MySQL
+        $expires = $expiresDate->format('Y-m-d H:i:s');
         
         // Guardar token en base de datos
         if ($this->userModel->createPasswordResetToken($user['id'], $token, $expires)) {

@@ -29,10 +29,18 @@ class Database {
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
-                PDO::ATTR_TIMEOUT => 5, // Timeout de 5 segundos
+                PDO::ATTR_PERSISTENT => true, // CRÍTICO: Reutilizar conexiones
+                PDO::ATTR_TIMEOUT => 30, // Aumentado para AWS (latencia red)
+                // CRÍTICO: Timezone DEBE estar en INIT_COMMAND para conexiones persistentes
+                PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci, time_zone = '-06:00'",
+                PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true, // Mejorar memoria
             ];
             
             $this->conn = new PDO($dsn, $this->username, $this->password, $options);
+            
+            // Verificar timezone (debug)
+            // $tz = $this->conn->query("SELECT @@session.time_zone")->fetchColumn();
+            // error_log("MySQL timezone: $tz");
             
             // Test the connection
             $this->conn->query("SELECT 1");

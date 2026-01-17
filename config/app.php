@@ -5,15 +5,15 @@
  */
 
 // Configuración del entorno
-define('APP_ENV', 'development'); // development, testing, production
+define('APP_ENV', 'production'); // development, testing, production
 
 // Configuración de zona horaria
 define('DEFAULT_TIMEZONE', 'America/Mexico_City'); // UTC-6 por defecto
 define('TIMEZONE_OFFSET', '-06:00'); // Offset para consultas de base de datos
 
 // Configuración de rutas base
-define('BASE_PATH', '/public'); // Base path para la aplicación (sin trailing slash)
-define('BASE_URL', '/public'); // URL base completa (sin trailing slash)
+define('BASE_PATH', '/sistema/public'); // Base path para la aplicación (sin trailing slash)
+define('BASE_URL', 'https://ejercitodigital.seguimientoamigos.com/sistema/public'); // URL base completa (sin trailing slash)
 
 // Configuración de directorios
 define('APP_ROOT', dirname(__DIR__));

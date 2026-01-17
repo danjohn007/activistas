@@ -82,23 +82,17 @@ class ActivityController {
             }
         }
         
-        // Pagination parameters - OPTIMIZACIÓN: Reducir a 20 por página
+        // Pagination parameters - OPTIMIZACIÓN: 15 items para balance velocidad/UX
         $page = max(1, intval($_GET['page'] ?? 1));
-        $perPage = 20; // Incrementado de 10 a 20 para mejor UX pero aún manejable
+        $perPage = 15; // Optimizado para AWS: menos datos = más rápido
         $filters['page'] = $page;
         $filters['per_page'] = $perPage;
         
+        // OPTIMIZACIÓN CRÍTICA: Obtener evidencias con JOIN optimizado (sin subconsulta)
+        $filters['include_evidence_count'] = true;
         $activities = $this->activityModel->getActivities($filters);
         
-        // OPTIMIZACIÓN: Agregar contador de evidencias (solo el número, no el contenido completo)
-        foreach ($activities as &$activity) {
-            if ($activity['estado'] === 'completada') {
-                $activity['evidence_count'] = $this->activityModel->countActivityEvidence($activity['id']);
-            } else {
-                $activity['evidence_count'] = 0;
-            }
-        }
-        unset($activity); // Liberar referencia
+        // El conteo de evidencias ya viene incluido en la consulta principal
         
         // OPTIMIZACIÓN: Caché del conteo total (pesado con muchos registros)
         $cacheKey = 'activity_count_' . md5(serialize($filters)) . '_' . floor(time() / 300); // 5 min
@@ -404,7 +398,11 @@ class ActivityController {
             redirectWithMessage('activities/', 'No tiene permisos para ver esta actividad', 'error');
         }
         
+        // Obtener evidencias del usuario (bloqueada = 1)
         $evidence = $this->activityModel->getActivityEvidence($activityId);
+        
+        // Obtener archivos de referencia del admin (bloqueada = 0)
+        $referenceFiles = $this->activityModel->getReferenceFiles($activityId);
         
         include __DIR__ . '/../views/activities/detail.php';
     }
@@ -713,12 +711,15 @@ class ActivityController {
             }
         }
         
-        $evidenceId = $this->activityModel->addEvidence($activityId, $evidenceType, $fileName, $content);
+        // El parámetro $blocked no se especifica, usa el valor por defecto 1 (evidencia del usuario)
+        // Esto asegura que las evidencias subidas por usuarios se marquen correctamente
+        $result = $this->activityModel->addEvidence($activityId, $evidenceType, $fileName, $content, 1);
         
-        if ($evidenceId) {
+        if ($result['success']) {
             redirectWithMessage("activities/detail.php?id=$activityId", 'Evidencia agregada exitosamente', 'success');
         } else {
-            redirectWithMessage("activities/detail.php?id=$activityId", 'Error al agregar evidencia', 'error');
+            $errorMsg = $result['error'] ?? 'Error al agregar evidencia';
+            redirectWithMessage("activities/detail.php?id=$activityId", $errorMsg, 'error');
         }
     }
     
