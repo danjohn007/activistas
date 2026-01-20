@@ -28,8 +28,8 @@ class ReportController {
         
         // Obtener filtros
         $filters = [
-            'fecha_desde' => $_GET['fecha_desde'] ?? '',
-            'fecha_hasta' => $_GET['fecha_hasta'] ?? '',
+            'fecha_desde' => $_GET['fecha_desde'] ?? '', // Sin fecha por defecto
+            'fecha_hasta' => $_GET['fecha_hasta'] ?? '',   // Sin fecha por defecto
             'nombre_actividad' => $_GET['nombre_actividad'] ?? '',
             'nombre_activista' => $_GET['nombre_activista'] ?? '',
             'grupo_id' => $_GET['grupo_id'] ?? '',
@@ -138,7 +138,160 @@ class ReportController {
         $grupos = $groupModel->getAllGroups();
         $lideres = $userModel->getActiveLiders();
         
+        // Hacer $currentUser disponible para la vista
+        $GLOBALS['currentUser'] = $currentUser;
+        
         include __DIR__ . '/../views/reports/task_detail.php';
+    }
+    
+    // Eliminar actividad global (para todos los activistas)
+    public function deleteGlobalTask() {
+        $this->auth->requireAuth();
+        
+        $currentUser = $this->auth->getCurrentUser();
+        
+        // Solo SuperAdmin y Gestor pueden eliminar actividades globales
+        if (!in_array($currentUser['rol'], ['SuperAdmin', 'Gestor'])) {
+            redirectWithMessage('reports/global-tasks.php', 'No tienes permisos para eliminar actividades', 'error');
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirectWithMessage('reports/global-tasks.php', 'Método no permitido', 'error');
+        }
+        
+        $titulo = $_POST['titulo'] ?? '';
+        $tipoActividadId = $_POST['tipo_actividad_id'] ?? '';
+        
+        if (empty($titulo) || empty($tipoActividadId)) {
+            redirectWithMessage('reports/global-tasks.php', 'Datos incompletos', 'error');
+        }
+        
+        try {
+            $result = $this->activityModel->deleteGlobalTask($titulo, $tipoActividadId);
+            
+            if ($result['success']) {
+                redirectWithMessage('reports/global-tasks.php', 
+                    "Actividad eliminada exitosamente. Se eliminaron {$result['deleted_count']} asignaciones.", 
+                    'success');
+            } else {
+                redirectWithMessage('reports/global-tasks.php', 
+                    'Error al eliminar la actividad: ' . $result['message'], 
+                    'error');
+            }
+        } catch (Exception $e) {
+            error_log("Error al eliminar actividad global: " . $e->getMessage());
+            redirectWithMessage('reports/global-tasks.php', 'Error al eliminar la actividad', 'error');
+        }
+    }
+    
+    // Editar actividad global (para todos los activistas)
+    public function editGlobalTask() {
+        $this->auth->requireAuth();
+        
+        $currentUser = $this->auth->getCurrentUser();
+        
+        // Solo SuperAdmin, Gestor y Líder pueden editar actividades globales
+        if (!in_array($currentUser['rol'], ['SuperAdmin', 'Gestor', 'Líder'])) {
+            redirectWithMessage('reports/global-tasks.php', 'No tienes permisos para editar actividades', 'error');
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirectWithMessage('reports/global-tasks.php', 'Método no permitido', 'error');
+        }
+        
+        $tituloOriginal = $_POST['titulo_original'] ?? '';
+        $tipoActividadId = $_POST['tipo_actividad_id'] ?? '';
+        $nuevoTitulo = trim($_POST['titulo'] ?? '');
+        $descripcion = trim($_POST['descripcion'] ?? '');
+        $fechaActividad = $_POST['fecha_actividad'] ?? '';
+        $fechaPublicacion = $_POST['fecha_publicacion'] ?? null;
+        $horaPublicacion = $_POST['hora_publicacion'] ?? null;
+        $fechaCierre = $_POST['fecha_cierre'] ?? null;
+        $horaCierre = $_POST['hora_cierre'] ?? null;
+        
+        if (empty($tituloOriginal) || empty($tipoActividadId) || empty($nuevoTitulo) || empty($fechaActividad)) {
+            redirectWithMessage('reports/global-tasks.php', 'Datos incompletos', 'error');
+        }
+        
+        try {
+            // Combinar fecha y hora de publicación si ambos están presentes
+            $fechaPublicacionCompleta = null;
+            if (!empty($fechaPublicacion) && !empty($horaPublicacion)) {
+                $fechaPublicacionCompleta = $fechaPublicacion . ' ' . $horaPublicacion;
+            } elseif (!empty($fechaPublicacion)) {
+                $fechaPublicacionCompleta = $fechaPublicacion;
+            }
+            
+            $updateData = [
+                'titulo' => $nuevoTitulo,
+                'descripcion' => $descripcion,
+                'fecha_actividad' => $fechaActividad,
+                'fecha_publicacion' => $fechaPublicacionCompleta,
+                'hora_publicacion' => $horaPublicacion,
+                'fecha_cierre' => $fechaCierre,
+                'hora_cierre' => $horaCierre
+            ];
+            
+            $result = $this->activityModel->updateGlobalTask($tituloOriginal, $tipoActividadId, $updateData);
+            
+            if ($result['success']) {
+                redirectWithMessage('reports/global-tasks.php', 
+                    "Actividad actualizada exitosamente. Se actualizaron {$result['updated_count']} asignaciones.", 
+                    'success');
+            } else {
+                redirectWithMessage('reports/global-tasks.php', 
+                    'Error al actualizar la actividad: ' . $result['message'], 
+                    'error');
+            }
+        } catch (Exception $e) {
+            error_log("Error al editar actividad global: " . $e->getMessage());
+            redirectWithMessage('reports/global-tasks.php', 'Error al actualizar la actividad', 'error');
+        }
+    }
+    
+    // Eliminar múltiples actividades globales a la vez
+    public function deleteMultipleTasks() {
+        $this->auth->requireAuth();
+        
+        $currentUser = $this->auth->getCurrentUser();
+        
+        // Solo SuperAdmin y Gestor pueden eliminar actividades globales
+        if (!in_array($currentUser['rol'], ['SuperAdmin', 'Gestor'])) {
+            redirectWithMessage('reports/global-tasks.php', 'No tienes permisos para eliminar actividades', 'error');
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirectWithMessage('reports/global-tasks.php', 'Método no permitido', 'error');
+        }
+        
+        $actividadesJson = $_POST['actividades'] ?? '';
+        
+        if (empty($actividadesJson)) {
+            redirectWithMessage('reports/global-tasks.php', 'No se especificaron actividades a eliminar', 'error');
+        }
+        
+        try {
+            $actividades = json_decode($actividadesJson, true);
+            
+            if (!is_array($actividades) || empty($actividades)) {
+                redirectWithMessage('reports/global-tasks.php', 'Datos inválidos', 'error');
+            }
+            
+            $result = $this->activityModel->deleteMultipleGlobalTasks($actividades);
+            
+            if ($result['success']) {
+                redirectWithMessage('reports/global-tasks.php', 
+                    "Se eliminaron {$result['total_activities']} actividades ({$result['total_deleted']} asignaciones en total).", 
+                    'success');
+            } else {
+                redirectWithMessage('reports/global-tasks.php', 
+                    'Error al eliminar las actividades: ' . $result['message'], 
+                    'error');
+            }
+        } catch (Exception $e) {
+            error_log("Error al eliminar múltiples actividades: " . $e->getMessage());
+            redirectWithMessage('reports/global-tasks.php', 'Error al eliminar las actividades', 'error');
+        }
     }
 }
 ?>

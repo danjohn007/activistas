@@ -1868,7 +1868,7 @@ class Activity {
     public function getGlobalTaskReport($filters = []) {
         try {
             $params = [];
-            $whereConditions = ['a.tarea_pendiente = 1'];
+            $whereConditions = [];
             
             // Filtros de fecha
             if (!empty($filters['fecha_desde'])) {
@@ -1905,7 +1905,7 @@ class Activity {
                 $params[] = $filters['lider_id'];
             }
             
-            $whereClause = implode(' AND ', $whereConditions);
+            $whereClause = !empty($whereConditions) ? implode(' AND ', $whereConditions) : '1=1';
             
             $sql = "
                 SELECT 
@@ -1920,8 +1920,7 @@ class Activity {
                         2
                     ) as porcentaje_cumplimiento,
                     MIN(a.fecha_creacion) as primera_asignacion,
-                    MAX(a.fecha_creacion) as ultima_asignacion,
-                    MIN(a.descripcion) as descripcion_ejemplo
+                    MAX(a.fecha_creacion) as ultima_asignacion
                 FROM actividades a
                 JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id
                 JOIN usuarios u ON a.usuario_id = u.id
@@ -1932,9 +1931,39 @@ class Activity {
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
+            $results = $stmt->fetchAll();
             
-            return $stmt->fetchAll();
+            // Obtener información adicional para cada tarea (descripcion y fechas) con consulta separada
+            foreach ($results as &$task) {
+                $infoSql = "SELECT descripcion, fecha_actividad, fecha_publicacion, hora_publicacion, fecha_cierre, hora_cierre 
+                           FROM actividades 
+                           WHERE titulo = ? AND tipo_actividad_id = ?
+                           LIMIT 1";
+                $infoStmt = $this->db->prepare($infoSql);
+                $infoStmt->execute([$task['titulo'], $task['tipo_actividad_id']]);
+                $info = $infoStmt->fetch();
+                
+                if ($info) {
+                    $task['descripcion'] = $info['descripcion'];
+                    $task['fecha_actividad'] = $info['fecha_actividad'];
+                    $task['fecha_publicacion'] = $info['fecha_publicacion'];
+                    $task['hora_publicacion'] = $info['hora_publicacion'];
+                    $task['fecha_cierre'] = $info['fecha_cierre'];
+                    $task['hora_cierre'] = $info['hora_cierre'];
+                } else {
+                    $task['descripcion'] = '';
+                    $task['fecha_actividad'] = null;
+                    $task['fecha_publicacion'] = null;
+                    $task['hora_publicacion'] = null;
+                    $task['fecha_cierre'] = null;
+                    $task['hora_cierre'] = null;
+                }
+            }
+            unset($task);
+            
+            return $results;
         } catch (Exception $e) {
+            error_log("getGlobalTaskReport - Error: " . $e->getMessage());
             logActivity("Error al obtener informe global de tareas: " . $e->getMessage(), 'ERROR');
             return [];
         }
@@ -2046,5 +2075,294 @@ class Activity {
             return [];
         }
     }
+    
+    /**
+     * Eliminar una actividad global (todas las asignaciones de la misma actividad)
+     * @param string $titulo Título de la actividad
+     * @param int $tipoActividadId ID del tipo de actividad
+     * @return array Resultado de la operación con 'success' y 'deleted_count'
+     */
+    public function deleteGlobalTask($titulo, $tipoActividadId) {
+        try {
+            $this->db->beginTransaction();
+            
+            // Primero obtener todos los IDs de actividades que coincidan
+            $sql = "SELECT id FROM actividades 
+                    WHERE titulo = ? 
+                    AND tipo_actividad_id = ? 
+                    AND (tarea_pendiente = 1 OR tarea_pendiente IS NULL)";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$titulo, $tipoActividadId]);
+            $activityIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+            if (empty($activityIds)) {
+                $this->db->rollBack();
+                return [
+                    'success' => false,
+                    'message' => 'No se encontraron actividades para eliminar',
+                    'deleted_count' => 0
+                ];
+            }
+            
+            $count = count($activityIds);
+            $placeholders = implode(',', array_fill(0, $count, '?'));
+            
+            // Eliminar evidencias asociadas
+            $sqlEvidence = "DELETE FROM evidencias WHERE actividad_id IN ($placeholders)";
+            $stmtEvidence = $this->db->prepare($sqlEvidence);
+            $stmtEvidence->execute($activityIds);
+            
+            // Eliminar las actividades
+            $sqlActivities = "DELETE FROM actividades WHERE id IN ($placeholders)";
+            $stmtActivities = $this->db->prepare($sqlActivities);
+            $stmtActivities->execute($activityIds);
+            
+            $this->db->commit();
+            
+            logActivity("Actividad global eliminada: '$titulo' (Tipo: $tipoActividadId, $count asignaciones)", 'DELETE');
+            
+            return [
+                'success' => true,
+                'deleted_count' => $count,
+                'message' => 'Actividad eliminada exitosamente'
+            ];
+            
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Error al eliminar actividad global: " . $e->getMessage());
+            logActivity("Error al eliminar actividad global: " . $e->getMessage(), 'ERROR');
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'deleted_count' => 0
+            ];
+        }
+    }
+    
+    /**
+     * Actualizar una actividad global (todas las asignaciones de la misma actividad)
+     * @param string $tituloOriginal Título original de la actividad
+     * @param int $tipoActividadId ID del tipo de actividad
+     * @param array $updateData Datos a actualizar (titulo, descripcion, fecha_inicio, fecha_limite)
+     * @return array Resultado de la operación con 'success' y 'updated_count'
+     */
+    public function updateGlobalTask($tituloOriginal, $tipoActividadId, $updateData) {
+        try {
+            $this->db->beginTransaction();
+            
+            // Construir la consulta de actualización dinámicamente
+            $setClause = [];
+            $params = [];
+            
+            if (isset($updateData['titulo'])) {
+                $setClause[] = "titulo = ?";
+                $params[] = $updateData['titulo'];
+            }
+            
+            if (isset($updateData['descripcion'])) {
+                $setClause[] = "descripcion = ?";
+                $params[] = $updateData['descripcion'];
+            }
+            
+            if (isset($updateData['fecha_actividad'])) {
+                $setClause[] = "fecha_actividad = ?";
+                $params[] = $updateData['fecha_actividad'];
+            }
+            
+            if (isset($updateData['fecha_publicacion'])) {
+                $setClause[] = "fecha_publicacion = ?";
+                $params[] = $updateData['fecha_publicacion'];
+            }
+            
+            if (isset($updateData['hora_publicacion'])) {
+                $setClause[] = "hora_publicacion = ?";
+                $params[] = $updateData['hora_publicacion'];
+            }
+            
+            if (isset($updateData['fecha_cierre'])) {
+                $setClause[] = "fecha_cierre = ?";
+                $params[] = $updateData['fecha_cierre'];
+            }
+            
+            if (isset($updateData['hora_cierre'])) {
+                $setClause[] = "hora_cierre = ?";
+                $params[] = $updateData['hora_cierre'];
+            }
+            
+            // Siempre actualizar fecha_actualizacion
+            $setClause[] = "fecha_actualizacion = NOW()";
+            
+            if (empty($setClause)) {
+                $this->db->rollBack();
+                return [
+                    'success' => false,
+                    'message' => 'No hay datos para actualizar',
+                    'updated_count' => 0
+                ];
+            }
+            
+            // Agregar parámetros del WHERE
+            $params[] = $tituloOriginal;
+            $params[] = $tipoActividadId;
+            
+            $sql = "UPDATE actividades 
+                    SET " . implode(', ', $setClause) . "
+                    WHERE titulo = ? 
+                    AND tipo_actividad_id = ? 
+                    AND (tarea_pendiente = 1 OR tarea_pendiente IS NULL)";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            
+            $updatedCount = $stmt->rowCount();
+            
+            if ($updatedCount === 0) {
+                $this->db->rollBack();
+                return [
+                    'success' => false,
+                    'message' => 'No se encontraron actividades para actualizar',
+                    'updated_count' => 0
+                ];
+            }
+            
+            $this->db->commit();
+            
+            $newTitle = $updateData['titulo'] ?? $tituloOriginal;
+            logActivity("Actividad global actualizada: '$tituloOriginal' -> '$newTitle' (Tipo: $tipoActividadId, $updatedCount asignaciones)", 'UPDATE');
+            
+            return [
+                'success' => true,
+                'updated_count' => $updatedCount,
+                'message' => 'Actividad actualizada exitosamente'
+            ];
+            
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Error al actualizar actividad global: " . $e->getMessage());
+            logActivity("Error al actualizar actividad global: " . $e->getMessage(), 'ERROR');
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'updated_count' => 0
+            ];
+        }
+    }
+    
+    /**
+     * Obtener información de una actividad por título y tipo
+     * @param string $titulo Título de la actividad
+     * @param int $tipoActividadId ID del tipo de actividad
+     * @return array|null Información de la actividad o null si no se encuentra
+     */
+    public function getTaskInfoByTitleAndType($titulo, $tipoActividadId) {
+        try {
+            $sql = "SELECT titulo, descripcion, fecha_inicio, fecha_limite, tipo_actividad_id
+                    FROM actividades 
+                    WHERE titulo = ? 
+                    AND tipo_actividad_id = ? 
+                    AND (tarea_pendiente = 1 OR tarea_pendiente IS NULL)
+                    LIMIT 1";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$titulo, $tipoActividadId]);
+            
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return $result ?: null;
+            
+        } catch (Exception $e) {
+            error_log("Error al obtener información de actividad: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Eliminar múltiples actividades globales a la vez
+     * @param array $actividades Array de arrays con 'titulo' y 'tipo_actividad_id'
+     * @return array Resultado de la operación con 'success', 'total_activities' y 'total_deleted'
+     */
+    public function deleteMultipleGlobalTasks($actividades) {
+        try {
+            $this->db->beginTransaction();
+            
+            $totalDeleted = 0;
+            $totalActivities = 0;
+            $errors = [];
+            
+            foreach ($actividades as $actividad) {
+                $titulo = $actividad['titulo'] ?? '';
+                $tipoActividadId = $actividad['tipo_actividad_id'] ?? '';
+                
+                if (empty($titulo) || empty($tipoActividadId)) {
+                    $errors[] = "Datos incompletos para una actividad";
+                    continue;
+                }
+                
+                // Obtener todos los IDs de actividades que coincidan
+                $sql = "SELECT id FROM actividades 
+                        WHERE titulo = ? 
+                        AND tipo_actividad_id = ? 
+                        AND (tarea_pendiente = 1 OR tarea_pendiente IS NULL)";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([$titulo, $tipoActividadId]);
+                $activityIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                
+                if (empty($activityIds)) {
+                    $errors[] = "No se encontraron actividades para '$titulo'";
+                    continue;
+                }
+                
+                $count = count($activityIds);
+                $placeholders = implode(',', array_fill(0, $count, '?'));
+                
+                // Eliminar evidencias asociadas
+                $sqlEvidence = "DELETE FROM evidencias WHERE actividad_id IN ($placeholders)";
+                $stmtEvidence = $this->db->prepare($sqlEvidence);
+                $stmtEvidence->execute($activityIds);
+                
+                // Eliminar las actividades
+                $sqlActivities = "DELETE FROM actividades WHERE id IN ($placeholders)";
+                $stmtActivities = $this->db->prepare($sqlActivities);
+                $stmtActivities->execute($activityIds);
+                
+                $totalDeleted += $count;
+                $totalActivities++;
+                
+                logActivity("Actividad eliminada (lote): '$titulo' (Tipo: $tipoActividadId, $count asignaciones)", 'DELETE');
+            }
+            
+            if ($totalActivities === 0) {
+                $this->db->rollBack();
+                return [
+                    'success' => false,
+                    'message' => 'No se pudieron eliminar actividades: ' . implode(', ', $errors),
+                    'total_activities' => 0,
+                    'total_deleted' => 0
+                ];
+            }
+            
+            $this->db->commit();
+            
+            logActivity("Eliminación múltiple completada: $totalActivities actividades ($totalDeleted asignaciones)", 'DELETE');
+            
+            return [
+                'success' => true,
+                'total_activities' => $totalActivities,
+                'total_deleted' => $totalDeleted,
+                'message' => 'Actividades eliminadas exitosamente',
+                'errors' => $errors
+            ];
+            
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Error al eliminar múltiples actividades globales: " . $e->getMessage());
+            logActivity("Error al eliminar múltiples actividades globales: " . $e->getMessage(), 'ERROR');
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'total_activities' => 0,
+                'total_deleted' => 0
+            ];
+        }
+    }
 }
-?>
