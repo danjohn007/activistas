@@ -225,6 +225,14 @@ class ActivityController {
         $recipients = [];
         $shouldCreateForRecipients = false;
         
+        // DEBUGGING: Log what was received to identify duplicate sources
+        error_log("=== CREATE ACTIVITY DEBUG ===");
+        error_log("User role: " . $currentUser['rol']);
+        error_log("destinatarios_lideres: " . json_encode($_POST['destinatarios_lideres'] ?? []));
+        error_log("destinatarios_grupos: " . json_encode($_POST['destinatarios_grupos'] ?? []));
+        error_log("destinatarios_todos: " . json_encode($_POST['destinatarios_todos'] ?? []));
+        error_log("destinatarios_activistas: " . json_encode($_POST['destinatarios_activistas'] ?? []));
+        
         if ($currentUser['rol'] === 'SuperAdmin') {
             if (!empty($_POST['destinatarios_lideres'])) {
                 // SuperAdmin selected leaders as recipients
@@ -247,6 +255,8 @@ class ActivityController {
                 // CRITICAL FIX: Remove duplicates that might come from multiple sources
                 // This prevents activities from being created twice for the same person
                 $recipients = array_values(array_unique($recipients));
+                error_log("Recipients after dedup (lideres): " . json_encode($recipients));
+                error_log("Total recipients: " . count($recipients));
                 $shouldCreateForRecipients = true;
             } elseif (!empty($_POST['destinatarios_grupos'])) {
                 // SuperAdmin selected groups as recipients
@@ -264,15 +274,19 @@ class ActivityController {
                 // CRITICAL FIX: Remove duplicates that might come from users in multiple groups
                 // This prevents activities from being created twice for the same person
                 $recipients = array_values(array_unique($recipients));
+                error_log("Recipients after dedup (grupos): " . json_encode($recipients));
+                error_log("Total recipients: " . count($recipients));
                 $shouldCreateForRecipients = true;
             } elseif (!empty($_POST['destinatarios_todos'])) {
-                // SuperAdmin selected all users as recipients
-                $recipients = array_values(array_unique(array_map('intval', $_POST['destinatarios_todos'])));
+                error_log("Recipients after dedup (todos): " . json_encode($recipients));
+                error_log("Total recipients: " . count($recipients));
                 $shouldCreateForRecipients = true;
             }
         } elseif ($currentUser['rol'] === 'Líder' && !empty($_POST['destinatarios_activistas'])) {
             // Leader selected activists as recipients
             $recipients = array_values(array_unique(array_map('intval', $_POST['destinatarios_activistas'])));
+            error_log("Recipients after dedup (activistas): " . json_encode($recipients));
+            error_log("Total recipients: " . count($recipients));
             $shouldCreateForRecipients = true;
         }
         
@@ -283,6 +297,8 @@ class ActivityController {
             
             // Create activity for each recipient
             $successCount = 0;
+            $skippedDuplicates = 0;
+            
             foreach ($recipients as $recipientId) {
                 $fechaPublicacion = cleanInput($_POST['fecha_publicacion'] ?? '');
                 $fechaActividad = !empty($fechaPublicacion) ? $fechaPublicacion : date('Y-m-d');
@@ -315,6 +331,20 @@ class ActivityController {
                     redirectWithMessage('activities/create.php', 'Por favor corrige los errores', 'error');
                 }
                 
+                // VALIDACIÓN ANTI-DUPLICADOS: Verificar si ya existe antes de crear
+                $exists = $this->activityModel->activityExists(
+                    $recipientId,
+                    $activityData['titulo'],
+                    $activityData['tipo_actividad_id'],
+                    $fechaActividad
+                );
+                
+                if ($exists) {
+                    $skippedDuplicates++;
+                    error_log("⏭️ Duplicado omitido para usuario $recipientId: {$activityData['titulo']}");
+                    continue; // Saltar este usuario y continuar con el siguiente
+                }
+                
                 $activityId = $this->activityModel->createActivity($activityData);
                 
                 if ($activityId) {
@@ -329,7 +359,12 @@ class ActivityController {
             }
             
             if ($successCount > 0) {
-                redirectWithMessage('activities/', "Actividad creada exitosamente para $successCount destinatario(s)", 'success');
+                $successMessage = "Actividad creada exitosamente para $successCount destinatario(s)";
+                if ($skippedDuplicates > 0) {
+                    $successMessage .= " ($skippedDuplicates duplicados omitidos)";
+                }
+                error_log("✅ Actividad creada: $successCount exitosos, $skippedDuplicates duplicados omitidos");
+                redirectWithMessage('activities/', $successMessage, 'success');
             } else {
                 redirectWithMessage('activities/create.php', 'Error al crear actividad', 'error');
             }

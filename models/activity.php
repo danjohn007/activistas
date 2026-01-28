@@ -29,9 +29,60 @@ class Activity {
         return $this->db;
     }
     
+    /**
+     * Verificar si ya existe una actividad duplicada
+     * @param int $usuario_id ID del usuario
+     * @param string $titulo Título de la actividad
+     * @param int $tipo_actividad_id Tipo de actividad
+     * @param string $fecha_actividad Fecha de la actividad
+     * @return bool True si existe duplicado, False si no existe
+     */
+    public function activityExists($usuario_id, $titulo, $tipo_actividad_id, $fecha_actividad) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT COUNT(*) as total
+                FROM actividades
+                WHERE usuario_id = ?
+                AND titulo = ?
+                AND tipo_actividad_id = ?
+                AND fecha_actividad = ?
+            ");
+            
+            $stmt->execute([$usuario_id, $titulo, $tipo_actividad_id, $fecha_actividad]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return ($result['total'] > 0);
+        } catch (Exception $e) {
+            error_log("Error verificando duplicados: " . $e->getMessage());
+            return false; // En caso de error, permitir inserción (por seguridad)
+        }
+    }
+    
     // Crear nueva actividad
     public function createActivity($data) {
         try {
+            // VALIDACIÓN ANTI-DUPLICADOS: Verificar si ya existe esta actividad para este usuario
+            $exists = $this->activityExists(
+                $data['usuario_id'],
+                $data['titulo'],
+                $data['tipo_actividad_id'],
+                $data['fecha_actividad']
+            );
+            
+            if ($exists) {
+                error_log("⚠️ DUPLICADO PREVENIDO: Actividad ya existe para usuario {$data['usuario_id']}: {$data['titulo']}");
+                // Retornar el ID de una actividad existente para no romper el flujo
+                // pero sin crear duplicado
+                $stmt = $this->db->prepare("
+                    SELECT id FROM actividades
+                    WHERE usuario_id = ? AND titulo = ? AND tipo_actividad_id = ? AND fecha_actividad = ?
+                    LIMIT 1
+                ");
+                $stmt->execute([$data['usuario_id'], $data['titulo'], $data['tipo_actividad_id'], $data['fecha_actividad']]);
+                $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+                return $existing ? $existing['id'] : false;
+            }
+            
             // Determine if this should be a pending task
             $tarea_pendiente = 0;
             $solicitante_id = null;

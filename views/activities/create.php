@@ -340,7 +340,7 @@
                                 <a href="<?= url('activities/') ?>" class="btn btn-secondary">
                                     <i class="fas fa-times me-1"></i>Cancelar
                                 </a>
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
                                     <i class="fas fa-save me-1"></i>Crear Actividad
                                 </button>
                             </div>
@@ -352,6 +352,32 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // CRITICAL FIX: Deshabilitar checkboxes de pestañas inactivas antes de enviar el formulario
+        // Esto previene que se envíen múltiples arrays de destinatarios y se creen duplicados
+        document.querySelector('form').addEventListener('submit', function(e) {
+            // Obtener la pestaña activa
+            const activeTab = document.querySelector('#assignmentTabs .nav-link.active');
+            
+            if (activeTab) {
+                const activeTabId = activeTab.getAttribute('data-bs-target');
+                
+                // Deshabilitar todos los checkboxes de las pestañas inactivas
+                document.querySelectorAll('.tab-pane').forEach(function(tabPane) {
+                    const tabId = '#' + tabPane.id;
+                    
+                    // Si no es la pestaña activa, deshabilitar todos sus checkboxes
+                    if (tabId !== activeTabId) {
+                        tabPane.querySelectorAll('input[type="checkbox"]').forEach(function(checkbox) {
+                            checkbox.disabled = true;
+                        });
+                    }
+                });
+                
+                console.log('✅ Checkboxes de pestañas inactivas deshabilitados para prevenir duplicados');
+            }
+        });
+    </script>
     <script>
         // Auto-llenar descripción cuando se selecciona un tipo de actividad
         document.getElementById('tipo_actividad_id').addEventListener('change', function() {
