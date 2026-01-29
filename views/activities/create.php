@@ -226,7 +226,7 @@
                                                 <div class="form-check">
                                                     <input class="form-check-input leader-checkbox" type="checkbox" 
                                                            id="lider_<?= $lider['id'] ?>" name="destinatarios_lideres[]" 
-                                                           value="<?= $lider['id'] ?>" checked>
+                                                           value="<?= $lider['id'] ?>">
                                                     <label class="form-check-label" for="lider_<?= $lider['id'] ?>">
                                                         <?= htmlspecialchars($lider['nombre_completo']) ?>
                                                     </label>
@@ -266,7 +266,7 @@
                                     <!-- All users tab -->
                                     <div class="tab-pane fade" id="all-users" role="tabpanel">
                                         <div class="form-check mb-2">
-                                            <input class="form-check-input" type="checkbox" id="select_all_users" checked>
+                                            <input class="form-check-input" type="checkbox" id="select_all_users">
                                             <label class="form-check-label fw-bold" for="select_all_users">
                                                 Seleccionar/Deseleccionar todos los usuarios
                                             </label>
@@ -279,7 +279,7 @@
                                                 <div class="form-check">
                                                     <input class="form-check-input all-user-checkbox" type="checkbox" 
                                                            id="user_<?= $user['id'] ?>" name="destinatarios_todos[]" 
-                                                           value="<?= $user['id'] ?>" checked>
+                                                           value="<?= $user['id'] ?>">
                                                     <label class="form-check-label" for="user_<?= $user['id'] ?>">
                                                         <?= htmlspecialchars($user['nombre_completo']) ?> 
                                                         <span class="badge bg-secondary ms-1"><?= $user['rol'] ?></span>
@@ -312,7 +312,7 @@
                                             <div class="form-check">
                                                 <input class="form-check-input activist-checkbox" type="checkbox" 
                                                        id="activista_<?= $activista['id'] ?>" name="destinatarios_activistas[]" 
-                                                       value="<?= $activista['id'] ?>" checked>
+                                                       value="<?= $activista['id'] ?>">
                                                 <label class="form-check-label" for="activista_<?= $activista['id'] ?>">
                                                     <?= htmlspecialchars($activista['nombre_completo']) ?>
                                                 </label>
@@ -353,32 +353,202 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // CRITICAL FIX: Deshabilitar checkboxes de pestañas inactivas antes de enviar el formulario
-        // Esto previene que se envíen múltiples arrays de destinatarios y se creen duplicados
-        document.querySelector('form').addEventListener('submit', function(e) {
-            // Obtener la pestaña activa
+        // VALIDACIÓN ANTI-DUPLICADOS: Verificar antes de enviar el formulario
+        let isValidatingDuplicates = false;
+        
+        document.querySelector('form').addEventListener('submit', async function(e) {
+            // TEMPORALMENTE DESHABILITADO - Solo deshabilitar pestañas inactivas
+            // La validación anti-duplicados está en el backend
+            
+            // PASO 1: DESMARCAR (no deshabilitar) pestañas inactivas para evitar enviar múltiples arrays
             const activeTab = document.querySelector('#assignmentTabs .nav-link.active');
+            
+            console.log('🔍 DEBUG: Pestaña activa:', activeTab ? activeTab.textContent.trim() : 'ninguna');
             
             if (activeTab) {
                 const activeTabId = activeTab.getAttribute('data-bs-target');
+                console.log('🔍 DEBUG: ID de pestaña activa:', activeTabId);
                 
-                // Deshabilitar todos los checkboxes de las pestañas inactivas
                 document.querySelectorAll('.tab-pane').forEach(function(tabPane) {
                     const tabId = '#' + tabPane.id;
                     
-                    // Si no es la pestaña activa, deshabilitar todos sus checkboxes
+                    // Si no es la pestaña activa, DESMARCAR todos sus checkboxes
                     if (tabId !== activeTabId) {
                         tabPane.querySelectorAll('input[type="checkbox"]').forEach(function(checkbox) {
-                            checkbox.disabled = true;
+                            if (checkbox.checked) {
+                                console.log('🔍 DEBUG: Desmarcando checkbox de pestaña inactiva:', checkbox.name, checkbox.value);
+                            }
+                            checkbox.checked = false; // DESMARCAR en lugar de deshabilitar
                         });
                     }
                 });
                 
-                console.log('✅ Checkboxes de pestañas inactivas deshabilitados para prevenir duplicados');
+                console.log('✅ Checkboxes de pestañas inactivas desmarcados');
             }
+            
+            // Verificar que hay destinatarios seleccionados Y mostrar cuáles
+            const usuariosIds = [];
+            const checkboxesAll = document.querySelectorAll('input[type="checkbox"][name^="destinatarios_"]:checked');
+            console.log('🔍 DEBUG: Total checkboxes marcados:', checkboxesAll.length);
+            
+            checkboxesAll.forEach(cb => {
+                console.log('🔍 DEBUG: Checkbox marcado -', 'name:', cb.name, 'value:', cb.value, 'id:', cb.id);
+                if (!cb.id.startsWith('select_all')) {
+                    const value = parseInt(cb.value);
+                    if (!isNaN(value)) {
+                        usuariosIds.push(value);
+                    }
+                }
+            });
+            
+            console.log('🔍 DEBUG: IDs de usuarios a enviar:', usuariosIds);
+            
+            if (usuariosIds.length === 0) {
+                e.preventDefault();
+                alert('Por favor selecciona al menos un destinatario');
+                return false;
+            }
+            
+            console.log(`✅ Enviando formulario con ${usuariosIds.length} destinatarios: `, usuariosIds);
+            
+            // Permitir envío del formulario - La validación anti-duplicados está en el backend
         });
     </script>
     <script>
+        // BLOQUEO DE PESTAÑAS: Solo permitir selección en UNA pestaña a la vez
+        function lockOtherTabs() {
+            // Verificar qué pestaña tiene selecciones (excluyendo "select all" checkboxes)
+            const leaderChecked = Array.from(document.querySelectorAll('.leader-checkbox:checked'))
+                .filter(cb => cb.id !== 'select_all_leaders').length > 0;
+            const groupChecked = Array.from(document.querySelectorAll('.group-checkbox:checked'))
+                .filter(cb => cb.id !== 'select_all_groups').length > 0;
+            const allUsersChecked = Array.from(document.querySelectorAll('.all-user-checkbox:checked'))
+                .filter(cb => cb.id !== 'select_all_users').length > 0;
+            
+            const leadersTab = document.getElementById('leaders-tab');
+            const groupsTab = document.getElementById('groups-tab');
+            const allUsersTab = document.getElementById('all-users-tab');
+            
+            // Si no hay nada seleccionado, habilitar todas las pestañas
+            if (!leaderChecked && !groupChecked && !allUsersChecked) {
+                enableAllTabs();
+                return;
+            }
+            
+            // Deshabilitar las pestañas que NO están en uso
+            if (leaderChecked) {
+                // Líderes seleccionados, habilitar solo Líderes
+                if (leadersTab) {
+                    leadersTab.classList.remove('disabled');
+                    leadersTab.style.pointerEvents = '';
+                    leadersTab.style.opacity = '';
+                }
+                if (groupsTab) {
+                    groupsTab.classList.add('disabled');
+                    groupsTab.style.pointerEvents = 'none';
+                    groupsTab.style.opacity = '0.5';
+                }
+                if (allUsersTab) {
+                    allUsersTab.classList.add('disabled');
+                    allUsersTab.style.pointerEvents = 'none';
+                    allUsersTab.style.opacity = '0.5';
+                }
+            } else if (groupChecked) {
+                // Grupos seleccionados, habilitar solo Grupos
+                if (leadersTab) {
+                    leadersTab.classList.add('disabled');
+                    leadersTab.style.pointerEvents = 'none';
+                    leadersTab.style.opacity = '0.5';
+                }
+                if (groupsTab) {
+                    groupsTab.classList.remove('disabled');
+                    groupsTab.style.pointerEvents = '';
+                    groupsTab.style.opacity = '';
+                }
+                if (allUsersTab) {
+                    allUsersTab.classList.add('disabled');
+                    allUsersTab.style.pointerEvents = 'none';
+                    allUsersTab.style.opacity = '0.5';
+                }
+            } else if (allUsersChecked) {
+                // Todos los usuarios seleccionados, habilitar solo Todos
+                if (leadersTab) {
+                    leadersTab.classList.add('disabled');
+                    leadersTab.style.pointerEvents = 'none';
+                    leadersTab.style.opacity = '0.5';
+                }
+                if (groupsTab) {
+                    groupsTab.classList.add('disabled');
+                    groupsTab.style.pointerEvents = 'none';
+                    groupsTab.style.opacity = '0.5';
+                }
+                if (allUsersTab) {
+                    allUsersTab.classList.remove('disabled');
+                    allUsersTab.style.pointerEvents = '';
+                    allUsersTab.style.opacity = '';
+                }
+            }
+        }
+        
+        function enableAllTabs() {
+            const leadersTab = document.getElementById('leaders-tab');
+            const groupsTab = document.getElementById('groups-tab');
+            const allUsersTab = document.getElementById('all-users-tab');
+            
+            if (leadersTab) {
+                leadersTab.classList.remove('disabled');
+                leadersTab.style.pointerEvents = '';
+                leadersTab.style.opacity = '';
+            }
+            if (groupsTab) {
+                groupsTab.classList.remove('disabled');
+                groupsTab.style.pointerEvents = '';
+                groupsTab.style.opacity = '';
+            }
+            if (allUsersTab) {
+                allUsersTab.classList.remove('disabled');
+                allUsersTab.style.pointerEvents = '';
+                allUsersTab.style.opacity = '';
+            }
+        }
+        
+        // Agregar listeners a todos los checkboxes para detectar cambios
+        document.addEventListener('DOMContentLoaded', function() {
+            // Listeners para líderes
+            document.querySelectorAll('.leader-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', lockOtherTabs);
+            });
+            
+            // Listeners para grupos
+            document.querySelectorAll('.group-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', lockOtherTabs);
+            });
+            
+            // Listeners para todos los usuarios
+            document.querySelectorAll('.all-user-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', lockOtherTabs);
+            });
+            
+            // Listeners para los "seleccionar todos"
+            const selectAllLeaders = document.getElementById('select_all_leaders');
+            if (selectAllLeaders) {
+                selectAllLeaders.addEventListener('change', lockOtherTabs);
+            }
+            
+            const selectAllGroups = document.getElementById('select_all_groups');
+            if (selectAllGroups) {
+                selectAllGroups.addEventListener('change', lockOtherTabs);
+            }
+            
+            const selectAllUsers = document.getElementById('select_all_users');
+            if (selectAllUsers) {
+                selectAllUsers.addEventListener('change', lockOtherTabs);
+            }
+            
+            // NO ejecutar lockOtherTabs al cargar - dejar todas las pestañas habilitadas inicialmente
+            // lockOtherTabs(); // COMENTADO - se ejecutará solo cuando haya cambios
+        });
+        
         // Auto-llenar descripción cuando se selecciona un tipo de actividad
         document.getElementById('tipo_actividad_id').addEventListener('change', function() {
             const typeId = this.value;
@@ -496,13 +666,7 @@
         // Funcionalidad para seleccionar/deseleccionar todos los usuarios (SuperAdmin)
         const selectAllUsersCheckbox = document.getElementById('select_all_users');
         if (selectAllUsersCheckbox) {
-            // Pre-seleccionar todos los usuarios por defecto para actividades de admin
-            // Implementación del requerimiento: "preseleccionar todos los usuarios en 'Nueva Actividad'"
             const userCheckboxes = document.querySelectorAll('.all-user-checkbox');
-            userCheckboxes.forEach(checkbox => {
-                checkbox.checked = true; // Pre-seleccionar todos por defecto
-            });
-            selectAllUsersCheckbox.checked = true; // Marcar el "seleccionar todos" también
             
             selectAllUsersCheckbox.addEventListener('change', function() {
                 userCheckboxes.forEach(checkbox => {

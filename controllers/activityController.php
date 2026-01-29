@@ -7,18 +7,24 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../models/activity.php';
 require_once __DIR__ . '/../models/user.php';
 require_once __DIR__ . '/../models/group.php';
+require_once __DIR__ . '/../config/database.php';
 
 class ActivityController {
     private $auth;
     private $activityModel;
     private $userModel;
     private $groupModel;
+    private $db;
     
     public function __construct() {
         $this->auth = getAuth();
         $this->activityModel = new Activity();
         $this->userModel = new User();
         $this->groupModel = new Group();
+        
+        // Conexión a BD para consultas optimizadas
+        $database = new Database();
+        $this->db = $database->getConnection();
     }
     
     // Mostrar lista de actividades
@@ -236,48 +242,50 @@ class ActivityController {
         if ($currentUser['rol'] === 'SuperAdmin') {
             if (!empty($_POST['destinatarios_lideres'])) {
                 // SuperAdmin selected leaders as recipients
-                // REQUIREMENT IMPLEMENTATION: Include both leaders AND all activists under those leaders
-                // This addresses the requirement: "Al generar una actividad desde el admin, debe enviarse 
-                // tanto a los líderes como a todos los activistas de cada líder (no solo a líderes)."
-                
+                // OPTIMIZACIÓN: Una sola consulta para obtener líderes y sus activistas
                 $selectedLeaders = array_map('intval', $_POST['destinatarios_lideres']);
-                $recipients = $selectedLeaders; // Start with the leaders themselves
+                $placeholders = str_repeat('?,', count($selectedLeaders) - 1) . '?';
                 
-                // Add all activists under the selected leaders
-                // For each selected leader, get their activists and add them to recipients
-                foreach ($selectedLeaders as $liderId) {
-                    $activists = $this->userModel->getActivistsOfLeader($liderId);
-                    foreach ($activists as $activist) {
-                        $recipients[] = intval($activist['id']);
-                    }
-                }
+                // Consulta optimizada: obtener líderes + sus activistas en una sola query
+                $stmt = $this->db->prepare("
+                    SELECT DISTINCT u.id
+                    FROM usuarios u
+                    WHERE (u.id IN ($placeholders) OR u.lider_id IN ($placeholders))
+                    AND u.estado = 'activo'
+                ");
+                $params = array_merge($selectedLeaders, $selectedLeaders);
+                $stmt->execute($params);
+                $results = $stmt->fetchAll(PDO::FETCH_COLUMN);
                 
-                // CRITICAL FIX: Remove duplicates that might come from multiple sources
-                // This prevents activities from being created twice for the same person
-                $recipients = array_values(array_unique($recipients));
+                $recipients = array_values(array_unique(array_map('intval', $results)));
                 error_log("Recipients after dedup (lideres): " . json_encode($recipients));
                 error_log("Total recipients: " . count($recipients));
                 $shouldCreateForRecipients = true;
             } elseif (!empty($_POST['destinatarios_grupos'])) {
                 // SuperAdmin selected groups as recipients
-                // Get all members from the selected groups
+                // OPTIMIZACIÓN: Una sola consulta para obtener todos los miembros de múltiples grupos
                 $selectedGroups = array_map('intval', $_POST['destinatarios_grupos']);
-                $recipients = [];
+                error_log("🔍 DEBUG Grupos seleccionados: " . json_encode($selectedGroups));
                 
-                foreach ($selectedGroups as $groupId) {
-                    $groupMembers = $this->groupModel->getGroupMembers($groupId);
-                    foreach ($groupMembers as $member) {
-                        $recipients[] = intval($member['id']);
-                    }
-                }
+                $placeholders = str_repeat('?,', count($selectedGroups) - 1) . '?';
                 
-                // CRITICAL FIX: Remove duplicates that might come from users in multiple groups
-                // This prevents activities from being created twice for the same person
-                $recipients = array_values(array_unique($recipients));
+                // Consulta optimizada: obtener todos los miembros en una sola query
+                $stmt = $this->db->prepare("
+                    SELECT DISTINCT id
+                    FROM usuarios
+                    WHERE grupo_id IN ($placeholders)
+                    AND estado = 'activo'
+                ");
+                $stmt->execute($selectedGroups);
+                $results = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                
+                $recipients = array_values(array_unique(array_map('intval', $results)));
                 error_log("Recipients after dedup (grupos): " . json_encode($recipients));
                 error_log("Total recipients: " . count($recipients));
                 $shouldCreateForRecipients = true;
             } elseif (!empty($_POST['destinatarios_todos'])) {
+                // SuperAdmin selected individual users from "Todos los usuarios" tab
+                $recipients = array_values(array_unique(array_map('intval', $_POST['destinatarios_todos'])));
                 error_log("Recipients after dedup (todos): " . json_encode($recipients));
                 error_log("Total recipients: " . count($recipients));
                 $shouldCreateForRecipients = true;
