@@ -54,6 +54,18 @@
                             </p>
                         <?php endif; ?>
                     </div>
+                    <?php
+                    // Mostrar aviso de edición para roles con permisos
+                    $canEdit = isset($GLOBALS['currentUser']) && in_array($GLOBALS['currentUser']['rol'], ['SuperAdmin', 'Gestor', 'Líder']);
+                    if ($canEdit):
+                    ?>
+                        <div>
+                            <span class="badge bg-info">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Puedes editar actividades individuales usando el botón "Editar"
+                            </span>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Estadísticas de la tarea -->
@@ -310,10 +322,23 @@
                                                 <?php endif; ?>
 
                                                 <div class="mt-3">
-                                                    <a href="<?= url('activities/detail.php?id=' . $detail['id']) ?>" 
-                                                       class="btn btn-sm btn-outline-primary w-100">
-                                                        <i class="fas fa-eye me-1"></i>Ver Actividad Completa
-                                                    </a>
+                                                    <div class="d-grid gap-2">
+                                                        <a href="<?= url('activities/detail.php?id=' . $detail['id']) ?>" 
+                                                           class="btn btn-sm btn-outline-primary">
+                                                            <i class="fas fa-eye me-1"></i>Ver Completa
+                                                        </a>
+                                                        <?php
+                                                        // Solo SuperAdmin, Gestor y Líder pueden editar
+                                                        if (isset($GLOBALS['currentUser']) && in_array($GLOBALS['currentUser']['rol'], ['SuperAdmin', 'Gestor', 'Líder'])):
+                                                        ?>
+                                                            <a href="<?= url('activities/edit.php?id=' . $detail['id']) ?>" 
+                                                               class="btn btn-sm btn-warning"
+                                                               onclick="return confirm('¿Estás seguro de que deseas editar la actividad de <?= htmlspecialchars($detail['usuario_nombre']) ?>?\n\nNota: Los cambios afectarán solo a esta actividad individual.')"
+                                                               title="Editar actividad de <?= htmlspecialchars($detail['usuario_nombre']) ?>">
+                                                                <i class="fas fa-edit me-1"></i>Editar
+                                                            </a>
+                                                        <?php endif; ?>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

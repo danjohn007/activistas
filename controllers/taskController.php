@@ -112,23 +112,79 @@ class TaskController {
         
         // REQUISITO CRÍTICO: Validar que hay archivos obligatorios (foto/evidencia)
         // Una tarea NO puede completarse sin subir al menos un archivo de evidencia
-        if (!isset($_FILES['archivo']) || !is_array($_FILES['archivo']['name']) || empty($_FILES['archivo']['name'][0])) {
+        
+        // DIAGNÓSTICO 1: Verificar que $_FILES['archivo'] existe
+        if (!isset($_FILES['archivo'])) {
+            error_log("ERROR CARGA: No se encontró \$_FILES['archivo']. POST size: " . strlen(file_get_contents('php://input')));
+            error_log("Configuración PHP - upload_max_filesize: " . ini_get('upload_max_filesize') . ", post_max_size: " . ini_get('post_max_size'));
             redirectWithMessage('tasks/complete.php?id=' . $taskId, 
-                'No se puede completar la tarea: Debe subir al menos una foto/archivo como evidencia (obligatorio)', 'error');
+                'ERROR: No se encontró tu archivo. Verifica que: 1) Seleccionaste un archivo, 2) El archivo no es muy grande (máx 20MB), 3) Tu conexión a internet es estable. Código: NO_FILES', 'error');
+        }
+        
+        // DIAGNÓSTICO 2: Verificar estructura del array
+        if (!is_array($_FILES['archivo']['name'])) {
+            error_log("ERROR CARGA: \$_FILES['archivo']['name'] no es un array");
+            redirectWithMessage('tasks/complete.php?id=' . $taskId, 
+                'ERROR: Formato de archivo incorrecto. Intenta seleccionar el archivo nuevamente. Código: INVALID_FORMAT', 'error');
+        }
+        
+        // DIAGNÓSTICO 3: Verificar que se proporcionó al menos un nombre de archivo
+        if (empty($_FILES['archivo']['name'][0])) {
+            error_log("ERROR CARGA: \$_FILES['archivo']['name'][0] está vacío. Error code: " . ($_FILES['archivo']['error'][0] ?? 'N/A'));
+            
+            // Verificar si es problema de tamaño
+            if (isset($_FILES['archivo']['error'][0]) && $_FILES['archivo']['error'][0] == UPLOAD_ERR_INI_SIZE) {
+                redirectWithMessage('tasks/complete.php?id=' . $taskId, 
+                    'ERROR: El archivo es demasiado grande. Tamaño máximo permitido: ' . ini_get('upload_max_filesize') . '. Código: FILE_TOO_LARGE', 'error');
+            }
+            
+            redirectWithMessage('tasks/complete.php?id=' . $taskId, 
+                'ERROR: No se encontró tu archivo. Asegúrate de seleccionar al menos un archivo antes de enviar el formulario. Código: EMPTY_FILE', 'error');
         }
         
         // Validar que al menos un archivo fue seleccionado correctamente
         $hasValidFile = false;
+        $uploadErrors = [];
+        
         for ($i = 0; $i < count($_FILES['archivo']['name']); $i++) {
             if (!empty($_FILES['archivo']['name'][$i]) && $_FILES['archivo']['error'][$i] !== UPLOAD_ERR_NO_FILE) {
-                $hasValidFile = true;
-                break;
+                // Verificar errores específicos
+                if ($_FILES['archivo']['error'][$i] !== UPLOAD_ERR_OK) {
+                    $errorMsg = 'Archivo ' . ($i+1) . ': ';
+                    switch ($_FILES['archivo']['error'][$i]) {
+                        case UPLOAD_ERR_INI_SIZE:
+                        case UPLOAD_ERR_FORM_SIZE:
+                            $errorMsg .= 'Demasiado grande (máx 20MB)';
+                            break;
+                        case UPLOAD_ERR_PARTIAL:
+                            $errorMsg .= 'Se subió parcialmente (verifica tu conexión)';
+                            break;
+                        case UPLOAD_ERR_NO_TMP_DIR:
+                            $errorMsg .= 'Falta directorio temporal (error del servidor)';
+                            break;
+                        case UPLOAD_ERR_CANT_WRITE:
+                            $errorMsg .= 'No se puede escribir en disco (error del servidor)';
+                            break;
+                        default:
+                            $errorMsg .= 'Error desconocido (código: ' . $_FILES['archivo']['error'][$i] . ')';
+                    }
+                    $uploadErrors[] = $errorMsg;
+                    error_log("ERROR CARGA archivo $i: " . $errorMsg);
+                } else {
+                    $hasValidFile = true;
+                }
             }
         }
         
         if (!$hasValidFile) {
-            redirectWithMessage('tasks/complete.php?id=' . $taskId, 
-                'No se puede completar la tarea: Debe subir al menos una foto/archivo como evidencia (obligatorio)', 'error');
+            $errorMessage = 'No se puede completar la tarea: No se encontró ningún archivo válido.';
+            if (!empty($uploadErrors)) {
+                $errorMessage .= ' Errores: ' . implode(', ', $uploadErrors);
+            } else {
+                $errorMessage .= ' Debe subir al menos una foto/archivo como evidencia (obligatorio). Código: NO_VALID_FILES';
+            }
+            error_log("ERROR CARGA: Sin archivos válidos. Detalles: " . json_encode($_FILES));
+            redirectWithMessage('tasks/complete.php?id=' . $taskId, $errorMessage, 'error');
         }
         
         // Procesar archivos múltiples
@@ -208,28 +264,41 @@ class TaskController {
         $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'audio/mpeg', 'audio/wav'];
         $maxSize = 20 * 1024 * 1024; // 20MB
         
+        // Log para diagnóstico
+        error_log("Procesando archivo: {$file['name']}, tipo: {$file['type']}, tamaño: {$file['size']}");
+        
         if (!in_array($file['type'], $allowedTypes)) {
-            error_log("Tipo de archivo no permitido: " . $file['type']);
+            error_log("RECHAZO: Tipo de archivo no permitido: " . $file['type']);
             return false;
         }
         
         if ($file['size'] > $maxSize) {
-            error_log("Archivo demasiado grande: " . $file['size']);
+            error_log("RECHAZO: Archivo demasiado grande: " . $file['size'] . " bytes (máx: $maxSize)");
             return false;
         }
         
         $uploadDir = UPLOADS_DIR . '/evidencias/';
+        error_log("Directorio de subida: $uploadDir");
+        
         if (!is_dir($uploadDir)) {
+            error_log("Directorio no existe, intentando crear: $uploadDir");
             if (!@mkdir($uploadDir, 0755, true)) {
-                error_log("No se pudo crear el directorio: $uploadDir");
+                error_log("CRÍTICO: No se pudo crear el directorio: $uploadDir. Verifica permisos del servidor.");
                 return false;
             }
+            error_log("Directorio creado exitosamente: $uploadDir");
         }
         
         // Verificar que el directorio sea escribible
         if (!is_writable($uploadDir)) {
-            error_log("El directorio no es escribible: $uploadDir");
-            return false;
+            error_log("CRÍTICO: El directorio no es escribible: $uploadDir. Permisos actuales: " . substr(sprintf('%o', fileperms($uploadDir)), -4));
+            // Intentar cambiar permisos
+            @chmod($uploadDir, 0777);
+            if (!is_writable($uploadDir)) {
+                error_log("CRÍTICO: No se pudieron establecer permisos de escritura en: $uploadDir");
+                return false;
+            }
+            error_log("Permisos corregidos para: $uploadDir");
         }
         
         $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
