@@ -109,31 +109,70 @@ class TaskController {
         }
         
         $evidenceFile = null;
+        $uploadedInput = null;
+        $uploadedFieldName = null;
+
+        if (isset($_FILES['archivo'])) {
+            $uploadedInput = $_FILES['archivo'];
+            $uploadedFieldName = 'archivo';
+        } elseif (isset($_FILES['evidence_files'])) {
+            $uploadedInput = $_FILES['evidence_files'];
+            $uploadedFieldName = 'evidence_files';
+        } elseif (isset($_FILES['evidence_file'])) {
+            $uploadedInput = $_FILES['evidence_file'];
+            $uploadedFieldName = 'evidence_file';
+        }
         
         // REQUISITO CRÍTICO: Validar que hay archivos obligatorios (foto/evidencia)
         // Una tarea NO puede completarse sin subir al menos un archivo de evidencia
         
         // DIAGNÓSTICO 1: Verificar que $_FILES['archivo'] existe
-        if (!isset($_FILES['archivo'])) {
-            error_log("ERROR CARGA: No se encontró \$_FILES['archivo']. POST size: " . strlen(file_get_contents('php://input')));
-            error_log("Configuración PHP - upload_max_filesize: " . ini_get('upload_max_filesize') . ", post_max_size: " . ini_get('post_max_size'));
+        if ($uploadedInput === null) {
+            $contentLength = isset($_SERVER['CONTENT_LENGTH']) ? (int)$_SERVER['CONTENT_LENGTH'] : 0;
+            $postMaxBytes = $this->parseSizeToBytes(ini_get('post_max_size'));
+            $fileUploadsEnabled = filter_var(ini_get('file_uploads'), FILTER_VALIDATE_BOOLEAN);
+
+            error_log("ERROR CARGA: No se encontró campo de archivos en \\$_FILES. Campos recibidos: " . implode(',', array_keys($_FILES ?? [])));
+            error_log("Configuración PHP - file_uploads: " . ini_get('file_uploads') . ", upload_max_filesize: " . ini_get('upload_max_filesize') . ", post_max_size: " . ini_get('post_max_size') . ", content_length: " . $contentLength);
+
+            if (!$fileUploadsEnabled) {
+                redirectWithMessage('tasks/complete.php?id=' . $taskId,
+                    'ERROR DEL SERVIDOR: La carga de archivos está deshabilitada (file_uploads=Off). Contacta al administrador. Código: FILE_UPLOADS_DISABLED', 'error');
+            }
+
+            if ($postMaxBytes > 0 && $contentLength > $postMaxBytes) {
+                redirectWithMessage('tasks/complete.php?id=' . $taskId,
+                    'ERROR: La solicitud excede el límite del servidor (post_max_size=' . ini_get('post_max_size') . '). Reduce tamaño o cantidad de archivos. Código: POST_TOO_LARGE', 'error');
+            }
+
             redirectWithMessage('tasks/complete.php?id=' . $taskId, 
                 'ERROR: No se encontró tu archivo. Verifica que: 1) Seleccionaste un archivo, 2) El archivo no es muy grande (máx 20MB), 3) Tu conexión a internet es estable. Código: NO_FILES', 'error');
         }
+
+        // Normalizar estructura para soportar campo único o múltiple
+        if (!is_array($uploadedInput['name'])) {
+            $uploadedInput = [
+                'name' => [$uploadedInput['name'] ?? ''],
+                'type' => [$uploadedInput['type'] ?? ''],
+                'tmp_name' => [$uploadedInput['tmp_name'] ?? ''],
+                'error' => [$uploadedInput['error'] ?? UPLOAD_ERR_NO_FILE],
+                'size' => [$uploadedInput['size'] ?? 0]
+            ];
+        }
         
         // DIAGNÓSTICO 2: Verificar estructura del array
-        if (!is_array($_FILES['archivo']['name'])) {
-            error_log("ERROR CARGA: \$_FILES['archivo']['name'] no es un array");
+        if (!is_array($uploadedInput['name'])) {
+            error_log(sprintf("ERROR CARGA: campo de archivos inválido (%s): name no es array", $uploadedFieldName));
             redirectWithMessage('tasks/complete.php?id=' . $taskId, 
                 'ERROR: Formato de archivo incorrecto. Intenta seleccionar el archivo nuevamente. Código: INVALID_FORMAT', 'error');
         }
         
         // DIAGNÓSTICO 3: Verificar que se proporcionó al menos un nombre de archivo
-        if (empty($_FILES['archivo']['name'][0])) {
-            error_log("ERROR CARGA: \$_FILES['archivo']['name'][0] está vacío. Error code: " . ($_FILES['archivo']['error'][0] ?? 'N/A'));
+        if (empty($uploadedInput['name'][0])) {
+            error_log(sprintf("ERROR CARGA: campo %s sin nombre de archivo en índice 0. Error code: %s", $uploadedFieldName, ($uploadedInput['error'][0] ?? 'N/A')));
             
             // Verificar si es problema de tamaño
-            if (isset($_FILES['archivo']['error'][0]) && $_FILES['archivo']['error'][0] == UPLOAD_ERR_INI_SIZE) {
+            if (isset($uploadedInput['error'][0]) && $uploadedInput['error'][0] == UPLOAD_ERR_INI_SIZE) {
                 redirectWithMessage('tasks/complete.php?id=' . $taskId, 
                     'ERROR: El archivo es demasiado grande. Tamaño máximo permitido: ' . ini_get('upload_max_filesize') . '. Código: FILE_TOO_LARGE', 'error');
             }
@@ -146,12 +185,12 @@ class TaskController {
         $hasValidFile = false;
         $uploadErrors = [];
         
-        for ($i = 0; $i < count($_FILES['archivo']['name']); $i++) {
-            if (!empty($_FILES['archivo']['name'][$i]) && $_FILES['archivo']['error'][$i] !== UPLOAD_ERR_NO_FILE) {
+        for ($i = 0; $i < count($uploadedInput['name']); $i++) {
+            if (!empty($uploadedInput['name'][$i]) && $uploadedInput['error'][$i] !== UPLOAD_ERR_NO_FILE) {
                 // Verificar errores específicos
-                if ($_FILES['archivo']['error'][$i] !== UPLOAD_ERR_OK) {
+                if ($uploadedInput['error'][$i] !== UPLOAD_ERR_OK) {
                     $errorMsg = 'Archivo ' . ($i+1) . ': ';
-                    switch ($_FILES['archivo']['error'][$i]) {
+                    switch ($uploadedInput['error'][$i]) {
                         case UPLOAD_ERR_INI_SIZE:
                         case UPLOAD_ERR_FORM_SIZE:
                             $errorMsg .= 'Demasiado grande (máx 20MB)';
@@ -166,7 +205,7 @@ class TaskController {
                             $errorMsg .= 'No se puede escribir en disco (error del servidor)';
                             break;
                         default:
-                            $errorMsg .= 'Error desconocido (código: ' . $_FILES['archivo']['error'][$i] . ')';
+                            $errorMsg .= 'Error desconocido (código: ' . $uploadedInput['error'][$i] . ')';
                     }
                     $uploadErrors[] = $errorMsg;
                     error_log("ERROR CARGA archivo $i: " . $errorMsg);
@@ -183,20 +222,20 @@ class TaskController {
             } else {
                 $errorMessage .= ' Debe subir al menos una foto/archivo como evidencia (obligatorio). Código: NO_VALID_FILES';
             }
-            error_log("ERROR CARGA: Sin archivos válidos. Detalles: " . json_encode($_FILES));
+            error_log("ERROR CARGA: Sin archivos válidos. Detalles campo $uploadedFieldName: " . json_encode($uploadedInput));
             redirectWithMessage('tasks/complete.php?id=' . $taskId, $errorMessage, 'error');
         }
         
         // Procesar archivos múltiples
         $uploadedFiles = [];
-        for ($i = 0; $i < count($_FILES['archivo']['name']); $i++) {
-            if ($_FILES['archivo']['error'][$i] === UPLOAD_ERR_OK) {
+        for ($i = 0; $i < count($uploadedInput['name']); $i++) {
+            if ($uploadedInput['error'][$i] === UPLOAD_ERR_OK) {
                 $fileData = [
-                    'name' => $_FILES['archivo']['name'][$i],
-                    'type' => $_FILES['archivo']['type'][$i],
-                    'tmp_name' => $_FILES['archivo']['tmp_name'][$i],
-                    'error' => $_FILES['archivo']['error'][$i],
-                    'size' => $_FILES['archivo']['size'][$i]
+                    'name' => $uploadedInput['name'][$i],
+                    'type' => $uploadedInput['type'][$i],
+                    'tmp_name' => $uploadedInput['tmp_name'][$i],
+                    'error' => $uploadedInput['error'][$i],
+                    'size' => $uploadedInput['size'][$i]
                 ];
                 
                 $evidenceFile = $this->processEvidenceFile($fileData, $taskId);
@@ -206,10 +245,10 @@ class TaskController {
                     redirectWithMessage('tasks/complete.php?id=' . $taskId, 
                         'Error al procesar uno de los archivos de evidencia', 'error');
                 }
-            } else if ($_FILES['archivo']['error'][$i] !== UPLOAD_ERR_NO_FILE) {
+            } else if ($uploadedInput['error'][$i] !== UPLOAD_ERR_NO_FILE) {
                 // Handle upload errors for files that were attempted but failed
                 $errorMessage = 'Error al subir el archivo';
-                switch ($_FILES['archivo']['error'][$i]) {
+                switch ($uploadedInput['error'][$i]) {
                     case UPLOAD_ERR_INI_SIZE:
                     case UPLOAD_ERR_FORM_SIZE:
                         $errorMessage = 'El archivo excede el tamaño máximo permitido';
@@ -256,6 +295,27 @@ class TaskController {
         } else {
             redirectWithMessage('tasks/complete.php?id=' . $taskId, 
                 'Error al completar la tarea', 'error');
+        }
+    }
+
+    private function parseSizeToBytes($size) {
+        $size = trim((string)$size);
+        if ($size === '') {
+            return 0;
+        }
+
+        $unit = strtolower(substr($size, -1));
+        $value = (float)$size;
+
+        switch ($unit) {
+            case 'g':
+                return (int)($value * 1024 * 1024 * 1024);
+            case 'm':
+                return (int)($value * 1024 * 1024);
+            case 'k':
+                return (int)($value * 1024);
+            default:
+                return (int)$value;
         }
     }
     

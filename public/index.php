@@ -6,10 +6,16 @@
 
 // Incluir configuración de la aplicación
 require_once __DIR__ . '/../config/app.php';
+require_once __DIR__ . '/../config/optimization.php';
 
-// Configuración básica
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// Configuración de errores basada en entorno
+if (defined('APP_ENV') && APP_ENV === 'development') {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+} else {
+    error_reporting(0);
+    ini_set('display_errors', 0);
+}
 
 // Incluir archivos necesarios
 require_once __DIR__ . '/../includes/functions.php';

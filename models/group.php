@@ -273,10 +273,20 @@ class Group {
             // Get total count for pagination
             $countStmt = $this->db->query("SELECT COUNT(*) as total FROM grupos WHERE activo = 1");
             $totalGroups = $countStmt->fetch()['total'];
+
+            if (empty($groups)) {
+                return [
+                    'groups' => [],
+                    'total_groups' => (int)$totalGroups,
+                    'current_page' => $page,
+                    'per_page' => $perPage,
+                    'total_pages' => $perPage > 0 ? ceil($totalGroups / $perPage) : 0
+                ];
+            }
             
             // Optimización: Obtener todos los usuarios de una vez con sus estadísticas
-            $groupIds = array_column($groups, 'id');
-            $groupIdsStr = implode(',', $groupIds);
+            $groupIds = array_map('intval', array_column($groups, 'id'));
+            $groupPlaceholders = implode(',', array_fill(0, count($groupIds), '?'));
             
             // Si hay filtros de fecha, usamos query más compleja pero filtrada
             // Si no hay filtros, usamos query simple y rápida
@@ -308,13 +318,13 @@ class Group {
                         WHERE 1=1 $dateFilter
                         GROUP BY usuario_id
                     ) stats ON u.id = stats.usuario_id
-                    WHERE u.grupo_id IN ($groupIdsStr) 
+                    WHERE u.grupo_id IN ($groupPlaceholders) 
                         AND u.estado = 'activo' 
                         AND u.id != 1
                     ORDER BY u.grupo_id, porcentaje_cumplimiento DESC, u.ranking_puntos DESC
                 ";
                 $allUsersStmt = $this->db->prepare($allUsersQuery);
-                $allUsersStmt->execute($params);
+                $allUsersStmt->execute(array_merge($params, $groupIds));
             } else {
                 // Query simple sin filtros de fecha (mucho más rápida)
                 $allUsersQuery = "
@@ -347,12 +357,13 @@ class Group {
                         WHERE tarea_pendiente = 1
                         GROUP BY usuario_id
                     ) pending ON u.id = pending.usuario_id
-                    WHERE u.grupo_id IN ($groupIdsStr) 
+                    WHERE u.grupo_id IN ($groupPlaceholders) 
                         AND u.estado = 'activo' 
                         AND u.id != 1
                     ORDER BY u.grupo_id, porcentaje_cumplimiento DESC, u.ranking_puntos DESC
                 ";
-                $allUsersStmt = $this->db->query($allUsersQuery);
+                $allUsersStmt = $this->db->prepare($allUsersQuery);
+                $allUsersStmt->execute($groupIds);
             }
             
             $allUsers = $allUsersStmt->fetchAll();

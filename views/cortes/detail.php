@@ -52,7 +52,10 @@ if (!defined('INCLUDED')) {
                         </p>
                     </div>
                     <div class="btn-toolbar mb-2 mb-md-0">
-                        <a href="index.php" class="btn btn-sm btn-secondary">
+                        <a href="export.php?id=<?php echo $corte['id']; ?>" class="btn btn-sm btn-outline-success me-2">
+                            <i class="fas fa-file-csv me-2"></i>Exportar CSV
+                        </a>
+                        <a href="<?php echo ($currentUser['rol'] === 'Líder') ? 'mis_cortes.php' : 'index.php'; ?>" class="btn btn-sm btn-secondary">
                             <i class="fas fa-arrow-left me-2"></i>Volver
                         </a>
                     </div>

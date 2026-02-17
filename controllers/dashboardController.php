@@ -17,8 +17,7 @@ class DashboardController {
         $this->userModel = new User();
         $this->activityModel = new Activity();
     }
-    
-    // Dashboard SuperAdmin
+
     public function adminDashboard() {
         try {
             $this->auth->requireRole(['SuperAdmin']);
@@ -471,10 +470,12 @@ class DashboardController {
                     SUM(CASE WHEN estado = 'en_progreso' THEN 1 ELSE 0 END) as en_progreso_mes,
                     SUM(CASE WHEN estado = 'cancelada' THEN 1 ELSE 0 END) as canceladas_mes
                 FROM actividades
-                WHERE YEAR(fecha_actividad) = YEAR(NOW()) 
-                  AND MONTH(fecha_actividad) = MONTH(NOW())
+                WHERE fecha_actividad >= ?
+                  AND fecha_actividad < ?
             ");
-            $stmt->execute();
+            $startOfMonth = date('Y-m-01');
+            $startOfNextMonth = date('Y-m-01', strtotime('+1 month'));
+            $stmt->execute([$startOfMonth, $startOfNextMonth]);
             $result = $stmt->fetch();
             
             return $result ?: [
@@ -629,7 +630,7 @@ class DashboardController {
                     SUM(CASE WHEN a.estado = 'programada' THEN 1 ELSE 0 END) as programadas
                 FROM actividades a
                 JOIN usuarios u ON a.usuario_id = u.id
-                WHERE u.lider_id = ? OR a.usuario_id = ?
+                WHERE u.lider_id = ? OR u.id = ?
             ");
             $stmt->execute([$liderId, $liderId]);
             $teamStats = $stmt->fetch() ?: [];

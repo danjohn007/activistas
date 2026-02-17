@@ -27,6 +27,7 @@ class Auth {
                 $_SESSION['user_email'] = $user['email'];
                 $_SESSION['user_role'] = $user['rol'];
                 $_SESSION['user_name'] = $user['nombre_completo'];
+                $_SESSION['user_municipio'] = $user['municipio'] ?? null;
                 
                 // Actualizar último acceso
                 $this->updateLastAccess($user['id']);
@@ -112,8 +113,8 @@ class Auth {
             
             // Insertar usuario
             $stmt = $this->db->prepare("
-                INSERT INTO usuarios (nombre_completo, telefono, email, password_hash, direccion, rol, lider_id, token_verificacion, foto_perfil)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 INSERT INTO usuarios (nombre_completo, telefono, email, password_hash, direccion, municipio, rol, lider_id, token_verificacion, foto_perfil)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $stmt->execute([
@@ -122,6 +123,7 @@ class Auth {
                 $userData['email'],
                 $passwordHash,
                 $userData['direccion'],
+                $userData['municipio'],
                 $userData['rol'],
                 $userData['lider_id'] ?? null,
                 $verificationToken,
@@ -158,6 +160,12 @@ class Auth {
         
         if (empty($data['password']) || !isStrongPassword($data['password'])) {
             $errors[] = 'La contraseña debe tener al menos 6 caracteres';
+        }
+
+        if (empty($data['municipio'])) {
+            $errors[] = 'El municipio es obligatorio';
+        } elseif (!isValidMunicipio($data['municipio'])) {
+            $errors[] = 'Municipio no válido';
         }
         
         if (!in_array($data['rol'], ['Líder', 'Activista'])) {

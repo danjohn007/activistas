@@ -227,6 +227,13 @@ function renderSidebar($currentPage = '') {
     echo '<h4><i class="' . $config['icon'] . ' me-2"></i>' . $config['title'] . '</h4>';
     echo '<small>' . htmlspecialchars($userName) . '</small>';
     echo '</div>';
+
+    if (in_array($userRole, ['Líder', 'Activista']) && empty($_SESSION['user_municipio'])) {
+        echo '<div class="alert alert-warning mx-2 py-2 mb-3" role="alert">';
+        echo '<strong>IMPORTANTE:</strong> Debes registrar tu municipio.';
+        echo '<br><a href="' . url('profile.php') . '" class="alert-link">Completar ahora</a>';
+        echo '</div>';
+    }
     
     echo '<ul class="nav flex-column px-2" style="padding-bottom: 100px !important;">';
     

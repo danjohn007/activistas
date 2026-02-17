@@ -81,6 +81,7 @@ class UserController {
             'email' => cleanInput($_POST['email'] ?? ''),
             'password' => $_POST['password'] ?? '',
             'direccion' => cleanInput($_POST['direccion'] ?? ''),
+            'municipio' => cleanInput($_POST['municipio'] ?? ''),
             'rol' => cleanInput($_POST['rol'] ?? ''),
             'lider_id' => !empty($_POST['lider_id']) ? intval($_POST['lider_id']) : null
         ];
@@ -123,6 +124,9 @@ class UserController {
         if (!empty($_GET['estado'])) {
             $filters['estado'] = cleanInput($_GET['estado']);
         }
+        if (!empty($_GET['municipio'])) {
+            $filters['municipio'] = cleanInput($_GET['municipio']);
+        }
         
         // Pagination
         $page = max(1, intval($_GET['page'] ?? 1));
@@ -164,6 +168,10 @@ class UserController {
         ];
         
         $stats = $this->userModel->getUserStats();
+        $municipioStats = [];
+        if (($currentUser['rol'] ?? '') === 'SuperAdmin') {
+            $municipioStats = $this->userModel->getMunicipioStats();
+        }
         
         include __DIR__ . '/../views/admin/users.php';
     }
@@ -282,6 +290,7 @@ class UserController {
             'nombre_completo' => cleanInput($_POST['nombre_completo'] ?? ''),
             'telefono' => cleanInput($_POST['telefono'] ?? ''),
             'direccion' => cleanInput($_POST['direccion'] ?? ''),
+            'municipio' => cleanInput($_POST['municipio'] ?? ''),
             'facebook' => cleanInput($_POST['facebook'] ?? ''),
             'instagram' => cleanInput($_POST['instagram'] ?? ''),
             'tiktok' => cleanInput($_POST['tiktok'] ?? ''),
@@ -318,6 +327,11 @@ class UserController {
                 redirectWithMessage("admin/edit_user.php?id=$userId", "URL de $field no válida", 'error');
                 return;
             }
+        }
+
+        if (!empty($updateData['municipio']) && !isValidMunicipio($updateData['municipio'])) {
+            redirectWithMessage("admin/edit_user.php?id=$userId", 'Municipio no válido', 'error');
+            return;
         }
         
         if (!empty($_POST['lider_id'])) {
@@ -445,6 +459,7 @@ class UserController {
             'nombre_completo' => cleanInput($_POST['nombre_completo'] ?? ''),
             'telefono' => cleanInput($_POST['telefono'] ?? ''),
             'direccion' => cleanInput($_POST['direccion'] ?? ''),
+            'municipio' => cleanInput($_POST['municipio'] ?? ''),
             'facebook' => cleanInput($_POST['facebook'] ?? ''),
             'instagram' => cleanInput($_POST['instagram'] ?? ''),
             'tiktok' => cleanInput($_POST['tiktok'] ?? ''),
@@ -460,6 +475,21 @@ class UserController {
                 return;
             }
         }
+
+        $currentRole = $_SESSION['user_role'] ?? '';
+        if (in_array($currentRole, ['Líder', 'Activista'])) {
+            if (empty($updateData['municipio'])) {
+                redirectWithMessage('profile.php', 'El municipio es obligatorio', 'error');
+                return;
+            }
+            if (!isValidMunicipio($updateData['municipio'])) {
+                redirectWithMessage('profile.php', 'Municipio no válido', 'error');
+                return;
+            }
+        } elseif (!empty($updateData['municipio']) && !isValidMunicipio($updateData['municipio'])) {
+            redirectWithMessage('profile.php', 'Municipio no válido', 'error');
+            return;
+        }
         
         // Procesar nueva foto de perfil si se subió
         if (isset($_FILES['foto_perfil']) && $_FILES['foto_perfil']['error'] === UPLOAD_ERR_OK) {
@@ -474,6 +504,7 @@ class UserController {
         if ($result) {
             // Actualizar nombre en sesión
             $_SESSION['user_name'] = $updateData['nombre_completo'];
+            $_SESSION['user_municipio'] = $updateData['municipio'] ?? null;
             redirectWithMessage('profile.php', 'Perfil actualizado exitosamente', 'success');
         } else {
             redirectWithMessage('profile.php', 'Error al actualizar perfil', 'error');

@@ -52,6 +52,12 @@
                                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                                 </div>
                             <?php endif; ?>
+
+                            <?php if (isset($_GET['debug_view'])): ?>
+                                <div class="alert alert-warning">
+                                    Vista: views/register.php | Municipios: <?= count(getMunicipiosQueretaro()) ?>
+                                </div>
+                            <?php endif; ?>
                             
                             <?php if (isset($_SESSION['form_errors'])): ?>
                                 <div class="alert alert-danger">
@@ -109,6 +115,18 @@
                                 <div class="mb-3">
                                     <label for="direccion" class="form-label">Dirección</label>
                                     <textarea class="form-control" id="direccion" name="direccion" rows="2"><?= htmlspecialchars($_SESSION['form_data']['direccion'] ?? '') ?></textarea>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="municipio" class="form-label">Municipio *</label>
+                                    <select class="form-select" id="municipio" name="municipio" required>
+                                        <option value="">Seleccione un municipio</option>
+                                        <?php foreach (getMunicipiosQueretaro() as $municipio): ?>
+                                            <option value="<?= htmlspecialchars($municipio) ?>" <?= ($_SESSION['form_data']['municipio'] ?? '') === $municipio ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($municipio) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
                                 </div>
                                 
                                 <div class="mb-3">

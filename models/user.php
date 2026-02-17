@@ -41,6 +41,15 @@ class User {
                 $sql .= " AND u.estado = ?";
                 $params[] = $filters['estado'];
             }
+
+            if (!empty($filters['municipio'])) {
+                if ($filters['municipio'] === 'Sin especificar') {
+                    $sql .= " AND (u.municipio IS NULL OR u.municipio = '')";
+                } else {
+                    $sql .= " AND u.municipio = ?";
+                    $params[] = $filters['municipio'];
+                }
+            }
             
             if (!empty($filters['lider_id'])) {
                 $sql .= " AND u.lider_id = ?";
@@ -296,6 +305,11 @@ class User {
                 $fields[] = "direccion = ?";
                 $params[] = $data['direccion'];
             }
+
+            if (isset($data['municipio'])) {
+                $fields[] = "municipio = ?";
+                $params[] = $data['municipio'];
+            }
             
             if (isset($data['foto_perfil'])) {
                 $fields[] = "foto_perfil = ?";
@@ -427,6 +441,33 @@ class User {
             return [];
         }
     }
+
+    // Obtener estadísticas por municipio para SuperAdmin
+    public function getMunicipioStats() {
+        try {
+            if (!$this->db) {
+                throw new Exception("No hay conexión a la base de datos disponible");
+            }
+
+            $stmt = $this->db->prepare(" 
+                SELECT 
+                    COALESCE(NULLIF(TRIM(municipio), ''), 'Sin especificar') as municipio,
+                    COUNT(*) as total_usuarios,
+                    SUM(CASE WHEN rol = 'Líder' THEN 1 ELSE 0 END) as total_lideres,
+                    SUM(CASE WHEN rol = 'Activista' THEN 1 ELSE 0 END) as total_activistas,
+                    SUM(CASE WHEN estado = 'activo' THEN 1 ELSE 0 END) as total_activos
+                FROM usuarios
+                GROUP BY COALESCE(NULLIF(TRIM(municipio), ''), 'Sin especificar')
+                ORDER BY total_usuarios DESC, municipio ASC
+            ");
+            $stmt->execute();
+
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            logActivity("Error al obtener estadísticas por municipio: " . $e->getMessage(), 'ERROR');
+            return [];
+        }
+    }
     
     // Obtener activistas de un líder
     public function getActivistsOfLeader($liderId) {
@@ -461,6 +502,15 @@ class User {
                 $sql .= " AND u.estado = ?";
                 $params[] = $filters['estado'];
             }
+
+            if (!empty($filters['municipio'])) {
+                if ($filters['municipio'] === 'Sin especificar') {
+                    $sql .= " AND (u.municipio IS NULL OR u.municipio = '')";
+                } else {
+                    $sql .= " AND u.municipio = ?";
+                    $params[] = $filters['municipio'];
+                }
+            }
             
             $sql .= " ORDER BY u.nombre_completo";
             
@@ -492,6 +542,15 @@ class User {
             if (!empty($filters['estado'])) {
                 $sql .= " AND u.estado = ?";
                 $params[] = $filters['estado'];
+            }
+
+            if (!empty($filters['municipio'])) {
+                if ($filters['municipio'] === 'Sin especificar') {
+                    $sql .= " AND (u.municipio IS NULL OR u.municipio = '')";
+                } else {
+                    $sql .= " AND u.municipio = ?";
+                    $params[] = $filters['municipio'];
+                }
             }
             
             $sql .= " ORDER BY u.nombre_completo";
@@ -589,6 +648,15 @@ class User {
                 $sql .= " AND u.estado = ?";
                 $params[] = $filters['estado'];
             }
+
+            if (!empty($filters['municipio'])) {
+                if ($filters['municipio'] === 'Sin especificar') {
+                    $sql .= " AND (u.municipio IS NULL OR u.municipio = '')";
+                } else {
+                    $sql .= " AND u.municipio = ?";
+                    $params[] = $filters['municipio'];
+                }
+            }
             
             $sql .= " ORDER BY u.fecha_registro DESC";
             
@@ -663,6 +731,15 @@ class User {
                 if (!empty($filters['estado'])) {
                     $subquery .= " AND u2.estado = ?";
                     $subParams[] = $filters['estado'];
+                }
+
+                if (!empty($filters['municipio'])) {
+                    if ($filters['municipio'] === 'Sin especificar') {
+                        $subquery .= " AND (u2.municipio IS NULL OR u2.municipio = '')";
+                    } else {
+                        $subquery .= " AND u2.municipio = ?";
+                        $subParams[] = $filters['municipio'];
+                    }
                 }
                 
                 $subquery .= " GROUP BY u2.id";

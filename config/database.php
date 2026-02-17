@@ -6,6 +6,7 @@
 
 class Database {
     private static $instance = null;
+    private static $sharedConn = null;
     private $host = 'localhost';
     private $db_name = 'ejercito_activistas';
     private $username = 'ejercito_activistas';
@@ -21,6 +22,11 @@ class Database {
     }
 
     public function getConnection() {
+        if (self::$sharedConn instanceof PDO) {
+            $this->conn = self::$sharedConn;
+            return $this->conn;
+        }
+        
         $this->conn = null;
         
         try {
@@ -37,13 +43,11 @@ class Database {
             ];
             
             $this->conn = new PDO($dsn, $this->username, $this->password, $options);
+            self::$sharedConn = $this->conn;
             
             // Verificar timezone (debug)
             // $tz = $this->conn->query("SELECT @@session.time_zone")->fetchColumn();
             // error_log("MySQL timezone: $tz");
-            
-            // Test the connection
-            $this->conn->query("SELECT 1");
             
         } catch(PDOException $exception) {
             // Log the error but don't expose it to the user interface

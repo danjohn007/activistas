@@ -102,6 +102,18 @@
                     </div>
                 <?php endif; ?>
 
+                <?php if (isset($_GET['debug_view'])): ?>
+                    <div class="alert alert-warning" role="alert">
+                        Vista: views/profile.php | Municipios: <?= count(getMunicipiosQueretaro()) ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (in_array(($user['rol'] ?? ''), ['Líder', 'Activista']) && empty($user['municipio'])): ?>
+                    <div class="alert alert-warning" role="alert">
+                        <strong>Importante:</strong> Debes registrar tu municipio para continuar con tu perfil.
+                    </div>
+                <?php endif; ?>
+
                 <div class="row">
                     <div class="col-md-8">
                         <?php if (isset($isOwnProfile) && $isOwnProfile): ?>
@@ -151,6 +163,18 @@
                                     <div class="mb-3">
                                         <label for="direccion" class="form-label">Dirección</label>
                                         <textarea class="form-control" id="direccion" name="direccion" rows="3"><?= htmlspecialchars($user['direccion'] ?? '') ?></textarea>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="municipio" class="form-label">Municipio <?= in_array(($user['rol'] ?? ''), ['Líder', 'Activista']) ? '*' : '' ?></label>
+                                        <select class="form-select" id="municipio" name="municipio" <?= in_array(($user['rol'] ?? ''), ['Líder', 'Activista']) ? 'required' : '' ?>>
+                                            <option value="">Seleccione un municipio</option>
+                                            <?php foreach (getMunicipiosQueretaro() as $municipio): ?>
+                                                <option value="<?= htmlspecialchars($municipio) ?>" <?= ($user['municipio'] ?? '') === $municipio ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars($municipio) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
                                     
                                     <!-- Redes Sociales -->
@@ -277,6 +301,11 @@
                                     <label class="form-label fw-bold">Dirección</label>
                                     <p class="form-control-plaintext"><?= htmlspecialchars($user['direccion'] ?? 'No especificada') ?></p>
                                 </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Municipio</label>
+                                    <p class="form-control-plaintext"><?= htmlspecialchars($user['municipio'] ?? 'No especificado') ?></p>
+                                </div>
                                 
                                 <!-- Redes Sociales -->
                                 <?php if (!empty($user['facebook']) || !empty($user['instagram']) || !empty($user['tiktok']) || !empty($user['x'])): ?>
@@ -370,6 +399,7 @@
                                 <hr>
                                 <div class="text-start">
                                     <p><strong>Email:</strong><br><?= htmlspecialchars($user['email'] ?? '') ?></p>
+                                    <p><strong>Municipio:</strong><br><?= htmlspecialchars($user['municipio'] ?? 'No especificado') ?></p>
                                     <p><strong>Estado:</strong><br>
                                         <span class="badge bg-<?= ($user['estado'] ?? '') === 'activo' ? 'success' : 'warning' ?>">
                                             <?= ucfirst($user['estado'] ?? 'Pendiente') ?>

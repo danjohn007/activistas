@@ -192,15 +192,28 @@ class CorteController {
         $this->auth->requireAuth();
         $currentUser = $this->auth->getCurrentUser();
         
-        // Solo SuperAdmin y Gestor pueden crear cortes
-        if (!in_array($currentUser['rol'], ['SuperAdmin', 'Gestor'])) {
+        // SuperAdmin, Gestor y Líder pueden crear cortes
+        if (!in_array($currentUser['rol'], ['SuperAdmin', 'Gestor', 'Líder'])) {
             redirectWithMessage('cortes/', 'No tienes permisos para crear cortes', 'error');
         }
         
         // Cargar grupos
         require_once __DIR__ . '/../models/group.php';
         $groupModel = new Group();
-        $groups = $groupModel->getAllGroups();
+        $groups = [];
+        if ($currentUser['rol'] === 'Líder') {
+            if (!empty($currentUser['grupo_id'])) {
+                $allGroups = $groupModel->getAllGroups();
+                foreach ($allGroups as $group) {
+                    if ((int)$group['id'] === (int)$currentUser['grupo_id']) {
+                        $groups[] = $group;
+                        break;
+                    }
+                }
+            }
+        } else {
+            $groups = $groupModel->getAllGroups();
+        }
         
         // Cargar tipos de actividades
         require_once __DIR__ . '/../models/activityType.php';
@@ -210,7 +223,11 @@ class CorteController {
         // Cargar activistas
         require_once __DIR__ . '/../models/user.php';
         $userModel = new User();
-        $activistas = $userModel->getAllUsers(['rol' => 'Activista', 'estado' => 'activo']);
+        $activistaFilters = ['rol' => 'Activista', 'estado' => 'activo'];
+        if ($currentUser['rol'] === 'Líder') {
+            $activistaFilters['lider_id'] = $currentUser['id'];
+        }
+        $activistas = $userModel->getAllUsers($activistaFilters);
         
         include __DIR__ . '/../views/cortes/create.php';
     }
@@ -242,8 +259,8 @@ class CorteController {
         
         $currentUser = $this->auth->getCurrentUser();
         
-        // Solo SuperAdmin y Gestor
-        if (!in_array($currentUser['rol'], ['SuperAdmin', 'Gestor'])) {
+        // Solo SuperAdmin, Gestor y Líder
+        if (!in_array($currentUser['rol'], ['SuperAdmin', 'Gestor', 'Líder'])) {
             redirectWithMessage('cortes/', 'No tienes permisos para crear cortes', 'error');
         }
         
@@ -255,15 +272,21 @@ class CorteController {
             redirectWithMessage('cortes/create.php', 'Por favor corrige los errores', 'error');
         }
         
+        $isLeader = ($currentUser['rol'] === 'Líder');
+
         $data = [
             'nombre' => cleanInput($_POST['nombre']),
             'descripcion' => cleanInput($_POST['descripcion'] ?? ''),
             'fecha_inicio' => cleanInput($_POST['fecha_inicio']),
             'fecha_fin' => cleanInput($_POST['fecha_fin']),
             'creado_por' => $currentUser['id'],
-            'grupo_id' => !empty($_POST['grupo_id']) ? intval($_POST['grupo_id']) : null,
+            'grupo_id' => $isLeader
+                ? (!empty($currentUser['grupo_id']) ? intval($currentUser['grupo_id']) : null)
+                : (!empty($_POST['grupo_id']) ? intval($_POST['grupo_id']) : null),
             'actividad_id' => !empty($_POST['actividad_id']) ? intval($_POST['actividad_id']) : null,
-            'usuario_id' => !empty($_POST['usuario_id']) ? intval($_POST['usuario_id']) : null
+            'usuario_id' => $isLeader
+                ? intval($currentUser['id'])
+                : (!empty($_POST['usuario_id']) ? intval($_POST['usuario_id']) : null)
         ];
         
         $corteId = $this->corteModel->crearCorte($data);
@@ -288,8 +311,8 @@ class CorteController {
         $this->auth->requireAuth();
         $currentUser = $this->auth->getCurrentUser();
         
-        // Solo SuperAdmin y Gestor
-        if (!in_array($currentUser['rol'], ['SuperAdmin', 'Gestor'])) {
+        // SuperAdmin, Gestor y Líder
+        if (!in_array($currentUser['rol'], ['SuperAdmin', 'Gestor', 'Líder'])) {
             redirectWithMessage('cortes/', 'No tienes permisos para ver cortes', 'error');
         }
         
@@ -302,6 +325,11 @@ class CorteController {
         if (!$corte) {
             redirectWithMessage('cortes/', 'Corte no encontrado', 'error');
         }
+
+        // Líder solo puede ver detalles de sus propios cortes
+        if ($currentUser['rol'] === 'Líder' && (int)($corte['usuario_id'] ?? 0) !== (int)$currentUser['id']) {
+            redirectWithMessage('cortes/mis_cortes.php', 'No tienes permisos para ver este corte', 'error');
+        }
         
         // Filtro de búsqueda
         $filters = [];
@@ -312,6 +340,70 @@ class CorteController {
         $detalle = $this->corteModel->getDetalleCorte($corteId, $filters);
         
         include __DIR__ . '/../views/cortes/detail.php';
+    }
+
+    /**
+     * Exportar detalle de corte a CSV
+     */
+    public function exportCorte() {
+        $this->auth->requireAuth();
+        $currentUser = $this->auth->getCurrentUser();
+
+        if (!in_array($currentUser['rol'], ['SuperAdmin', 'Gestor', 'Líder'])) {
+            redirectWithMessage('cortes/', 'No tienes permisos para exportar cortes', 'error');
+        }
+
+        $corteId = intval($_GET['id'] ?? 0);
+        if ($corteId <= 0) {
+            redirectWithMessage('cortes/', 'Corte no encontrado', 'error');
+        }
+
+        $corte = $this->corteModel->getCorteById($corteId);
+        if (!$corte) {
+            redirectWithMessage('cortes/', 'Corte no encontrado', 'error');
+        }
+
+        if ($currentUser['rol'] === 'Líder' && (int)($corte['usuario_id'] ?? 0) !== (int)$currentUser['id']) {
+            redirectWithMessage('cortes/mis_cortes.php', 'No tienes permisos para exportar este corte', 'error');
+        }
+
+        $detalle = $this->corteModel->getDetalleCorte($corteId, []);
+
+        $filename = 'corte_' . $corteId . '_' . date('Y-m-d_H-i-s') . '.csv';
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=' . $filename);
+
+        $output = fopen('php://output', 'w');
+        fwrite($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+        fputcsv($output, [
+            'Corte',
+            'Fecha Inicio',
+            'Fecha Fin',
+            'Ranking',
+            'Activista',
+            'Tareas Asignadas',
+            'Tareas Entregadas',
+            'Cumplimiento (%)',
+            'Fecha Cálculo'
+        ]);
+
+        foreach ($detalle as $row) {
+            fputcsv($output, [
+                $corte['nombre'],
+                $corte['fecha_inicio'],
+                $corte['fecha_fin'],
+                $row['ranking_posicion'] ?? '',
+                $row['nombre_completo'] ?? '',
+                $row['tareas_asignadas'] ?? 0,
+                $row['tareas_entregadas'] ?? 0,
+                $row['porcentaje_cumplimiento'] ?? 0,
+                $row['fecha_calculo'] ?? ''
+            ]);
+        }
+
+        fclose($output);
+        exit();
     }
     
     /**

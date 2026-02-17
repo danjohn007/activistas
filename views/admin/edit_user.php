@@ -162,6 +162,18 @@
                                         <label for="direccion" class="form-label">Dirección</label>
                                         <textarea class="form-control" id="direccion" name="direccion" rows="3"><?= htmlspecialchars($user['direccion']) ?></textarea>
                                     </div>
+
+                                    <div class="mb-3">
+                                        <label for="municipio" class="form-label">Municipio</label>
+                                        <select class="form-select" id="municipio" name="municipio">
+                                            <option value="">Seleccione un municipio</option>
+                                            <?php foreach (getMunicipiosQueretaro() as $municipio): ?>
+                                                <option value="<?= htmlspecialchars($municipio) ?>" <?= ($user['municipio'] ?? '') === $municipio ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars($municipio) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
                                     
                                     <!-- Redes Sociales -->
                                     <div class="card mt-4 mb-3">

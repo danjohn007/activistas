@@ -206,8 +206,9 @@ class Activity {
                     
                     // Filtro de fecha de publicación para Activistas (solo mostrar tareas ya publicadas)
                     // CRÍTICO: Combinar fecha+hora en un DATETIME para evitar desincronización de timezones
-                    $sql .= " AND (a.fecha_publicacion IS NULL 
-                                OR CONCAT(DATE(a.fecha_publicacion), ' ', COALESCE(a.hora_publicacion, '00:00:00')) <= NOW())";
+                    $sql .= " AND (a.fecha_publicacion IS NULL
+                                OR a.fecha_publicacion < CURDATE()
+                                OR (a.fecha_publicacion = CURDATE() AND COALESCE(a.hora_publicacion, '00:00:00') <= CURTIME()))";
                 }
             }
             
@@ -306,13 +307,9 @@ class Activity {
                 throw new Exception("No hay conexión a la base de datos disponible");
             }
             
-            $sql = "SELECT COUNT(DISTINCT a.id) as total
+                $sql = "SELECT COUNT(*) as total
                     FROM actividades a 
-                    JOIN usuarios u ON a.usuario_id = u.id 
-                    JOIN tipos_actividades ta ON a.tipo_actividad_id = ta.id 
-                    LEFT JOIN usuarios s ON a.solicitante_id = s.id
-                    LEFT JOIN usuarios p ON a.propuesto_por = p.id
-                    LEFT JOIN usuarios auth ON a.autorizado_por = auth.id
+                    JOIN usuarios u ON a.usuario_id = u.id
                     WHERE 1=1";
             $params = [];
             
@@ -336,8 +333,9 @@ class Activity {
                     
                     // Filtro de fecha de publicación para Activistas (solo mostrar tareas ya publicadas)
                     // CRÍTICO: Combinar fecha+hora en un DATETIME para evitar desincronización de timezones
-                    $sql .= " AND (a.fecha_publicacion IS NULL 
-                                OR CONCAT(DATE(a.fecha_publicacion), ' ', COALESCE(a.hora_publicacion, '00:00:00')) <= NOW())";
+                    $sql .= " AND (a.fecha_publicacion IS NULL
+                                OR a.fecha_publicacion < CURDATE()
+                                OR (a.fecha_publicacion = CURDATE() AND COALESCE(a.hora_publicacion, '00:00:00') <= CURTIME()))";
                 }
             }
             
@@ -444,8 +442,9 @@ class Activity {
                 $sql .= " AND (a.fecha_cierre IS NULL 
                             OR a.fecha_cierre > CURDATE()
                             OR (a.fecha_cierre = CURDATE() AND (a.hora_cierre IS NULL OR a.hora_cierre > CURTIME())))";
-                $sql .= " AND (a.fecha_publicacion IS NULL 
-                            OR CONCAT(DATE(a.fecha_publicacion), ' ', COALESCE(a.hora_publicacion, '00:00:00')) <= NOW())";
+                $sql .= " AND (a.fecha_publicacion IS NULL
+                            OR a.fecha_publicacion < CURDATE()
+                            OR (a.fecha_publicacion = CURDATE() AND COALESCE(a.hora_publicacion, '00:00:00') <= CURTIME()))";
             }
             
             if (!empty($filters['lider_id'])) {

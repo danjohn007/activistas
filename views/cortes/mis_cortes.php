@@ -52,6 +52,11 @@ if (!defined('INCLUDED')) {
                         <h2><i class="fas fa-camera me-2"></i>Mis Cortes Realizados</h2>
                         <p class="text-muted mb-0">Cortes históricos de mi equipo</p>
                     </div>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <a href="create.php" class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus me-2"></i>Crear Corte por Fecha
+                        </a>
+                    </div>
                 </div>
 
                 <?php if (isset($_SESSION['message'])): ?>
@@ -111,7 +116,7 @@ if (!defined('INCLUDED')) {
                     <div class="row">
                         <?php foreach ($cortes as $corte): ?>
                         <div class="col-md-6 col-lg-4 mb-4">
-                            <div class="card corte-card h-100" onclick="window.location.href='<?= url('reports/activists.php?corte_id=' . $corte['id']) ?>'">
+                            <div class="card corte-card h-100" onclick="window.location.href='detail.php?id=<?= intval($corte['id']) ?>'">
                                 <div class="card-header bg-primary text-white">
                                     <h6 class="mb-0">
                                         <i class="fas fa-camera me-2"></i>
@@ -168,7 +173,7 @@ if (!defined('INCLUDED')) {
                                 </div>
                                 <div class="card-footer bg-transparent">
                                     <button class="btn btn-primary btn-sm w-100">
-                                        <i class="fas fa-eye me-2"></i>Ver Reporte del Corte
+                                        <i class="fas fa-eye me-2"></i>Ver Detalle y Exportar
                                     </button>
                                 </div>
                             </div>

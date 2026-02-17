@@ -88,7 +88,19 @@ require_once __DIR__ . '/../../includes/functions.php';
                                     <?php endif; ?>
                                 </select>
                             </div>
-                            <div class="col-md-3 d-flex align-items-end">
+                            <div class="col-md-3">
+                                <label for="municipio" class="form-label">Municipio</label>
+                                <select class="form-select" id="municipio" name="municipio">
+                                    <option value="">Todos los municipios</option>
+                                    <option value="Sin especificar" <?= ($_GET['municipio'] ?? '') === 'Sin especificar' ? 'selected' : '' ?>>Sin especificar</option>
+                                    <?php foreach (getMunicipiosQueretaro() as $municipio): ?>
+                                        <option value="<?= htmlspecialchars($municipio) ?>" <?= ($_GET['municipio'] ?? '') === $municipio ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($municipio) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
                                 <button type="submit" class="btn btn-primary me-2">
                                     <i class="fas fa-search me-1"></i>Buscar
                                 </button>
@@ -120,6 +132,62 @@ require_once __DIR__ . '/../../includes/functions.php';
                 </div>
                 <?php endif; ?>
 
+                <?php if (($currentUser['rol'] ?? '') === 'SuperAdmin' && !empty($municipioStats)): ?>
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Distribución por Municipio</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Municipio</th>
+                                        <th class="text-end">Usuarios</th>
+                                        <th class="text-end">Líderes</th>
+                                        <th class="text-end">Activistas</th>
+                                        <th class="text-end">Activos</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($municipioStats as $municipioRow): ?>
+                                        <?php
+                                            $municipioValue = $municipioRow['municipio'];
+                                            $baseQuery = $_GET;
+                                            $baseQuery['municipio'] = $municipioValue;
+                                            $baseQuery['page'] = 1;
+                                        ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($municipioRow['municipio']) ?></td>
+                                            <td class="text-end">
+                                                <a href="<?= url('admin/users.php?' . http_build_query(array_merge($baseQuery, ['rol' => '']))) ?>">
+                                                    <?= (int)$municipioRow['total_usuarios'] ?>
+                                                </a>
+                                            </td>
+                                            <td class="text-end">
+                                                <a href="<?= url('admin/users.php?' . http_build_query(array_merge($baseQuery, ['rol' => 'Líder']))) ?>">
+                                                    <?= (int)$municipioRow['total_lideres'] ?>
+                                                </a>
+                                            </td>
+                                            <td class="text-end">
+                                                <a href="<?= url('admin/users.php?' . http_build_query(array_merge($baseQuery, ['rol' => 'Activista']))) ?>">
+                                                    <?= (int)$municipioRow['total_activistas'] ?>
+                                                </a>
+                                            </td>
+                                            <td class="text-end">
+                                                <a href="<?= url('admin/users.php?' . http_build_query(array_merge($baseQuery, ['estado' => 'activo']))) ?>">
+                                                    <?= (int)$municipioRow['total_activos'] ?>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
                 <!-- Lista de usuarios -->
                 <div class="card">
                     <div class="card-header">
@@ -144,6 +212,7 @@ require_once __DIR__ . '/../../includes/functions.php';
                                             <th>Estado</th>
                                             <th>Vigencia</th>
                                             <th>Líder</th>
+                                            <th>Municipio</th>
                                             <th>Registro</th>
                                             <th>Acciones</th>
                                         </tr>
@@ -190,6 +259,7 @@ require_once __DIR__ . '/../../includes/functions.php';
                                                 </span>
                                             </td>
                                             <td><?= htmlspecialchars($user['lider_nombre'] ?? 'N/A') ?></td>
+                                            <td><?= htmlspecialchars($user['municipio'] ?? 'No especificado') ?></td>
                                             <td><?= formatDate($user['fecha_registro']) ?></td>
                                             <td>
                                                 <div class="btn-group btn-group-sm" role="group">

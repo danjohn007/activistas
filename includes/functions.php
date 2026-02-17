@@ -5,9 +5,39 @@
 
 // Incluir configuración de la aplicación
 require_once __DIR__ . '/../config/app.php';
+require_once __DIR__ . '/../config/optimization.php';
 
-// Incluir helpers de evidencias
-require_once __DIR__ . '/evidence_helpers.php';
+// Incluir helpers de evidencias (opcional para entornos donde no esté desplegado)
+$evidenceHelpersPath = __DIR__ . '/evidence_helpers.php';
+if (file_exists($evidenceHelpersPath)) {
+    require_once $evidenceHelpersPath;
+} else {
+    if (defined('APP_ENV') && APP_ENV === 'development') {
+        error_log('Activistas App - WARNING: Archivo no encontrado: ' . $evidenceHelpersPath);
+    }
+}
+
+// Fallbacks para evitar errores fatales si los helpers no están disponibles
+if (!function_exists('parseEvidenceLinks')) {
+    function parseEvidenceLinks($input) {
+        return is_string($input) ? trim($input) : '';
+    }
+}
+
+if (!function_exists('normalizeEvidenceType')) {
+    function normalizeEvidenceType($type) {
+        return is_string($type) ? trim($type) : '';
+    }
+}
+
+if (!function_exists('findEvidenceFile')) {
+    function findEvidenceFile($dbFileName) {
+        if (!is_string($dbFileName) || $dbFileName === '') {
+            return null;
+        }
+        return basename($dbFileName);
+    }
+}
 
 // Configurar zona horaria de México
 if (defined('DEFAULT_TIMEZONE')) {
@@ -19,6 +49,13 @@ if (defined('DEFAULT_TIMEZONE')) {
 // Iniciar sesión si no está iniciada
 function startSession() {
     if (session_status() == PHP_SESSION_NONE) {
+        ini_set('session.use_strict_mode', '1');
+        ini_set('session.use_only_cookies', '1');
+        ini_set('session.use_trans_sid', '0');
+        ini_set('session.cookie_httponly', '1');
+        ini_set('session.cookie_secure', (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? '1' : '0');
+        ini_set('session.cookie_samesite', 'Lax');
+        ini_set('session.lazy_write', '1');
         session_start();
     }
 }
@@ -61,6 +98,36 @@ function isValidUrl($url) {
         return true; // URLs vacías son válidas (opcionales)
     }
     return filter_var($url, FILTER_VALIDATE_URL) !== false;
+}
+
+function getMunicipiosQueretaro() {
+    return [
+        'Amealco de Bonfil',
+        'Arroyo Seco',
+        'Cadereyta de Montes',
+        'Colón',
+        'Corregidora',
+        'Ezequiel Montes',
+        'Huimilpan',
+        'Jalpan de Serra',
+        'Landa de Matamoros',
+        'El Marqués',
+        'Pedro Escobedo',
+        'Peñamiller',
+        'Pinal de Amoles',
+        'Querétaro',
+        'San Joaquín',
+        'San Juan del Río',
+        'Tequisquiapan',
+        'Tolimán'
+    ];
+}
+
+function isValidMunicipio($municipio) {
+    if (empty($municipio)) {
+        return false;
+    }
+    return in_array(trim($municipio), getMunicipiosQueretaro(), true);
 }
 
 // Generar token aleatorio
